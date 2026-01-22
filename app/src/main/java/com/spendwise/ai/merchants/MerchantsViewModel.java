@@ -15,7 +15,7 @@ import com.spendwise.ai.data.repository.ExpenseRepository;
 import com.spendwise.ai.data.repository.MerchantRepository;
 import com.spendwise.ai.util.DateUtils;
 
-import java.time.YearMonth;
+import org.threeten.bp.YearMonth;
 import java.util.List;
 
 /**

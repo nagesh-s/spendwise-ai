@@ -23,9 +23,9 @@ import com.spendwise.ai.data.repository.CategoryRepository;
 import com.spendwise.ai.databinding.FragmentCalendarBinding;
 import com.spendwise.ai.util.DateUtils;
 
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
+import org.threeten.bp.LocalDate;
+import org.threeten.bp.YearMonth;
+import org.threeten.bp.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -68,6 +68,21 @@ public class CalendarFragment extends Fragment {
         
         // Set to current date
         calendarView.setSelectedDate(CalendarDay.today());
+        
+        // Style the calendar for dark mode compatibility
+        int textColor = getResources().getColor(
+                com.google.android.material.R.color.m3_ref_palette_dynamic_neutral10, 
+                requireContext().getTheme());
+        
+        // Check if dark mode is active
+        int nightModeFlags = getResources().getConfiguration().uiMode & 
+                android.content.res.Configuration.UI_MODE_NIGHT_MASK;
+        if (nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
+            // Use light text for dark mode
+            textColor = getResources().getColor(
+                    com.google.android.material.R.color.m3_ref_palette_dynamic_neutral90,
+                    requireContext().getTheme());
+        }
         
         // Date selection listener
         calendarView.setOnDateChangedListener((widget, date, selected) -> {

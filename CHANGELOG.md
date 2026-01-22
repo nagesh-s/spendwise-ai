@@ -9,7 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Planned
-- Phase 3-8: Screen implementations
+- Import/Export JSON with Storage Access Framework
+- Smart category suggestions
+- QuickTiles for frequent expenses
+- Calendar day decorators
+
+---
+
+## [0.3.0] - 2026-01-22
+### Added
+- **Dashboard Screen** - Monthly overview with PieChart and BarChart
+- **Calendar Screen** - MaterialCalendarView with expense list per day
+- **Expense Editor** - Dialog for add/edit with form validation
+- **Categories Screen** - Category list with budget progress bars
+- **Merchants Screen** - Top merchants with ranking badges
+- **Settings Screen** - Dark mode toggle, export/import placeholders
+- 4 new adapters: CategoryTotal, Expense, CategoryBudget, Merchant
+- 10+ drawable resources and item layouts
+
+### Notes
+- Git tag: `v0.3.0`
 
 ---
 

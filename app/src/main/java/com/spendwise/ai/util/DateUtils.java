@@ -1,8 +1,8 @@
 package com.spendwise.ai.util;
 
-import java.time.LocalDate;
-import java.time.YearMonth;
-import java.time.format.DateTimeFormatter;
+import org.threeten.bp.LocalDate;
+import org.threeten.bp.YearMonth;
+import org.threeten.bp.format.DateTimeFormatter;
 
 /**
  * Utility class for date operations used throughout the app.

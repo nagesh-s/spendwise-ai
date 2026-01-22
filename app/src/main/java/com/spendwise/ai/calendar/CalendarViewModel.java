@@ -13,8 +13,8 @@ import com.spendwise.ai.data.pojo.DailyTotal;
 import com.spendwise.ai.data.repository.ExpenseRepository;
 import com.spendwise.ai.util.DateUtils;
 
-import java.time.LocalDate;
-import java.time.YearMonth;
+import org.threeten.bp.LocalDate;
+import org.threeten.bp.YearMonth;
 import java.util.List;
 
 /**
