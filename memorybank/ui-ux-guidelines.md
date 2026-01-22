@@ -1,0 +1,4 @@
+- Dark mode: support system default + manual toggle
+- Typography/colors: use theme attributes for light/dark parity
+- Lists: MaterialCardView and shape appearance for modern look
+- Charts: avoid overcrowding labels; provide legends where needed

@@ -1,0 +1,15 @@
+# SpendWise AI Build Artifacts
+.gradle/
+build/
+app/build/
+
+# IDE
+.idea/
+*.iml
+local.properties
+
+# macOS
+.DS_Store
+
+# Logs
+*.log

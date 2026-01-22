@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/navigation_dashboard"
+        android:icon="@drawable/ic_dashboard_black_24dp"
+        android:title="@string/title_dashboard" />
+
+    <item
+        android:id="@+id/navigation_calendar"
+        android:icon="@drawable/ic_calendar_black_24dp"
+        android:title="@string/title_calendar" />
+
+    <item
+        android:id="@+id/navigation_categories"
+        android:icon="@drawable/ic_category_black_24dp"
+        android:title="@string/title_categories" />
+
+    <item
+        android:id="@+id/navigation_merchants"
+        android:icon="@drawable/ic_merchants_black_24dp"
+        android:title="@string/title_merchants" />
+
+    <item
+        android:id="@+id/navigation_settings"
+        android:icon="@drawable/ic_settings_black_24dp"
+        android:title="@string/title_settings" />
+
+</menu>

@@ -1,0 +1,4 @@
+- Single Activity: MainActivity hosts NavHostFragment; BottomNavigationView wired to NavController
+- Fragments: DashboardFragment, CalendarFragment, CategoriesBudgetsFragment, MerchantsFragment, SettingsFragment
+- Data layer: Room database with Entities + DAOs; LiveData/observers drive UI updates
+- Smart features: lightweight heuristics computed from local history (no network)

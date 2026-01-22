@@ -1,0 +1,5 @@
+- Java style: Google Java style alignment where practical
+- Naming: FooActivity (only MainActivity), FooFragment, FooViewModel, FooDao, FooEntity
+- Nullability: Use @NonNull/@Nullable consistently
+- Threading: DB access off main thread via Room/Executors
+- Tests: DAO unit tests + navigation/UI smoke flows

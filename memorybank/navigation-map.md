@@ -1,0 +1,3 @@
+- Graph: app_nav_graph.xml
+- Bottom nav IDs -> fragment IDs mapping
+- Dialog: ExpenseEditorDialogFragment with args (expenseId?, date?)
