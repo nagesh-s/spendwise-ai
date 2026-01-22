@@ -66,6 +66,12 @@ public interface CategoryDao {
     int countByName(String name);
 
     /**
+     * Find a category by exact name (case-insensitive).
+     */
+    @Query("SELECT * FROM categories WHERE LOWER(name) = LOWER(:name) LIMIT 1")
+    Category findByName(String name);
+
+    /**
      * Get the count of all categories.
      */
     @Query("SELECT COUNT(*) FROM categories")

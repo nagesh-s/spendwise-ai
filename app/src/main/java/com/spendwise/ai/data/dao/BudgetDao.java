@@ -45,6 +45,9 @@ public interface BudgetDao {
     @Query("SELECT * FROM budgets WHERE monthKeyYYYYMM = :monthKey ORDER BY categoryId")
     List<Budget> getBudgetsForMonthSync(String monthKey);
 
+    @Query("SELECT * FROM budgets ORDER BY monthKeyYYYYMM DESC, categoryId")
+    List<Budget> getAllBudgetsSync();
+
     @Query("SELECT * FROM budgets WHERE monthKeyYYYYMM = :monthKey AND categoryId = :categoryId LIMIT 1")
     Budget getBudgetForCategoryAndMonth(long categoryId, String monthKey);
 

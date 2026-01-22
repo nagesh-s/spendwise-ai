@@ -41,6 +41,9 @@ public interface ExpenseDao {
     @Query("SELECT * FROM expenses ORDER BY dateEpochDay DESC, id DESC")
     LiveData<List<Expense>> getAllExpenses();
 
+    @Query("SELECT * FROM expenses ORDER BY dateEpochDay DESC, id DESC")
+    List<Expense> getAllExpensesSync();
+
     // ==================== Date-based Queries ====================
 
     /**
