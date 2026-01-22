@@ -21,4 +21,15 @@
         <!-- Status bar color -->
         <item name="android:statusBarColor">@color/md_theme_surface</item>
     </style>
+    
+    <!-- Calendar text styles for MaterialCalendarView -->
+    <style name="CalendarDateTextAppearance" parent="android:TextAppearance">
+        <item name="android:textColor">?attr/colorOnSurface</item>
+        <item name="android:textSize">14sp</item>
+    </style>
+    
+    <style name="CalendarWeekTextAppearance" parent="android:TextAppearance">
+        <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
+        <item name="android:textSize">12sp</item>
+    </style>
 </resources>

@@ -19,7 +19,9 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             app:mcv_showOtherDates="out_of_range"
-            app:mcv_selectionColor="?attr/colorPrimary" />
+            app:mcv_selectionColor="?attr/colorPrimary"
+            app:mcv_dateTextAppearance="@style/CalendarDateTextAppearance"
+            app:mcv_weekDayTextAppearance="@style/CalendarWeekTextAppearance" />
 
         <!-- Divider -->
         <View

@@ -47,7 +47,24 @@ public class CategoriesFragment extends Fragment {
     private void setupRecyclerView() {
         adapter = new CategoryBudgetAdapter();
         adapter.setOnBudgetClickListener((category, currentBudget) -> {
-            // TODO: Show budget editor dialog
+            long currentBudgetCents = currentBudget != null ? currentBudget.getLimitCents() : 0;
+            BudgetEditorDialog dialog = BudgetEditorDialog.newInstance(
+                    category.getId(),
+                    category.getName(),
+                    currentBudgetCents
+            );
+            dialog.setOnBudgetSavedListener(new BudgetEditorDialog.OnBudgetSavedListener() {
+                @Override
+                public void onBudgetSaved(long categoryId, long amountCents) {
+                    viewModel.setBudget(categoryId, amountCents);
+                }
+
+                @Override
+                public void onBudgetRemoved(long categoryId) {
+                    viewModel.setBudget(categoryId, 0);
+                }
+            });
+            dialog.show(getChildFragmentManager(), "budget_editor");
         });
         binding.recyclerCategories.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.recyclerCategories.setAdapter(adapter);
