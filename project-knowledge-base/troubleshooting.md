@@ -14,6 +14,20 @@
 
 ### Build Issues
 
+#### Problem: Gradle build fails from terminal
+**Symptoms**: `Unable to locate a Java Runtime` when running `./gradlew` from terminal
+**Cause**: Java is not in system PATH (Android Studio uses its own bundled JDK)
+**Solution**:
+1. **Quick fix**: Build in Android Studio instead (Build → Make Project)
+2. **Permanent fix**: Add Android Studio's JDK to PATH:
+   ```bash
+   export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+   export PATH="$JAVA_HOME/bin:$PATH"
+   ```
+   Add these lines to `~/.zshrc` for persistence.
+
+---
+
 #### Problem: Gradle sync fails
 **Symptoms**: Android Studio shows "Gradle sync failed" error
 **Cause**: Usually network issues or dependency resolution problems

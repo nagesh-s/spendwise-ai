@@ -9,9 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Planned
-- Phase 1: Data Layer (entities, DAOs, database)
 - Phase 2: Repository & ViewModel layer
 - Phase 3-8: Screen implementations
+
+---
+
+## [0.1.0] - 2026-01-22
+### Added
+- **Data Layer** - Complete Room database implementation
+  - 5 Entities: Expense, Category, Merchant, Budget, QuickTile
+  - 5 DAOs with CRUD and aggregate queries
+  - 4 POJOs for query results
+  - AppDatabase with singleton pattern and background executor
+  - 10 default categories prepopulated on first run
+
+### Notes
+- Git tag: `v0.1.0`
 
 ---
 

@@ -8,9 +8,9 @@
 
 | Metric | Value |
 |--------|-------|
-| **Overall Progress** | ~5% |
-| **Current Phase** | Phase 0 - Planning |
-| **Last Checkpoint** | CP-0: Navigation scaffold |
+| **Overall Progress** | ~15% |
+| **Current Phase** | Phase 1 Complete, ready for Phase 2 |
+| **Last Checkpoint** | CP-1: Data Layer complete |
 | **Last Updated** | 2026-01-22 |
 
 ---
@@ -19,21 +19,18 @@
 
 ### Phase 0: Project Setup (Complete)
 - [x] Android project created with Gradle
-- [x] Dependencies configured in `app/build.gradle`:
-  - Room database (2.6.1)
-  - Navigation component (2.7.7)
-  - MPAndroidChart (v3.1.0)
-  - MaterialCalendarView (2.0.1)
-  - Material Components (1.12.0)
-- [x] MainActivity with BottomNavigationView (4 tabs)
-- [x] Navigation graph with 5 fragment destinations
-- [x] Empty fragment shells created:
-  - DashboardFragment
-  - CalendarFragment
-  - CategoriesFragment
-  - MerchantsFragment
-  - SettingsFragment
-- [x] ExpenseEditorDialogFragment placeholder
+- [x] Dependencies configured
+- [x] MainActivity with BottomNavigationView
+- [x] Navigation graph with 5 fragments
+- [x] Empty fragment shells
+- [x] Git repository initialized (v0.0.1)
+
+### Phase 1: Data Layer (Complete)
+- [x] **Entities**: Expense, Category, Merchant, Budget, QuickTile
+- [x] **POJOs**: CategoryTotal, MerchantAgg, DailyTotal, BudgetWithSpend
+- [x] **DAOs**: ExpenseDao, CategoryDao, MerchantDao, BudgetDao, QuickTileDao
+- [x] **AppDatabase**: Singleton with background executor
+- [x] **Default categories**: 10 prepopulated on first run
 
 ---
 
