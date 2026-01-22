@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingVertical="12dp">
+
+    <!-- Category Color Indicator -->
+    <View
+        android:id="@+id/view_category_color"
+        android:layout_width="12dp"
+        android:layout_height="12dp"
+        android:background="@drawable/shape_circle"
+        tools:backgroundTint="#FF5722" />
+
+    <!-- Category Name -->
+    <TextView
+        android:id="@+id/text_category_name"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
+        android:ellipsize="end"
+        android:maxLines="1"
+        tools:text="Food &amp; Dining" />
+
+    <!-- Category Total -->
+    <TextView
+        android:id="@+id/text_category_total"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textAppearance="?attr/textAppearanceBodyLarge"
+        android:textStyle="bold"
+        tools:text="₹12,500.00" />
+
+</LinearLayout>

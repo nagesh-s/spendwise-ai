@@ -4,14 +4,24 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import com.spendwise.ai.databinding.FragmentCategoriesBinding;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.spendwise.ai.databinding.FragmentCategoriesBinding;
+import com.spendwise.ai.util.DateUtils;
+
+/**
+ * Fragment for managing categories and viewing/setting budgets.
+ */
 public class CategoriesFragment extends Fragment {
 
     private FragmentCategoriesBinding binding;
+    private CategoriesViewModel viewModel;
+    private CategoryBudgetAdapter adapter;
 
     @Nullable
     @Override
@@ -20,6 +30,55 @@ public class CategoriesFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         binding = FragmentCategoriesBinding.inflate(inflater, container, false);
         return binding.getRoot();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        viewModel = new ViewModelProvider(this).get(CategoriesViewModel.class);
+
+        setupRecyclerView();
+        setupMonthNavigation();
+        setupFab();
+        observeData();
+    }
+
+    private void setupRecyclerView() {
+        adapter = new CategoryBudgetAdapter();
+        adapter.setOnBudgetClickListener((category, currentBudget) -> {
+            // TODO: Show budget editor dialog
+        });
+        binding.recyclerCategories.setLayoutManager(new LinearLayoutManager(requireContext()));
+        binding.recyclerCategories.setAdapter(adapter);
+    }
+
+    private void setupMonthNavigation() {
+        binding.btnPrevMonth.setOnClickListener(v -> viewModel.goToPreviousMonth());
+        binding.btnNextMonth.setOnClickListener(v -> viewModel.goToNextMonth());
+    }
+
+    private void setupFab() {
+        binding.fabAddCategory.setOnClickListener(v -> {
+            // TODO: Show category editor dialog
+        });
+    }
+
+    private void observeData() {
+        // Observe current budget month
+        viewModel.getBudgetMonth().observe(getViewLifecycleOwner(), month -> {
+            binding.textBudgetMonth.setText(DateUtils.getDisplayMonth(month) + " Budgets");
+        });
+
+        // Observe categories
+        viewModel.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
+            adapter.setCategories(categories);
+        });
+
+        // Observe budgets with spend
+        viewModel.getBudgetsWithSpend().observe(getViewLifecycleOwner(), budgets -> {
+            adapter.setBudgets(budgets);
+        });
     }
 
     @Override

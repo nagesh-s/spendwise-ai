@@ -4,14 +4,42 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
-import com.spendwise.ai.databinding.FragmentCalendarBinding;
+import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.prolificinteractive.materialcalendarview.CalendarDay;
+import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
+import com.prolificinteractive.materialcalendarview.OnDateSelectedListener;
+import com.prolificinteractive.materialcalendarview.OnMonthChangedListener;
+import com.spendwise.ai.common.ExpenseAdapter;
+import com.spendwise.ai.common.ExpenseEditorDialogFragment;
+import com.spendwise.ai.data.entity.Category;
+import com.spendwise.ai.data.entity.Expense;
+import com.spendwise.ai.data.repository.CategoryRepository;
+import com.spendwise.ai.databinding.FragmentCalendarBinding;
+import com.spendwise.ai.util.DateUtils;
+
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+
+/**
+ * Calendar fragment showing monthly calendar with expense list for selected date.
+ */
 public class CalendarFragment extends Fragment {
 
     private FragmentCalendarBinding binding;
+    private CalendarViewModel viewModel;
+    private ExpenseAdapter expenseAdapter;
+    private CategoryRepository categoryRepository;
+
+    private static final DateTimeFormatter DATE_DISPLAY_FORMAT = 
+            DateTimeFormatter.ofPattern("EEEE, MMMM d");
 
     @Nullable
     @Override
@@ -20,6 +48,98 @@ public class CalendarFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         binding = FragmentCalendarBinding.inflate(inflater, container, false);
         return binding.getRoot();
+    }
+
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        viewModel = new ViewModelProvider(this).get(CalendarViewModel.class);
+        categoryRepository = new CategoryRepository(requireActivity().getApplication());
+
+        setupCalendar();
+        setupRecyclerView();
+        setupFab();
+        observeData();
+    }
+
+    private void setupCalendar() {
+        MaterialCalendarView calendarView = binding.calendarView;
+        
+        // Set to current date
+        calendarView.setSelectedDate(CalendarDay.today());
+        
+        // Date selection listener
+        calendarView.setOnDateChangedListener((widget, date, selected) -> {
+            LocalDate localDate = LocalDate.of(date.getYear(), date.getMonth(), date.getDay());
+            viewModel.setSelectedDate(localDate);
+        });
+
+        // Month change listener
+        calendarView.setOnMonthChangedListener((widget, date) -> {
+            YearMonth yearMonth = YearMonth.of(date.getYear(), date.getMonth());
+            viewModel.setDisplayedMonth(yearMonth);
+        });
+    }
+
+    private void setupRecyclerView() {
+        expenseAdapter = new ExpenseAdapter();
+        binding.recyclerExpenses.setLayoutManager(new LinearLayoutManager(requireContext()));
+        binding.recyclerExpenses.setAdapter(expenseAdapter);
+
+        // Handle expense click for editing
+        expenseAdapter.setOnExpenseClickListener(expense -> {
+            openExpenseEditor(expense.getId());
+        });
+    }
+
+    private void setupFab() {
+        binding.fabAddExpense.setOnClickListener(v -> openExpenseEditor(null));
+        binding.btnAddExpenseEmpty.setOnClickListener(v -> openExpenseEditor(null));
+    }
+
+    private void openExpenseEditor(@Nullable Long expenseId) {
+        ExpenseEditorDialogFragment dialog = ExpenseEditorDialogFragment.newInstance(
+                expenseId,
+                viewModel.getSelectedDateEpochDay()
+        );
+        dialog.show(getChildFragmentManager(), "expense_editor");
+    }
+
+    private void observeData() {
+        // Observe selected date
+        viewModel.getSelectedDate().observe(getViewLifecycleOwner(), date -> {
+            binding.textSelectedDate.setText(date.format(DATE_DISPLAY_FORMAT));
+        });
+
+        // Observe expenses for selected date
+        viewModel.getSelectedDateExpenses().observe(getViewLifecycleOwner(), expenses -> {
+            updateExpensesList(expenses);
+        });
+
+        // Load categories for displaying in list
+        categoryRepository.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
+            expenseAdapter.setCategories(categories);
+        });
+    }
+
+    private void updateExpensesList(List<Expense> expenses) {
+        if (expenses == null || expenses.isEmpty()) {
+            binding.recyclerExpenses.setVisibility(View.GONE);
+            binding.layoutEmptyState.setVisibility(View.VISIBLE);
+            binding.textSelectedDateTotal.setText(DateUtils.formatAmountCents(0));
+        } else {
+            binding.recyclerExpenses.setVisibility(View.VISIBLE);
+            binding.layoutEmptyState.setVisibility(View.GONE);
+            expenseAdapter.submitList(expenses);
+            
+            // Calculate total
+            long total = 0;
+            for (Expense expense : expenses) {
+                total += expense.getAmountCents();
+            }
+            binding.textSelectedDateTotal.setText(DateUtils.formatAmountCents(total));
+        }
     }
 
     @Override
