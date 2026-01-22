@@ -32,11 +32,10 @@
 - [x] **AppDatabase**: Singleton with background executor
 - [x] **Default categories**: 10 prepopulated on first run
 
----
-
-## 🔄 What's In Progress
-
-Nothing currently in progress. Ready to start Phase 1.
+### Phase 2: Repository & ViewModel Layer (Complete)
+- [x] **Repositories**: ExpenseRepository, CategoryRepository, MerchantRepository, BudgetRepository
+- [x] **ViewModels**: DashboardViewModel, CalendarViewModel, CategoriesViewModel, MerchantsViewModel, SettingsViewModel, ExpenseEditorViewModel
+- [x] **Utilities**: DateUtils for month keys, epoch days, formatting
 
 ---
 

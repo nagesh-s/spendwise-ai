@@ -9,8 +9,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 ### Planned
-- Phase 2: Repository & ViewModel layer
 - Phase 3-8: Screen implementations
+
+---
+
+## [0.2.0] - 2026-01-22
+### Added
+- **Repository Layer** - Clean data access abstraction
+  - ExpenseRepository, CategoryRepository, MerchantRepository, BudgetRepository
+- **ViewModel Layer** - MVVM architecture for all screens
+  - DashboardViewModel with month navigation and reactive totals
+  - CalendarViewModel with date selection and daily totals
+  - CategoriesViewModel with category CRUD and budget management
+  - MerchantsViewModel with analytics and merchant selection
+  - SettingsViewModel with dark mode persistence
+  - ExpenseEditorViewModel with form validation and save logic
+- **DateUtils** - Helper for month keys, epoch days, and amount formatting
+
+### Notes
+- Git tag: `v0.2.0`
 
 ---
 
