@@ -21,7 +21,8 @@ import java.util.List;
 
 /**
  * ViewModel for ExpenseEditorDialog.
- * Manages expense creation/editing form state and provides category/merchant suggestions.
+ * Manages expense creation/editing form state and provides category/merchant
+ * suggestions.
  */
 public class ExpenseEditorViewModel extends AndroidViewModel {
 
@@ -31,6 +32,9 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
 
     // All categories for dropdown
     private final LiveData<List<Category>> allCategories;
+
+    // All merchants for autocomplete
+    private final LiveData<List<Merchant>> allMerchants;
 
     // Form state
     private final MutableLiveData<Long> expenseId = new MutableLiveData<>();
@@ -54,6 +58,7 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
         merchantRepository = new MerchantRepository(application);
 
         allCategories = categoryRepository.getAllCategories();
+        allMerchants = merchantRepository.getAllMerchants();
 
         // Initialize with today's date
         selectedDate.setValue(LocalDate.now());
@@ -81,13 +86,18 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
         // Load expense in background and populate form
         // This would need to be done via a callback or by observing
         expenseId.setValue(existingExpenseId);
-        // Note: Actual loading would happen when the fragment observes and calls loadExpense()
+        // Note: Actual loading would happen when the fragment observes and calls
+        // loadExpense()
     }
 
     // ==================== Form Getters/Setters ====================
 
     public LiveData<List<Category>> getAllCategories() {
         return allCategories;
+    }
+
+    public LiveData<List<Merchant>> getAllMerchants() {
+        return allMerchants;
     }
 
     public MutableLiveData<Long> getAmountCents() {
@@ -208,8 +218,7 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
                 amount,
                 desc,
                 categoryId,
-                merchantId
-        );
+                merchantId);
 
         Long existingId = expenseId.getValue();
         if (existingId != null && existingId > 0) {

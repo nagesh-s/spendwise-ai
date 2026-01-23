@@ -29,7 +29,8 @@ import java.util.Map;
 
 /**
  * Dialog fragment for creating and editing expenses.
- * Supports passing expenseId for editing, or dateEpochDay for new expense on specific date.
+ * Supports passing expenseId for editing, or dateEpochDay for new expense on
+ * specific date.
  */
 public class ExpenseEditorDialogFragment extends DialogFragment {
 
@@ -60,14 +61,15 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setStyle(DialogFragment.STYLE_NORMAL, com.google.android.material.R.style.ThemeOverlay_Material3_MaterialAlertDialog);
+        setStyle(DialogFragment.STYLE_NORMAL,
+                com.google.android.material.R.style.ThemeOverlay_Material3_MaterialAlertDialog);
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         binding = FragmentExpenseEditorDialogBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
@@ -93,27 +95,114 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
         }
 
         setupCategoryDropdown();
+        setupMerchantAutocomplete();
+        setupDescriptionSuggestions();
         setupDatePicker();
         setupButtons();
         observeViewModel();
+    }
+
+    private void setupMerchantAutocomplete() {
+        // Load all merchants for autocomplete
+        viewModel.getAllMerchants().observe(getViewLifecycleOwner(), merchants -> {
+            if (merchants == null || merchants.isEmpty())
+                return;
+
+            List<String> merchantNames = new ArrayList<>();
+            for (com.spendwise.ai.data.entity.Merchant merchant : merchants) {
+                merchantNames.add(merchant.getName());
+            }
+
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(
+                    requireContext(),
+                    android.R.layout.simple_dropdown_item_1line,
+                    merchantNames);
+            binding.editMerchant.setAdapter(adapter);
+        });
+    }
+
+    private void setupDescriptionSuggestions() {
+        // When description changes, suggest a category based on keywords
+        binding.editDescription.addTextChangedListener(new android.text.TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+            }
+
+            @Override
+            public void afterTextChanged(android.text.Editable s) {
+                String description = s.toString().toLowerCase();
+                suggestCategoryFromDescription(description);
+            }
+        });
+    }
+
+    private void suggestCategoryFromDescription(String description) {
+        if (description.isEmpty())
+            return;
+
+        // Only suggest if no category is selected yet
+        Long currentCategory = viewModel.getSelectedCategoryId().getValue();
+        if (currentCategory != null && currentCategory > 0)
+            return;
+
+        // Simple keyword matching for category suggestions
+        String suggestedCategory = null;
+
+        if (containsAny(description, "food", "lunch", "dinner", "breakfast", "restaurant", "pizza", "burger",
+                "coffee")) {
+            suggestedCategory = "Food & Dining";
+        } else if (containsAny(description, "grocery", "groceries", "supermarket", "vegetables", "fruits")) {
+            suggestedCategory = "Groceries";
+        } else if (containsAny(description, "uber", "ola", "taxi", "bus", "train", "metro", "petrol", "fuel", "gas")) {
+            suggestedCategory = "Transportation";
+        } else if (containsAny(description, "electric", "water", "internet", "wifi", "phone", "mobile", "recharge")) {
+            suggestedCategory = "Utilities";
+        } else if (containsAny(description, "movie", "netflix", "spotify", "concert", "game", "entertainment")) {
+            suggestedCategory = "Entertainment";
+        } else if (containsAny(description, "clothes", "shoes", "fashion", "shopping", "amazon", "flipkart")) {
+            suggestedCategory = "Shopping";
+        } else if (containsAny(description, "doctor", "medicine", "hospital", "pharmacy", "health")) {
+            suggestedCategory = "Healthcare";
+        } else if (containsAny(description, "rent", "maintenance", "repair", "home")) {
+            suggestedCategory = "Housing";
+        }
+
+        if (suggestedCategory != null) {
+            Long categoryId = categoryNameToId.get(suggestedCategory);
+            if (categoryId != null) {
+                binding.dropdownCategory.setText(suggestedCategory, false);
+                viewModel.setSelectedCategoryId(categoryId);
+            }
+        }
+    }
+
+    private boolean containsAny(String text, String... keywords) {
+        for (String keyword : keywords) {
+            if (text.contains(keyword))
+                return true;
+        }
+        return false;
     }
 
     private void setupCategoryDropdown() {
         viewModel.getAllCategories().observe(getViewLifecycleOwner(), categoryList -> {
             this.categories = categoryList;
             categoryNameToId.clear();
-            
+
             List<String> categoryNames = new ArrayList<>();
             for (Category category : categoryList) {
                 categoryNames.add(category.getName());
                 categoryNameToId.put(category.getName(), category.getId());
             }
-            
+
             ArrayAdapter<String> adapter = new ArrayAdapter<>(
                     requireContext(),
                     android.R.layout.simple_dropdown_item_1line,
-                    categoryNames
-            );
+                    categoryNames);
             binding.dropdownCategory.setAdapter(adapter);
         });
 
@@ -144,8 +233,7 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
                 },
                 currentDate.getYear(),
                 currentDate.getMonthValue() - 1,
-                currentDate.getDayOfMonth()
-        );
+                currentDate.getDayOfMonth());
         dialog.show();
     }
 
