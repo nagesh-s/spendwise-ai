@@ -54,6 +54,8 @@
 | v0.4.0 | JSON import/export | 2026-01-23 |
 | v0.5.0 | Merchant autocomplete, category suggestions | 2026-01-23 |
 | v1.0.0 | Calendar decorators, final polish | 2026-01-23 |
+| v1.0.1 | Dark mode persistence, delete expense | 2026-01-23 |
+| v1.0.2 | Chart/card dark mode visibility | 2026-01-23 |
 
 ---
 
