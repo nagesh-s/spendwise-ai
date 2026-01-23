@@ -35,7 +35,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Dashboard fragment showing monthly overview with charts and category breakdown.
+ * Dashboard fragment showing monthly overview with charts and category
+ * breakdown.
  */
 public class DashboardFragment extends Fragment {
 
@@ -46,8 +47,8 @@ public class DashboardFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         binding = FragmentDashboardBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
@@ -65,6 +66,12 @@ public class DashboardFragment extends Fragment {
     }
 
     private void setupCharts() {
+        // Get theme-aware text color
+        int textColor = com.google.android.material.color.MaterialColors.getColor(
+                requireContext(),
+                com.google.android.material.R.attr.colorOnSurface,
+                Color.BLACK);
+
         // Configure Pie Chart
         PieChart pieChart = binding.pieChartCategories;
         pieChart.setUsePercentValues(true);
@@ -87,6 +94,7 @@ public class DashboardFragment extends Fragment {
         pieLegend.setOrientation(Legend.LegendOrientation.HORIZONTAL);
         pieLegend.setDrawInside(false);
         pieLegend.setWordWrapEnabled(true);
+        pieLegend.setTextColor(textColor);
 
         // Configure Bar Chart
         HorizontalBarChart barChart = binding.barChartBudgets;
@@ -103,6 +111,7 @@ public class DashboardFragment extends Fragment {
         xAxis.setPosition(XAxis.XAxisPosition.BOTTOM);
         xAxis.setDrawGridLines(false);
         xAxis.setGranularity(1f);
+        xAxis.setTextColor(textColor);
 
         YAxis leftAxis = barChart.getAxisLeft();
         leftAxis.setEnabled(false);
@@ -167,8 +176,8 @@ public class DashboardFragment extends Fragment {
         updatePieChart(categoryTotals);
 
         // Update list (top 5)
-        List<CategoryTotal> top5 = categoryTotals.size() > 5 
-                ? categoryTotals.subList(0, 5) 
+        List<CategoryTotal> top5 = categoryTotals.size() > 5
+                ? categoryTotals.subList(0, 5)
                 : categoryTotals;
         categoryAdapter.submitList(new ArrayList<>(top5));
     }
@@ -223,7 +232,7 @@ public class DashboardFragment extends Fragment {
             float usagePercent = budget.getUsagePercent();
             entries.add(new BarEntry(i, Math.min(usagePercent, 120f))); // Cap at 120%
             labels.add(budget.getCategoryName());
-            
+
             // Color based on usage
             if (usagePercent >= 100) {
                 colors.add(colorRed);
