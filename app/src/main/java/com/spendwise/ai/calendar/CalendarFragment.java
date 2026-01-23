@@ -29,7 +29,8 @@ import org.threeten.bp.format.DateTimeFormatter;
 import java.util.List;
 
 /**
- * Calendar fragment showing monthly calendar with expense list for selected date.
+ * Calendar fragment showing monthly calendar with expense list for selected
+ * date.
  */
 public class CalendarFragment extends Fragment {
 
@@ -38,14 +39,13 @@ public class CalendarFragment extends Fragment {
     private ExpenseAdapter expenseAdapter;
     private CategoryRepository categoryRepository;
 
-    private static final DateTimeFormatter DATE_DISPLAY_FORMAT = 
-            DateTimeFormatter.ofPattern("EEEE, MMMM d");
+    private static final DateTimeFormatter DATE_DISPLAY_FORMAT = DateTimeFormatter.ofPattern("EEEE, MMMM d");
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         binding = FragmentCalendarBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
@@ -65,17 +65,17 @@ public class CalendarFragment extends Fragment {
 
     private void setupCalendar() {
         MaterialCalendarView calendarView = binding.calendarView;
-        
+
         // Set to current date
         calendarView.setSelectedDate(CalendarDay.today());
-        
+
         // Style the calendar for dark mode compatibility
         int textColor = getResources().getColor(
-                com.google.android.material.R.color.m3_ref_palette_dynamic_neutral10, 
+                com.google.android.material.R.color.m3_ref_palette_dynamic_neutral10,
                 requireContext().getTheme());
-        
+
         // Check if dark mode is active
-        int nightModeFlags = getResources().getConfiguration().uiMode & 
+        int nightModeFlags = getResources().getConfiguration().uiMode &
                 android.content.res.Configuration.UI_MODE_NIGHT_MASK;
         if (nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
             // Use light text for dark mode
@@ -83,7 +83,7 @@ public class CalendarFragment extends Fragment {
                     com.google.android.material.R.color.m3_ref_palette_dynamic_neutral90,
                     requireContext().getTheme());
         }
-        
+
         // Date selection listener
         calendarView.setOnDateChangedListener((widget, date, selected) -> {
             LocalDate localDate = LocalDate.of(date.getYear(), date.getMonth(), date.getDay());
@@ -116,8 +116,7 @@ public class CalendarFragment extends Fragment {
     private void openExpenseEditor(@Nullable Long expenseId) {
         ExpenseEditorDialogFragment dialog = ExpenseEditorDialogFragment.newInstance(
                 expenseId,
-                viewModel.getSelectedDateEpochDay()
-        );
+                viewModel.getSelectedDateEpochDay());
         dialog.show(getChildFragmentManager(), "expense_editor");
     }
 
@@ -136,6 +135,35 @@ public class CalendarFragment extends Fragment {
         categoryRepository.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
             expenseAdapter.setCategories(categories);
         });
+
+        // Observe daily totals for calendar decorators
+        viewModel.getDailyTotals().observe(getViewLifecycleOwner(), dailyTotals -> {
+            updateCalendarDecorators(dailyTotals);
+        });
+    }
+
+    private void updateCalendarDecorators(List<com.spendwise.ai.data.pojo.DailyTotal> dailyTotals) {
+        if (dailyTotals == null || dailyTotals.isEmpty())
+            return;
+
+        MaterialCalendarView calendarView = binding.calendarView;
+        calendarView.removeDecorators();
+
+        // Spending thresholds in cents (₹500 low, ₹2000 high)
+        final long LOW_THRESHOLD = 50000; // ₹500
+        final long HIGH_THRESHOLD = 200000; // ₹2000
+
+        for (com.spendwise.ai.data.pojo.DailyTotal daily : dailyTotals) {
+            LocalDate date = DateUtils.epochDayToDate(daily.getDateEpochDay());
+            CalendarDay calendarDay = CalendarDay.from(date.getYear(), date.getMonthValue(), date.getDayOfMonth());
+
+            SingleDayDecorator decorator = SingleDayDecorator.forAmount(
+                    calendarDay,
+                    daily.getTotalCents(),
+                    LOW_THRESHOLD,
+                    HIGH_THRESHOLD);
+            calendarView.addDecorator(decorator);
+        }
     }
 
     private void updateExpensesList(List<Expense> expenses) {
@@ -147,7 +175,7 @@ public class CalendarFragment extends Fragment {
             binding.recyclerExpenses.setVisibility(View.VISIBLE);
             binding.layoutEmptyState.setVisibility(View.GONE);
             expenseAdapter.submitList(expenses);
-            
+
             // Calculate total
             long total = 0;
             for (Expense expense : expenses) {
