@@ -1,44 +1,102 @@
 # SpendWise AI - Project Knowledge Base
 
-> **Purpose**: Plain English documentation of how the app works. Designed so anyone (even non-developers) can understand the system, troubleshoot issues, and provide context for AI assistants to resume work.
+> **Purpose**: Complete documentation for understanding, debugging, and extending the app. Designed for non-developers to find issues and AI agents to fix them.
 
 ---
 
 ## 📂 Documentation Structure
 
-| File | Description |
-|------|-------------|
-| [progress-log.md](./progress-log.md) | What's been done, current state, checkpoints |
-| [troubleshooting.md](./troubleshooting.md) | Common issues and solutions |
-| **Module Guides** | |
-| [data-layer.md](./modules/data-layer.md) | Database, entities, how data is stored |
-| [dashboard.md](./modules/dashboard.md) | Monthly overview, charts, totals |
-| [calendar.md](./modules/calendar.md) | Calendar view, daily expenses |
-| [expense-editor.md](./modules/expense-editor.md) | Adding/editing expenses |
-| [categories-budgets.md](./modules/categories-budgets.md) | Categories and monthly budgets |
-| [merchants.md](./modules/merchants.md) | Merchant analytics |
-| [settings.md](./modules/settings.md) | Dark mode, import/export |
+| File | Purpose | When to Use |
+|------|---------|-------------|
+| [architecture.md](./architecture.md) | **START HERE** - System overview, file map, data flow | Understanding how everything connects |
+| [troubleshooting.md](./troubleshooting.md) | Issue catalog by symptom | When something breaks |
+| [progress-log.md](./progress-log.md) | Development history, versions | Resume work or understand changes |
+
+### Module Guides
+
+| Module | File | Covers |
+|--------|------|--------|
+| Data Layer | [data-layer.md](./modules/data-layer.md) | Database, entities, DAOs, queries |
+| Dashboard | [dashboard.md](./modules/dashboard.md) | Charts, monthly totals, navigation |
+| Calendar | [calendar.md](./modules/calendar.md) | Date selection, spending dots |
+| Expense Editor | [expense-editor.md](./modules/expense-editor.md) | Add/edit expenses, smart suggestions |
+| Categories | [categories-budgets.md](./modules/categories-budgets.md) | Budget setting, progress tracking |
+| Merchants | [merchants.md](./modules/merchants.md) | Spending analytics by merchant |
+| Settings | [settings.md](./modules/settings.md) | Dark mode, import/export |
 
 ---
 
-## 🔄 How to Use This Documentation
+## 🔍 Finding Issues (For Non-Coders)
 
-### For Resuming Work (AI Agents)
-1. Read `progress-log.md` to understand current state
-2. Check the "Next Steps" section for what to do next
-3. Read relevant module guide before modifying that feature
+### Something Crashed?
+1. Open `troubleshooting.md`
+2. Find your symptom in the tables
+3. The "File to Check" column tells where the problem is
 
-### For Troubleshooting (Anyone)
-1. Check `troubleshooting.md` for known issues
-2. Read the relevant module guide to understand how that feature works
-3. Use the "How It Works" section to trace the flow
+### Feature Not Working?
+1. Identify which screen has the issue
+2. Open that module's guide (e.g., `calendar.md`)
+3. Read "How It Works" to understand the flow
+4. Check "Common Issues" section for known fixes
 
-### For Understanding the System
-1. Start with this README
-2. Read module guides for features you want to understand
-3. Each guide explains what it does, how it works, and links to code files
+### Need to Explain Issue to an AI?
+1. Say which screen/feature is broken
+2. Describe what happens vs what should happen
+3. Share any error messages from Logcat
+4. Reference the file from documentation
+
+---
+
+## 🤖 For AI Agents
+
+### First Time with This Project?
+1. Read `architecture.md` for system overview
+2. Understand the file map (which file does what)
+3. Check data flow diagrams for how features work
+
+### Fixing a Bug?
+1. User describes symptom → find in `troubleshooting.md`
+2. Identify "File to Check" → view that file
+3. Fix the issue following the pattern in similar code
+4. Test the fix
+
+### Adding a Feature?
+1. Find similar feature in module guides
+2. Follow the same pattern (Fragment → ViewModel → Repository → DAO)
+3. Add proper LiveData observers for UI updates
+
+---
+
+## 📁 Key File Locations
+
+```
+app/src/main/java/com/spendwise/ai/
+├── MainActivity.java          # App entry
+├── SpendWiseApplication.java  # ThreeTen init
+├── dashboard/                 # Dashboard screen
+├── calendar/                  # Calendar screen
+├── categories/                # Categories & budgets
+├── merchants/                 # Merchant analytics
+├── settings/                  # Settings screen
+├── common/                    # Shared (ExpenseAdapter, ExpenseEditor)
+├── data/
+│   ├── entity/               # Table definitions
+│   ├── dao/                  # SQL queries
+│   ├── pojo/                 # Query results
+│   ├── repository/           # Business logic
+│   ├── AppDatabase.java      # Room DB
+│   └── DataBackupManager.java # Import/export
+└── util/
+    └── DateUtils.java        # Date helpers
+
+app/src/main/res/
+├── layout/                   # Screen layouts
+├── values/                   # Light theme, colors, strings
+├── values-night/             # Dark theme
+└── drawable/                 # Icons
+```
 
 ---
 
 ## 📅 Last Updated
-2026-01-22
+2026-01-23 - v1.0.0 Complete documentation
