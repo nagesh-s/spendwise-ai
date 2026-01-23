@@ -235,6 +235,16 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
         saveComplete.setValue(false);
     }
 
+    /**
+     * Delete the current expense being edited.
+     */
+    public void deleteExpense() {
+        Long existingId = expenseId.getValue();
+        if (existingId != null && existingId > 0) {
+            expenseRepository.deleteById(existingId);
+        }
+    }
+
     // ==================== Merchant Suggestions ====================
 
     /**

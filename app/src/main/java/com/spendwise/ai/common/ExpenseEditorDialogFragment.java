@@ -87,10 +87,12 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
                 long expenseId = args.getLong(ARG_EXPENSE_ID);
                 viewModel.initForEdit(expenseId);
                 binding.textDialogTitle.setText("Edit Expense");
+                binding.btnDelete.setVisibility(View.VISIBLE);
             } else {
                 long dateEpochDay = args.getLong(ARG_DATE_EPOCH_DAY, DateUtils.getTodayEpochDay());
                 viewModel.initForNewExpense(dateEpochDay);
                 binding.textDialogTitle.setText("Add Expense");
+                binding.btnDelete.setVisibility(View.GONE);
             }
         }
 
@@ -239,6 +241,18 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
 
     private void setupButtons() {
         binding.btnCancel.setOnClickListener(v -> dismiss());
+
+        binding.btnDelete.setOnClickListener(v -> {
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Delete Expense")
+                    .setMessage("Are you sure you want to delete this expense?")
+                    .setNegativeButton("Cancel", null)
+                    .setPositiveButton("Delete", (dialog, which) -> {
+                        viewModel.deleteExpense();
+                        dismiss();
+                    })
+                    .show();
+        });
 
         binding.btnSave.setOnClickListener(v -> {
             // Get values from form
