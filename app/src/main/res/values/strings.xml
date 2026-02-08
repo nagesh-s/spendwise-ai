@@ -6,4 +6,29 @@
     <string name="title_categories">Categories</string>
     <string name="title_merchants">Merchants</string>
     <string name="title_settings">Settings</string>
+
+    <!-- QuickTiles Widget -->
+    <string name="widget_description">Add expenses quickly with one tap</string>
+    <string name="quick_add">Quick Add</string>
+    <string name="add_quick_tile">Add Quick Tile</string>
+    <string name="no_quick_tiles">No quick tiles yet.\nTap + to add one.</string>
+    <string name="quick_tiles">Quick Tiles</string>
+    <string name="manage_quick_tiles">Manage Quick Tiles</string>
+    <string name="tile_label">Label</string>
+    <string name="tile_amount">Amount</string>
+    <string name="save_tile">Save Tile</string>
+    <string name="delete_tile">Delete Tile</string>
+    <string name="expense_added">Expense added!</string>
+
+    <!-- Recurring Expenses -->
+    <string name="recurring_expenses">Recurring Expenses</string>
+    <string name="add_recurring_expense">Add Recurring Expense</string>
+    <string name="no_recurring_expenses">No recurring expenses yet.\nAdd subscriptions, rent, and regular bills.</string>
+    <string name="description">Description</string>
+    <string name="amount">Amount</string>
+    <string name="category">Category</string>
+    <string name="frequency">Frequency</string>
+    <string name="day_of_period">Day</string>
+    <string name="save">Save</string>
+    <string name="delete">Delete</string>
 </resources>

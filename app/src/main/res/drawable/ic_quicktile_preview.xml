@@ -1,0 +1,36 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="200dp"
+    android:height="100dp"
+    android:viewportWidth="200"
+    android:viewportHeight="100">
+    
+    <!-- Background -->
+    <path
+        android:fillColor="#F5F5F5"
+        android:pathData="M8,8h184a8,8 0,0 1,8 8v76a8,8 0,0 1,-8 8H8a8,8 0,0 1,-8 -8V16a8,8 0,0 1,8 -8z"/>
+    
+    <!-- Title -->
+    <path
+        android:fillColor="#424242"
+        android:pathData="M16,20h60v8h-60z"/>
+    
+    <!-- Tile 1 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,36h80a4,4 0,0 1,4 4v24a4,4 0,0 1,-4 4H16a4,4 0,0 1,-4 -4V40a4,4 0,0 1,4 -4z"/>
+    
+    <!-- Tile 2 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M108,36h80a4,4 0,0 1,4 4v24a4,4 0,0 1,-4 4h-80a4,4 0,0 1,-4 -4V40a4,4 0,0 1,4 -4z"/>
+    
+    <!-- Tile 3 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M16,72h80a4,4 0,0 1,4 4v12a4,4 0,0 1,-4 4H16a4,4 0,0 1,-4 -4V76a4,4 0,0 1,4 -4z"/>
+    
+    <!-- Tile 4 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M108,72h80a4,4 0,0 1,4 4v12a4,4 0,0 1,-4 4h-80a4,4 0,0 1,-4 -4V76a4,4 0,0 1,4 -4z"/>
+</vector>

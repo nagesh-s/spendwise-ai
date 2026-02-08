@@ -7,12 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.0] - 2026-02-08
+### Added
+- **QuickTiles Home Screen Widget** - One-tap expense creation from home screen
+- **QuickTiles Management** - In-app fragment to create, edit, and delete quick tiles
+- **Recurring Expenses System** - Auto-generate expenses for subscriptions, rent, and regular bills
+- Supports daily, weekly, monthly, and yearly frequencies
+- WorkManager-based background processing for automatic expense generation
+- Recurring expenses management UI with toggle and delete
+
+### Technical
+- Added `widget/` package with widget provider, service, and factory
+- Added `quicktiles/` package with fragment, ViewModel, adapter, and editor dialog
+- Added `recurring/` package with fragment, ViewModel, adapter, and editor dialog
+- Added `work/` package with `RecurringExpenseWorker` and `WorkScheduler`
+- Added `RecurringExpense` entity to database (version 2)
+- Added WorkManager dependency
+- Updated `MainActivity` for widget intent handling
+- Updated `SpendWiseApplication` to schedule recurring work
+
+---
+
 ## [Unreleased]
 ### Planned
-- Import/Export JSON with Storage Access Framework
-- Smart category suggestions
-- QuickTiles for frequent expenses
-- Calendar day decorators
+- Recurring Expenses System
+- Bill Reminders & Notifications
+- Photo Attachments for Expenses
+- Biometric Lock (App Security)
+- Auto Transaction Reader (SMS + Notifications)
 
 ---
 

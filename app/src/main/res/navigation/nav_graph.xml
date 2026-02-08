@@ -35,4 +35,17 @@
         android:name="com.spendwise.ai.common.ExpenseEditorDialogFragment"
         android:label="ExpenseEditorDialogFragment"
         tools:layout="@layout/fragment_expense_editor_dialog" />
+
+    <fragment
+        android:id="@+id/navigation_quick_tiles"
+        android:name="com.spendwise.ai.quicktiles.QuickTilesFragment"
+        android:label="Quick Tiles"
+        tools:layout="@layout/fragment_quick_tiles" />
+
+    <fragment
+        android:id="@+id/navigation_recurring"
+        android:name="com.spendwise.ai.recurring.RecurringExpensesFragment"
+        android:label="Recurring Expenses"
+        tools:layout="@layout/fragment_recurring_expenses" />
+
 </navigation>

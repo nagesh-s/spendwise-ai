@@ -56,6 +56,7 @@
 | v1.0.0 | Calendar decorators, final polish | 2026-01-23 |
 | v1.0.1 | Dark mode persistence, delete expense | 2026-01-23 |
 | v1.0.2 | Chart/card dark mode visibility | 2026-01-23 |
+| v1.1.0 | **QuickTiles widget, Recurring expenses** | 2026-02-08 |
 
 ---
 
