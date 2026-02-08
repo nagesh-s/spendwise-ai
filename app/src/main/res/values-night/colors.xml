@@ -1,32 +1,50 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Dark Theme - SpendWise -->
+    
+    <!-- Brand Colors (same in dark) -->
+    <color name="sw_primary">#4DB6AC</color>           <!-- Lighter Teal for dark -->
+    <color name="sw_primary_dark">#00897B</color>
+    <color name="sw_primary_light">#80CBC4</color>
+    
+    <color name="sw_accent">#FF8A80</color>            <!-- Lighter Coral for dark -->
+    <color name="sw_accent_dark">#FF6F61</color>
+    
+    <color name="sw_navy">#7986CB</color>              <!-- Lighter Navy for dark -->
+    <color name="sw_navy_light">#9FA8DA</color>
+    
     <!-- Material 3 Dark Theme Colors -->
-    <color name="md_theme_dark_primary">#D0BCFF</color>
-    <color name="md_theme_dark_onPrimary">#381E72</color>
-    <color name="md_theme_dark_primaryContainer">#4F378B</color>
-    <color name="md_theme_dark_onPrimaryContainer">#EADDFF</color>
+    <color name="md_theme_primary">#4DB6AC</color>
+    <color name="md_theme_onPrimary">#00251A</color>
+    <color name="md_theme_primaryContainer">#004D40</color>
+    <color name="md_theme_onPrimaryContainer">#B2DFDB</color>
     
-    <color name="md_theme_dark_secondary">#CCC2DC</color>
-    <color name="md_theme_dark_onSecondary">#332D41</color>
-    <color name="md_theme_dark_secondaryContainer">#4A4458</color>
-    <color name="md_theme_dark_onSecondaryContainer">#E8DEF8</color>
+    <color name="md_theme_secondary">#FF8A80</color>
+    <color name="md_theme_onSecondary">#3B0000</color>
+    <color name="md_theme_secondaryContainer">#5C0000</color>
+    <color name="md_theme_onSecondaryContainer">#FFE4E1</color>
     
-    <color name="md_theme_dark_tertiary">#EFB8C8</color>
-    <color name="md_theme_dark_onTertiary">#492532</color>
-    <color name="md_theme_dark_tertiaryContainer">#633B48</color>
-    <color name="md_theme_dark_onTertiaryContainer">#FFD8E4</color>
+    <color name="md_theme_tertiary">#9FA8DA</color>
+    <color name="md_theme_onTertiary">#000051</color>
+    <color name="md_theme_tertiaryContainer">#303F9F</color>
+    <color name="md_theme_onTertiaryContainer">#C5CAE9</color>
     
-    <color name="md_theme_dark_error">#F2B8B5</color>
-    <color name="md_theme_dark_onError">#601410</color>
-    <color name="md_theme_dark_errorContainer">#8C1D18</color>
-    <color name="md_theme_dark_onErrorContainer">#F9DEDC</color>
+    <color name="md_theme_error">#FF8A80</color>
+    <color name="md_theme_onError">#410002</color>
+    <color name="md_theme_errorContainer">#93000A</color>
+    <color name="md_theme_onErrorContainer">#FFCDD2</color>
     
-    <color name="md_theme_dark_background">#1C1B1F</color>
-    <color name="md_theme_dark_onBackground">#E6E1E5</color>
-    <color name="md_theme_dark_surface">#1C1B1F</color>
-    <color name="md_theme_dark_onSurface">#E6E1E5</color>
-    <color name="md_theme_dark_surfaceVariant">#49454F</color>
-    <color name="md_theme_dark_onSurfaceVariant">#CAC4D0</color>
-    <color name="md_theme_dark_outline">#938F99</color>
-    <color name="md_theme_dark_outlineVariant">#49454F</color>
+    <color name="md_theme_background">#121212</color>
+    <color name="md_theme_onBackground">#E6E1E5</color>
+    <color name="md_theme_surface">#1E1E1E</color>
+    <color name="md_theme_onSurface">#E6E1E5</color>
+    <color name="md_theme_surfaceVariant">#263238</color>
+    <color name="md_theme_onSurfaceVariant">#CAC4D0</color>
+    <color name="md_theme_outline">#938F99</color>
+    <color name="md_theme_outlineVariant">#37474F</color>
+    
+    <!-- Card & Surface -->
+    <color name="card_background">#1E1E1E</color>
+    <color name="card_elevated">#2D2D2D</color>
+    <color name="surface_dim">#0D0D0D</color>
 </resources>

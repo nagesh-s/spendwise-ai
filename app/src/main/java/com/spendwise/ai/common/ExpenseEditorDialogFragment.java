@@ -100,8 +100,18 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
         setupMerchantAutocomplete();
         setupDescriptionSuggestions();
         setupDatePicker();
+        setupPresetChips();
         setupButtons();
         observeViewModel();
+    }
+
+    private void setupPresetChips() {
+        // Setup preset amount chip click listeners
+        binding.chip50.setOnClickListener(v -> binding.editAmount.setText("50"));
+        binding.chip100.setOnClickListener(v -> binding.editAmount.setText("100"));
+        binding.chip200.setOnClickListener(v -> binding.editAmount.setText("200"));
+        binding.chip500.setOnClickListener(v -> binding.editAmount.setText("500"));
+        binding.chip1000.setOnClickListener(v -> binding.editAmount.setText("1000"));
     }
 
     private void setupMerchantAutocomplete() {

@@ -19,12 +19,12 @@
         android:textAppearance="?attr/textAppearanceHeadlineSmall"
         android:textStyle="bold" />
 
-    <!-- Amount Input -->
+    <!-- Amount Input - Larger for better UX -->
     <com.google.android.material.textfield.TextInputLayout
         android:id="@+id/layout_amount"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="24dp"
+        android:layout_marginTop="20dp"
         android:hint="Amount"
         app:prefixText="₹"
         app:startIconDrawable="@drawable/ic_currency"
@@ -35,6 +35,72 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:inputType="numberDecimal"
+            android:textSize="24sp"
+            android:maxLines="1" />
+
+    </com.google.android.material.textfield.TextInputLayout>
+
+    <!-- Preset Amount Chips -->
+    <com.google.android.material.chip.ChipGroup
+        android:id="@+id/chip_group_presets"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        app:singleSelection="true"
+        app:selectionRequired="false">
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_50"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="₹50"
+            style="@style/Widget.Material3.Chip.Filter" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_100"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="₹100"
+            style="@style/Widget.Material3.Chip.Filter" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_200"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="₹200"
+            style="@style/Widget.Material3.Chip.Filter" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_500"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="₹500"
+            style="@style/Widget.Material3.Chip.Filter" />
+
+        <com.google.android.material.chip.Chip
+            android:id="@+id/chip_1000"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="₹1000"
+            style="@style/Widget.Material3.Chip.Filter" />
+
+    </com.google.android.material.chip.ChipGroup>
+
+    <!-- Category Dropdown -->
+    <com.google.android.material.textfield.TextInputLayout
+        android:id="@+id/layout_category"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:hint="Category"
+        app:startIconDrawable="@drawable/ic_category_black_24dp"
+        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+
+        <AutoCompleteTextView
+            android:id="@+id/dropdown_category"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:inputType="none"
             android:maxLines="1" />
 
     </com.google.android.material.textfield.TextInputLayout>
@@ -58,64 +124,56 @@
 
     </com.google.android.material.textfield.TextInputLayout>
 
-    <!-- Category Dropdown -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/layout_category"
+    <!-- Date & Merchant Row -->
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
-        android:hint="Category"
-        app:startIconDrawable="@drawable/ic_category_black_24dp"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox.ExposedDropdownMenu">
+        android:orientation="horizontal">
 
-        <AutoCompleteTextView
-            android:id="@+id/dropdown_category"
-            android:layout_width="match_parent"
+        <!-- Date Picker -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layout_date"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:inputType="none"
-            android:maxLines="1" />
+            android:layout_weight="1"
+            android:layout_marginEnd="8dp"
+            android:hint="Date"
+            app:startIconDrawable="@drawable/ic_calendar_black_24dp"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
-    </com.google.android.material.textfield.TextInputLayout>
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/edit_date"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:focusable="false"
+                android:clickable="true"
+                android:maxLines="1" />
 
-    <!-- Merchant Input -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/layout_merchant"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="Merchant (optional)"
-        app:startIconDrawable="@drawable/ic_merchants_black_24dp"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+        </com.google.android.material.textfield.TextInputLayout>
 
-        <AutoCompleteTextView
-            android:id="@+id/edit_merchant"
-            android:layout_width="match_parent"
+        <!-- Merchant Input -->
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/layout_merchant"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:inputType="text"
-            android:completionThreshold="1"
-            android:maxLines="1" />
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:hint="Merchant"
+            app:startIconDrawable="@drawable/ic_merchants_black_24dp"
+            style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
 
-    </com.google.android.material.textfield.TextInputLayout>
+            <AutoCompleteTextView
+                android:id="@+id/edit_merchant"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="text"
+                android:completionThreshold="1"
+                android:maxLines="1" />
 
-    <!-- Date Picker -->
-    <com.google.android.material.textfield.TextInputLayout
-        android:id="@+id/layout_date"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:hint="Date"
-        app:startIconDrawable="@drawable/ic_calendar_black_24dp"
-        style="@style/Widget.Material3.TextInputLayout.OutlinedBox">
+        </com.google.android.material.textfield.TextInputLayout>
 
-        <com.google.android.material.textfield.TextInputEditText
-            android:id="@+id/edit_date"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:focusable="false"
-            android:clickable="true"
-            android:maxLines="1" />
-
-    </com.google.android.material.textfield.TextInputLayout>
+    </LinearLayout>
 
     <!-- Action Buttons -->
     <LinearLayout
@@ -151,7 +209,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="8dp"
-            android:text="Save" />
+            android:text="Save"
+            app:backgroundTint="?attr/colorPrimary" />
 
     </LinearLayout>
 

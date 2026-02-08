@@ -1,41 +1,70 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- Existing colors -->
-    <color name="purple_200">#FFBB86FC</color>
-    <color name="purple_500">#FF6200EE</color>
-    <color name="purple_700">#FF3700B3</color>
-    <color name="teal_200">#FF03DAC5</color>
-    <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
-
-    <!-- Material 3 Light Theme Colors -->
-    <color name="md_theme_primary">#6750A4</color>
+    <!-- SpendWise Brand Colors -->
+    <color name="sw_primary">#00897B</color>           <!-- Deep Teal - Trust -->
+    <color name="sw_primary_dark">#00695C</color>      <!-- Darker Teal -->
+    <color name="sw_primary_light">#4DB6AC</color>     <!-- Light Teal -->
+    
+    <color name="sw_accent">#FF6F61</color>            <!-- Living Coral - Expenses -->
+    <color name="sw_accent_dark">#E65C50</color>       <!-- Darker Coral -->
+    
+    <color name="sw_navy">#1A237E</color>              <!-- Navy - Headers -->
+    <color name="sw_navy_light">#534BAE</color>        <!-- Light Navy -->
+    
+    <!-- Semantic Colors -->
+    <color name="sw_income">#4CAF50</color>            <!-- Green - Income/Positive -->
+    <color name="sw_expense">#FF6F61</color>           <!-- Coral - Expense/Negative -->
+    <color name="sw_warning">#FFA726</color>           <!-- Orange - Warnings -->
+    <color name="sw_error">#EF5350</color>             <!-- Red - Errors -->
+    
+    <!-- Category Colors -->
+    <color name="category_food">#FF7043</color>        <!-- Orange -->
+    <color name="category_transport">#42A5F5</color>   <!-- Blue -->
+    <color name="category_shopping">#AB47BC</color>    <!-- Purple -->
+    <color name="category_entertainment">#EC407A</color><!-- Pink -->
+    <color name="category_bills">#78909C</color>       <!-- Gray-Blue -->
+    <color name="category_health">#66BB6A</color>      <!-- Green -->
+    <color name="category_travel">#26C6DA</color>      <!-- Cyan -->
+    <color name="category_education">#5C6BC0</color>   <!-- Indigo -->
+    <color name="category_personal">#FFCA28</color>    <!-- Amber -->
+    <color name="category_other">#8D6E63</color>       <!-- Brown -->
+    
+    <!-- Light Theme Colors -->
+    <color name="md_theme_primary">#00897B</color>
     <color name="md_theme_onPrimary">#FFFFFF</color>
-    <color name="md_theme_primaryContainer">#EADDFF</color>
-    <color name="md_theme_onPrimaryContainer">#21005D</color>
+    <color name="md_theme_primaryContainer">#B2DFDB</color>
+    <color name="md_theme_onPrimaryContainer">#00251A</color>
     
-    <color name="md_theme_secondary">#625B71</color>
+    <color name="md_theme_secondary">#FF6F61</color>
     <color name="md_theme_onSecondary">#FFFFFF</color>
-    <color name="md_theme_secondaryContainer">#E8DEF8</color>
-    <color name="md_theme_onSecondaryContainer">#1D192B</color>
+    <color name="md_theme_secondaryContainer">#FFE4E1</color>
+    <color name="md_theme_onSecondaryContainer">#3B0000</color>
     
-    <color name="md_theme_tertiary">#7D5260</color>
+    <color name="md_theme_tertiary">#1A237E</color>
     <color name="md_theme_onTertiary">#FFFFFF</color>
-    <color name="md_theme_tertiaryContainer">#FFD8E4</color>
-    <color name="md_theme_onTertiaryContainer">#31111D</color>
+    <color name="md_theme_tertiaryContainer">#C5CAE9</color>
+    <color name="md_theme_onTertiaryContainer">#000051</color>
     
-    <color name="md_theme_error">#B3261E</color>
+    <color name="md_theme_error">#EF5350</color>
     <color name="md_theme_onError">#FFFFFF</color>
-    <color name="md_theme_errorContainer">#F9DEDC</color>
-    <color name="md_theme_onErrorContainer">#410E0B</color>
+    <color name="md_theme_errorContainer">#FFCDD2</color>
+    <color name="md_theme_onErrorContainer">#410002</color>
     
-    <color name="md_theme_background">#FFFBFE</color>
+    <color name="md_theme_background">#FAFAFA</color>
     <color name="md_theme_onBackground">#1C1B1F</color>
-    <color name="md_theme_surface">#FFFBFE</color>
+    <color name="md_theme_surface">#FFFFFF</color>
     <color name="md_theme_onSurface">#1C1B1F</color>
-    <color name="md_theme_surfaceVariant">#E7E0EC</color>
+    <color name="md_theme_surfaceVariant">#E0F2F1</color>
     <color name="md_theme_onSurfaceVariant">#49454F</color>
     <color name="md_theme_outline">#79747E</color>
-    <color name="md_theme_outlineVariant">#CAC4D0</color>
+    <color name="md_theme_outlineVariant">#B2DFDB</color>
+    
+    <!-- Card & Surface -->
+    <color name="card_background">#FFFFFF</color>
+    <color name="card_elevated">#FFFFFF</color>
+    <color name="surface_dim">#F5F5F5</color>
+    
+    <!-- Legacy colors for compatibility -->
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
 </resources>

@@ -62,7 +62,32 @@ public class DashboardFragment extends Fragment {
         setupCharts();
         setupRecyclerView();
         setupMonthNavigation();
+        setupFab();
         observeData();
+    }
+
+    private void setupFab() {
+        binding.fabAddExpense.setOnClickListener(v -> {
+            // Navigate to add expense dialog
+            androidx.navigation.Navigation.findNavController(v)
+                    .navigate(com.spendwise.ai.R.id.expenseEditorDialogFragment);
+        });
+
+        // Animate FAB entrance
+        android.view.animation.Animation fabAnim = android.view.animation.AnimationUtils.loadAnimation(
+                requireContext(), com.spendwise.ai.R.anim.fab_pop_in);
+        fabAnim.setStartOffset(500);
+        binding.fabAddExpense.startAnimation(fabAnim);
+
+        // Animate cards with stagger
+        animateCard(binding.cardMonthlyTotal, 0);
+    }
+
+    private void animateCard(View card, int delay) {
+        android.view.animation.Animation anim = android.view.animation.AnimationUtils.loadAnimation(
+                requireContext(), com.spendwise.ai.R.anim.card_slide_up);
+        anim.setStartOffset(delay);
+        card.startAnimation(anim);
     }
 
     private void setupCharts() {
@@ -147,6 +172,16 @@ public class DashboardFragment extends Fragment {
             } else {
                 binding.textMonthlyTotal.setText(DateUtils.formatAmountCents(0));
             }
+        });
+
+        // Observe today's total
+        viewModel.getTodayTotal().observe(getViewLifecycleOwner(), total -> {
+            binding.textTodayTotal.setText(DateUtils.formatAmountCents(total != null ? total : 0));
+        });
+
+        // Observe this week's total
+        viewModel.getWeekTotal().observe(getViewLifecycleOwner(), total -> {
+            binding.textWeekTotal.setText(DateUtils.formatAmountCents(total != null ? total : 0));
         });
 
         // Observe category totals for pie chart and list

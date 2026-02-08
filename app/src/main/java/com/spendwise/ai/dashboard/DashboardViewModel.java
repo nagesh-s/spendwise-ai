@@ -34,6 +34,10 @@ public class DashboardViewModel extends AndroidViewModel {
     private final LiveData<List<CategoryTotal>> categoryTotals;
     private final LiveData<List<BudgetWithSpend>> budgetsWithSpend;
 
+    // Today and this week totals (always current)
+    private final LiveData<Long> todayTotal;
+    private final LiveData<Long> weekTotal;
+
     public DashboardViewModel(@NonNull Application application) {
         super(application);
         expenseRepository = new ExpenseRepository(application);
@@ -63,6 +67,17 @@ public class DashboardViewModel extends AndroidViewModel {
             long endDay = DateUtils.getMonthEndEpochDay(month);
             return budgetRepository.getBudgetsWithSpend(monthKey, startDay, endDay);
         });
+
+        // Today's total
+        long today = org.threeten.bp.LocalDate.now().toEpochDay();
+        todayTotal = expenseRepository.getTotalForRangeLive(today, today);
+
+        // This week's total (Monday to today)
+        org.threeten.bp.LocalDate now = org.threeten.bp.LocalDate.now();
+        // Find Monday of current week using threeten.bp
+        org.threeten.bp.LocalDate weekStart = now
+                .with(org.threeten.bp.temporal.TemporalAdjusters.previousOrSame(org.threeten.bp.DayOfWeek.MONDAY));
+        weekTotal = expenseRepository.getTotalForRangeLive(weekStart.toEpochDay(), today);
     }
 
     // ==================== Month Navigation ====================
@@ -101,6 +116,14 @@ public class DashboardViewModel extends AndroidViewModel {
 
     public LiveData<List<BudgetWithSpend>> getBudgetsWithSpend() {
         return budgetsWithSpend;
+    }
+
+    public LiveData<Long> getTodayTotal() {
+        return todayTotal;
+    }
+
+    public LiveData<Long> getWeekTotal() {
+        return weekTotal;
     }
 
     /**
