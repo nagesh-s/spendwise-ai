@@ -87,20 +87,36 @@ public abstract class AppDatabase extends RoomDatabase {
     }
 
     /**
-     * Callback to prepopulate default categories on first database creation.
+     * Callback to prepopulate default categories on first database creation
+     * or when categories are missing after a migration.
      */
     private static final RoomDatabase.Callback prepopulateCallback = new RoomDatabase.Callback() {
         @Override
         public void onCreate(@NonNull SupportSQLiteDatabase db) {
             super.onCreate(db);
+            seedDefaultCategories();
+        }
 
-            // Prepopulate default categories in background
-            databaseWriteExecutor.execute(() -> {
-                CategoryDao categoryDao = INSTANCE.categoryDao();
-                categoryDao.insertAll(getDefaultCategories());
-            });
+        @Override
+        public void onOpen(@NonNull SupportSQLiteDatabase db) {
+            super.onOpen(db);
+            // Also check on open in case migration cleared the data
+            seedDefaultCategories();
         }
     };
+
+    private static void seedDefaultCategories() {
+        databaseWriteExecutor.execute(() -> {
+            if (INSTANCE == null)
+                return;
+            CategoryDao categoryDao = INSTANCE.categoryDao();
+            // Only seed if no categories exist
+            int count = categoryDao.getCategoryCount();
+            if (count == 0) {
+                categoryDao.insertAll(getDefaultCategories());
+            }
+        });
+    }
 
     /**
      * Returns the list of default expense categories.

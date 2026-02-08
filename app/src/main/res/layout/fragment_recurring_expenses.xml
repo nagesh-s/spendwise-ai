@@ -29,6 +29,7 @@
         android:layout_margin="16dp"
         android:src="@drawable/ic_add"
         android:contentDescription="@string/add_recurring_expense"
-        app:tint="@android:color/white" />
+        app:tint="?attr/colorOnPrimaryContainer"
+        app:backgroundTint="?attr/colorPrimaryContainer" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

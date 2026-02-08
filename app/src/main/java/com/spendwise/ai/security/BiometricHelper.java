@@ -81,6 +81,22 @@ public class BiometricHelper {
     }
 
     /**
+     * Alias for shouldRequireUnlock - used by MainActivity.
+     */
+    public static boolean isLockRequired(Context context) {
+        return shouldRequireUnlock(context);
+    }
+
+    /**
+     * Update the last active time to delay the lock timeout.
+     */
+    public static void updateLastActiveTime(Context context) {
+        if (isBiometricEnabled(context)) {
+            recordUnlock(context);
+        }
+    }
+
+    /**
      * Show biometric authentication prompt.
      */
     public static void authenticate(FragmentActivity activity, AuthCallback callback) {

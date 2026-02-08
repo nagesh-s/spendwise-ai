@@ -75,6 +75,7 @@
         android:layout_margin="16dp"
         android:contentDescription="Add category"
         android:src="@drawable/ic_add"
-        app:tint="@android:color/white" />
+        app:tint="?attr/colorOnPrimaryContainer"
+        app:backgroundTint="?attr/colorPrimaryContainer" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

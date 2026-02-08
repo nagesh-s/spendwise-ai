@@ -36,8 +36,27 @@ public class MainActivity extends AppCompatActivity {
         BottomNavigationView bottomNavView = binding.bottomNavView;
         NavigationUI.setupWithNavController(bottomNavView, navController);
 
+        // Check if biometric lock is enabled and required
+        checkBiometricLock();
+
         // Handle intent from widget
         handleWidgetIntent(getIntent());
+    }
+
+    private void checkBiometricLock() {
+        if (com.spendwise.ai.security.BiometricHelper.isBiometricEnabled(this) &&
+                com.spendwise.ai.security.BiometricHelper.isLockRequired(this)) {
+            // Launch lock screen
+            Intent lockIntent = new Intent(this, com.spendwise.ai.security.LockScreenActivity.class);
+            startActivity(lockIntent);
+        }
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        // Update last active time when app resumes
+        com.spendwise.ai.security.BiometricHelper.updateLastActiveTime(this);
     }
 
     @Override
