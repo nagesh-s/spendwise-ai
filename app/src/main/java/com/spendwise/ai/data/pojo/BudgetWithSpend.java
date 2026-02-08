@@ -10,6 +10,7 @@ import androidx.annotation.Nullable;
 public class BudgetWithSpend {
 
     private long budgetId;
+    private long categoryId;
 
     @NonNull
     private String categoryName;
@@ -20,9 +21,10 @@ public class BudgetWithSpend {
 
     private long spentCents;
 
-    public BudgetWithSpend(long budgetId, @NonNull String categoryName, int categoryColorArgb,
+    public BudgetWithSpend(long budgetId, long categoryId, @NonNull String categoryName, int categoryColorArgb,
                            long limitCents, long spentCents) {
         this.budgetId = budgetId;
+        this.categoryId = categoryId;
         this.categoryName = categoryName;
         this.categoryColorArgb = categoryColorArgb;
         this.limitCents = limitCents;
@@ -31,6 +33,10 @@ public class BudgetWithSpend {
 
     public long getBudgetId() {
         return budgetId;
+    }
+
+    public long getCategoryId() {
+        return categoryId;
     }
 
     @NonNull

@@ -48,10 +48,19 @@
                 android:textStyle="bold"
                 tools:text="Wednesday, January 22" />
 
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_today"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minWidth="0dp"
+                android:text="@string/today" />
+
             <TextView
                 android:id="@+id/text_selected_date_total"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
                 android:textAppearance="?attr/textAppearanceTitleMedium"
                 android:textColor="?attr/colorPrimary"
                 android:textStyle="bold"

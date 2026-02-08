@@ -1,47 +1,44 @@
 # Settings Module
 
-> **Purpose**: Explains how settings and data backup work.
+> **Purpose**: Explains how settings, feature entry points, and data backup work.
 
 ---
 
-## 📌 Status: ✅ IMPLEMENTED (v1.0.0)
+## 📌 Status: ✅ IMPLEMENTED + EXPANDED (v1.1.x)
 
 ---
 
 ## 🎯 What This Screen Does
 
-Settings screen provides:
-- **Dark mode toggle** - switches app theme
-- **Export data** - saves all data to JSON file
-- **Import data** - restores data from JSON backup
-- **App version** display
+Settings provides:
+- **Dark mode toggle**
+- **Feature cards**:
+  - Quick Tiles management
+  - Recurring expenses management
+  - Biometric lock toggle
+- **Data controls**:
+  - Export data to JSON
+  - Import data from JSON
+- App version display
 
 ---
 
 ## 🔄 How It Works
 
-### Dark Mode Toggle
-1. User toggles switch
-2. `viewModel.setDarkModeEnabled(isChecked)` called
-3. ViewModel saves preference to SharedPreferences
-4. App follows system night mode with override
+### Dark Mode
+1. Toggle updates `SettingsViewModel`.
+2. Value persists in SharedPreferences.
+3. App theme updates via `AppCompatDelegate`.
 
-### Export Data
-1. User taps "Export Data" card
-2. `launchExport()` opens SAF file picker via `ACTION_CREATE_DOCUMENT`
-3. User picks location, names file (default: spendwise_backup.json)
-4. `DataBackupManager.exportData(uri)` called
-5. Loads all data from DAOs (using sync methods)
-6. Writes JSON to selected file
-7. Shows success toast with item count
+### Feature Navigation
+- `card_quick_tiles` navigates to `navigation_quick_tiles`.
+- `card_recurring` navigates to `navigation_recurring`.
+- Biometric switch is enabled only when device biometric is available.
 
-### Import Data
-1. User taps "Import Data" card
-2. `launchImport()` opens SAF file picker via `ACTION_OPEN_DOCUMENT`
-3. User selects JSON backup file
-4. `DataBackupManager.importData(uri)` called
-5. Parses JSON, inserts new records (skips duplicates)
-6. Shows success toast with imported count
+### Export / Import
+1. Export uses SAF `ACTION_CREATE_DOCUMENT` and writes JSON through `DataBackupManager`.
+2. Import uses SAF `ACTION_OPEN_DOCUMENT` and parses JSON through `DataBackupManager`.
+3. Success/error toasts are shown on completion.
 
 ---
 
@@ -49,27 +46,11 @@ Settings screen provides:
 
 | File | Purpose |
 |------|---------|
-| `settings/SettingsFragment.java` | UI, SAF launchers |
-| `settings/SettingsViewModel.java` | Dark mode preference |
-| `data/DataBackupManager.java` | JSON export/import logic |
-| `fragment_settings.xml` | Screen layout |
-
----
-
-## 📦 Backup JSON Format
-
-```json
-{
-  "backupVersion": 1,
-  "timestamp": 1737654321000,
-  "categories": [...],
-  "merchants": [...],
-  "expenses": [...],
-  "budgets": [...]
-}
-```
-
-Each array contains objects with all entity fields.
+| `settings/SettingsFragment.java` | UI wiring, feature navigation, SAF launchers |
+| `settings/SettingsViewModel.java` | Dark mode persistence |
+| `data/DataBackupManager.java` | Export/import JSON logic |
+| `security/BiometricHelper.java` | Biometric capability + preference handling |
+| `fragment_settings.xml` | Settings layout |
 
 ---
 
@@ -77,13 +58,11 @@ Each array contains objects with all entity fields.
 
 | Issue | Cause | Solution |
 |-------|-------|----------|
-| Export fails | File write error | Check SAF permissions, try different location |
-| Import fails to parse | Wrong JSON format | Ensure file is valid SpendWise backup |
-| "Backup from newer version" | Version mismatch | Update app or use older backup |
-| Dark mode not saving | SharedPreferences issue | Check SettingsViewModel |
-| Duplicates after import | Same data imported twice | Import skips existing, normal behavior |
+| Biometric switch disabled | Device has no biometric enrollment/support | Verify device setup and helper checks |
+| Import/export does nothing | SAF URI unavailable | Check result callback and URI null-check path |
+| Feature card not opening screen | Nav ID mismatch | Check settings click handlers + nav graph IDs |
 
 ---
 
 ## 📅 Last Updated
-2026-01-23 - v1.0.0 with full import/export
+2026-02-08 - v1.1.x settings feature routing documented

@@ -4,39 +4,40 @@
 
 ---
 
-## 📌 Status: ✅ IMPLEMENTED (v1.0.0)
+## 📌 Status: ✅ IMPLEMENTED + ENHANCED (v1.1.1)
 
 ---
 
 ## 🎯 What This Screen Does
 
 Categories screen lets users:
-- View all expense categories
-- Set/edit monthly budgets per category
-- See budget progress (spent vs limit)
-- Navigate between months
+- View all categories
+- Set/edit/remove monthly budgets per category
+- See category-level progress bars (spent vs limit)
+- See month-level budget summary (aggregate usage + over-budget count)
+- Copy previous month budgets into current month
+- Navigate budget month
 
 ---
 
 ## 🔄 How It Works
 
-### Viewing Categories
-1. `CategoriesFragment` loads `getAllCategories()` from ViewModel
-2. `CategoryBudgetAdapter` displays categories with budget progress
-3. Progress bars show % of budget used (green/orange/red)
+### Category + Budget Loading
+1. `CategoriesViewModel` exposes all categories and `budgetMonth`.
+2. `switchMap` on `budgetMonth` loads `getBudgetsWithSpend(monthKey, startDay, endDay)`.
+3. `CategoryBudgetAdapter` binds per-category progress.
 
-### Setting Budget
-1. User taps "Set Budget" button on a category
-2. Opens `BudgetEditorDialog` with category name
-3. User enters monthly limit amount
-4. `viewModel.setBudget(categoryId, amountCents)` called
-5. Budget saved for current month's monthKey (YYYYMM format)
+### Month Summary
+- Fragment computes:
+  - total spent across budgets
+  - total limit across budgets
+  - over-budget category count
+- Summary card progress/color updates with the same thresholds as category rows.
 
-### Budget Progress Calculation
-1. ViewModel calls `getBudgetsWithSpend(monthKey, startDay, endDay)`
-2. DAO joins budgets with expenses, sums spending per category
-3. Returns `BudgetWithSpend` with limit and spent amounts
-4. Adapter calculates `(spent / limit) * 100` for progress bar
+### Copy Previous Month
+1. User taps **Copy Previous Month Budgets**.
+2. `viewModel.copyBudgetsFromPreviousMonth()` is called.
+3. Repository only copies if current month has no budgets.
 
 ---
 
@@ -44,27 +45,14 @@ Categories screen lets users:
 
 | File | Purpose |
 |------|---------|
-| `categories/CategoriesFragment.java` | UI, month navigation |
-| `categories/CategoriesViewModel.java` | Data loading, budget operations |
-| `categories/CategoryBudgetAdapter.java` | RecyclerView with progress bars |
-| `categories/BudgetEditorDialog.java` | Dialog for setting budgets |
+| `categories/CategoriesFragment.java` | UI, month nav, summary card, copy action |
+| `categories/CategoriesViewModel.java` | Month state + budget operations |
+| `categories/CategoryBudgetAdapter.java` | Category list with progress bars |
+| `categories/BudgetEditorDialog.java` | Set/edit budget dialog |
 | `fragment_categories.xml` | Screen layout |
-| `item_category_budget.xml` | Category list item |
-| `dialog_budget_editor.xml` | Budget dialog layout |
-| `data/entity/Budget.java` | Budget table entity |
-| `data/dao/BudgetDao.java` | CRUD + getBudgetsWithSpend |
-
----
-
-## 🎨 Budget Progress Colors
-
-| Color | Usage Level | Meaning |
-|-------|-------------|---------|
-| 🟢 Green | < 80% | On track |
-| 🟠 Orange | 80-100% | Warning |
-| 🔴 Red | > 100% | Over budget |
-
-Colors set in `CategoryBudgetAdapter.ViewHolder.bind()`.
+| `item_category_budget.xml` | Category row |
+| `data/dao/BudgetDao.java` | Budget queries and month copy query |
+| `data/pojo/BudgetWithSpend.java` | Budget aggregate model with `categoryId` |
 
 ---
 
@@ -72,11 +60,12 @@ Colors set in `CategoryBudgetAdapter.ViewHolder.bind()`.
 
 | Issue | Cause | Solution |
 |-------|-------|----------|
-| Budget not saving | Dialog not calling ViewModel | Check BudgetEditorDialog.onBudgetSaved |
-| Progress shows 0% | No expenses for month | Add expenses in that category |
-| Wrong month budget | monthKey mismatch | Check YYYYMM format in DateUtils |
+| Summary card shows empty | No budgets for month | Add budget rows via Set Budget |
+| Copy action seems no-op | Current month already has budgets | Clear current month budgets first or edit existing |
+| Row progress on wrong category | Mapping mismatch | Ensure adapter maps by `categoryId` |
+| Progress > 100 not obvious | Over budget state | Check red indicator and over-budget count text |
 
 ---
 
 ## 📅 Last Updated
-2026-01-23 - v1.0.0 Complete
+2026-02-08 - v1.1.1 month summary and budget copy action documented

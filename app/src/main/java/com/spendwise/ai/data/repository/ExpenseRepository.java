@@ -50,6 +50,10 @@ public class ExpenseRepository {
         return expenseDao.getAllExpenses();
     }
 
+    public Expense getExpenseByIdSync(long expenseId) {
+        return expenseDao.getById(expenseId);
+    }
+
     public LiveData<List<Expense>> getExpensesForDate(long dateEpochDay) {
         return expenseDao.getExpensesForDate(dateEpochDay);
     }

@@ -60,6 +60,7 @@ public interface BudgetDao {
      * @param endDay Last day of the month as epoch day
      */
     @Query("SELECT b.id AS budgetId, " +
+           "b.categoryId AS categoryId, " +
            "c.name AS categoryName, " +
            "c.colorArgb AS categoryColorArgb, " +
            "b.limitCents AS limitCents, " +

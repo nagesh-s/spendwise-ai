@@ -4,38 +4,37 @@
 
 ---
 
-## 📌 Status: ✅ IMPLEMENTED (v1.0.0)
+## 📌 Status: ✅ IMPLEMENTED + ENHANCED (v1.1.1)
 
 ---
 
 ## 🎯 What This Screen Does
 
-The Calendar shows a **month view** where users can:
-- See which days have expenses (color-coded dots)
-- Tap a day to view/add expenses for that date
-- Navigate between months
+Calendar screen provides:
+- Month view with day decorators based on spending tiers
+- Selected date header with daily total
+- Expense list for selected day
+- One-tap **Today** action to jump back to current date/month
+- Add/edit flow through expense editor dialog
 
 ---
 
 ## 🔄 How It Works
 
 ### Viewing Calendar
-1. User opens Calendar tab
-2. `CalendarFragment` initializes `MaterialCalendarView`
-3. ViewModel loads `dailyTotals` for displayed month
-4. `SingleDayDecorator` adds colored dots (green/orange/red based on spending)
+1. `CalendarFragment` sets today as selected date.
+2. ViewModel loads `dailyTotals` for displayed month.
+3. Decorators are rebuilt from totals and applied to calendar.
 
-### Selecting a Date
-1. User taps a calendar day
-2. `onDateChangedListener` fires
-3. ViewModel sets `selectedDate`
-4. `selectedDateExpenses` LiveData updates
-5. RecyclerView shows expenses for that day
+### Selecting / Jumping Date
+1. User taps day → `setSelectedDate()` in ViewModel.
+2. Or user taps **Today** → calendar selects current day and month.
+3. `selectedDateExpenses` LiveData updates list for date.
 
-### Adding Expense
-1. User taps FAB (+ button)
-2. Opens `ExpenseEditorDialogFragment` with selected date pre-filled
-3. After save, expense appears in list
+### Managing Expenses
+1. FAB or empty-state button opens `ExpenseEditorDialogFragment`.
+2. Save in dialog updates DB.
+3. List and decorators refresh via LiveData observers.
 
 ---
 
@@ -43,13 +42,12 @@ The Calendar shows a **month view** where users can:
 
 | File | Purpose |
 |------|---------|
-| `calendar/CalendarFragment.java` | UI logic, calendar setup, observers |
-| `calendar/CalendarViewModel.java` | Selected date, daily totals, expenses |
-| `calendar/SingleDayDecorator.java` | Colored dots for spending levels |
-| `calendar/SpendingDayDecorator.java` | Base decorator class |
-| `fragment_calendar.xml` | Layout with MaterialCalendarView |
-| `item_expense.xml` | Expense list item layout |
-| `common/ExpenseAdapter.java` | RecyclerView adapter |
+| `calendar/CalendarFragment.java` | UI logic, observers, Today action |
+| `calendar/CalendarViewModel.java` | Selected date, displayed month, totals |
+| `calendar/SingleDayDecorator.java` | Dot color assignment per day |
+| `calendar/SpendingDayDecorator.java` | Base decorator logic |
+| `fragment_calendar.xml` | Calendar + selected day UI |
+| `common/ExpenseAdapter.java` | Day expense list adapter |
 
 ---
 
@@ -61,7 +59,7 @@ The Calendar shows a **month view** where users can:
 | 🟠 Orange | Medium | ₹500 - ₹2000 |
 | 🔴 Red | High | > ₹2000 |
 
-Thresholds defined in `CalendarFragment.updateCalendarDecorators()`.
+Thresholds are defined in `CalendarFragment.updateCalendarDecorators()`.
 
 ---
 
@@ -69,11 +67,11 @@ Thresholds defined in `CalendarFragment.updateCalendarDecorators()`.
 
 | Issue | Cause | Solution |
 |-------|-------|----------|
-| Dates not visible in dark mode | Wrong text color | Check `CalendarDateTextAppearance` in themes.xml |
-| Dots not showing | No expenses / decorators not attached | Check `getDailyTotals()` returns data |
-| Wrong month expenses showing | Epoch day calculation | Check `getMonthStartEpochDay/EndEpochDay` |
+| Today button not jumping | Date/month sync issue | Check `jumpToToday()` implementation |
+| Dots not showing | No data or decorators removed | Verify `dailyTotals` query output |
+| Date list stale | Selected date not propagated | Check `setSelectedDate()` observer chain |
 
 ---
 
 ## 📅 Last Updated
-2026-01-23 - v1.0.0 Complete with decorators
+2026-02-08 - v1.1.1 added Today quick-jump action

@@ -1,3 +1,12 @@
-- Graph: app_nav_graph.xml
-- Bottom nav IDs -> fragment IDs mapping
-- Dialog: ExpenseEditorDialogFragment with args (expenseId?, date?)
+- Graph: `app/src/main/res/navigation/nav_graph.xml`
+- Bottom nav mappings:
+  - `navigation_dashboard` -> `DashboardFragment`
+  - `navigation_calendar` -> `CalendarFragment`
+  - `navigation_categories` -> `CategoriesFragment`
+  - `navigation_merchants` -> `MerchantsFragment`
+  - `navigation_settings` -> `SettingsFragment`
+- Additional fragment routes:
+  - `navigation_quick_tiles` (from Settings card)
+  - `navigation_recurring` (from Settings card)
+- Dialog route:
+  - `expenseEditorDialogFragment` -> `ExpenseEditorDialogFragment` with args `(expenseId?, dateEpochDay)`

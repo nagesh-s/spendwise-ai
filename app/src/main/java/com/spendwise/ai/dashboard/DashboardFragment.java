@@ -31,6 +31,9 @@ import com.spendwise.ai.data.pojo.CategoryTotal;
 import com.spendwise.ai.databinding.FragmentDashboardBinding;
 import com.spendwise.ai.util.DateUtils;
 
+import org.threeten.bp.LocalDate;
+import org.threeten.bp.YearMonth;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -43,6 +46,9 @@ public class DashboardFragment extends Fragment {
     private FragmentDashboardBinding binding;
     private DashboardViewModel viewModel;
     private CategoryTotalAdapter categoryAdapter;
+    private YearMonth currentMonth = YearMonth.now();
+    private long monthlyTotalCents = 0L;
+    private List<BudgetWithSpend> latestBudgets = new ArrayList<>();
 
     @Nullable
     @Override
@@ -81,6 +87,7 @@ public class DashboardFragment extends Fragment {
 
         // Animate cards with stagger
         animateCard(binding.cardMonthlyTotal, 0);
+        animateCard(binding.cardBudgetHealth, 120);
     }
 
     private void animateCard(View card, int delay) {
@@ -162,16 +169,17 @@ public class DashboardFragment extends Fragment {
     private void observeData() {
         // Observe current month
         viewModel.getCurrentMonth().observe(getViewLifecycleOwner(), month -> {
+            currentMonth = month;
             binding.textCurrentMonth.setText(DateUtils.getDisplayMonth(month));
+            updateSpendingPace();
         });
 
         // Observe monthly total
         viewModel.getMonthlyTotal().observe(getViewLifecycleOwner(), total -> {
-            if (total != null) {
-                binding.textMonthlyTotal.setText(DateUtils.formatAmountCents(total));
-            } else {
-                binding.textMonthlyTotal.setText(DateUtils.formatAmountCents(0));
-            }
+            monthlyTotalCents = total != null ? total : 0L;
+            binding.textMonthlyTotal.setText(DateUtils.formatAmountCents(monthlyTotalCents));
+            updateSpendingPace();
+            updateBudgetHealth();
         });
 
         // Observe today's total
@@ -188,7 +196,11 @@ public class DashboardFragment extends Fragment {
         viewModel.getCategoryTotals().observe(getViewLifecycleOwner(), this::updateCategoryData);
 
         // Observe budget progress
-        viewModel.getBudgetsWithSpend().observe(getViewLifecycleOwner(), this::updateBudgetChart);
+        viewModel.getBudgetsWithSpend().observe(getViewLifecycleOwner(), budgets -> {
+            latestBudgets = budgets != null ? budgets : new ArrayList<>();
+            updateBudgetChart(budgets);
+            updateBudgetHealth();
+        });
     }
 
     private void updateCategoryData(List<CategoryTotal> categoryTotals) {
@@ -291,6 +303,88 @@ public class DashboardFragment extends Fragment {
         binding.barChartBudgets.setData(data);
         binding.barChartBudgets.animateY(800);
         binding.barChartBudgets.invalidate();
+    }
+
+    private void updateSpendingPace() {
+        int elapsedDays = getElapsedDays(currentMonth);
+        int totalDays = currentMonth.lengthOfMonth();
+        long dailyAverage = elapsedDays > 0 ? (monthlyTotalCents / elapsedDays) : 0L;
+
+        long projectedTotal;
+        if (currentMonth.equals(YearMonth.now())) {
+            projectedTotal = dailyAverage * totalDays;
+        } else {
+            projectedTotal = monthlyTotalCents;
+        }
+
+        binding.textDailyAverage.setText(DateUtils.formatAmountCents(dailyAverage));
+        binding.textProjectedTotal.setText(DateUtils.formatAmountCents(projectedTotal));
+    }
+
+    private int getElapsedDays(YearMonth month) {
+        if (!month.equals(YearMonth.now())) {
+            return month.lengthOfMonth();
+        }
+        return LocalDate.now().getDayOfMonth();
+    }
+
+    private void updateBudgetHealth() {
+        if (latestBudgets == null || latestBudgets.isEmpty()) {
+            binding.textBudgetHealthPrimary.setText(getString(com.spendwise.ai.R.string.no_budgets_set));
+            binding.textBudgetHealthMeta.setText(getString(com.spendwise.ai.R.string.no_budgets_summary_meta));
+            binding.progressBudgetHealth.setProgress(0);
+            return;
+        }
+
+        long totalLimit = 0L;
+        long totalSpent = 0L;
+        int overBudgetCount = 0;
+        for (BudgetWithSpend budget : latestBudgets) {
+            totalLimit += budget.getLimitCents();
+            totalSpent += budget.getSpentCents();
+            if (budget.isOverBudget()) {
+                overBudgetCount++;
+            }
+        }
+
+        int usagePercent = totalLimit > 0 ? (int) ((totalSpent * 100) / totalLimit) : 0;
+        binding.progressBudgetHealth.setProgress(Math.min(usagePercent, 100));
+        binding.progressBudgetHealth.setIndicatorColor(getBudgetIndicatorColor(usagePercent));
+
+        String primaryText = getString(
+                com.spendwise.ai.R.string.budget_usage_format,
+                DateUtils.formatAmountCents(totalSpent),
+                DateUtils.formatAmountCents(totalLimit));
+        binding.textBudgetHealthPrimary.setText(primaryText);
+
+        long remaining = totalLimit - totalSpent;
+        String remainingText = remaining >= 0
+                ? getString(com.spendwise.ai.R.string.remaining_budget_format, DateUtils.formatAmountCents(remaining))
+                : getString(com.spendwise.ai.R.string.over_budget_amount_format, DateUtils.formatAmountCents(Math.abs(remaining)));
+        String overBudgetText = getResources().getQuantityString(
+                com.spendwise.ai.R.plurals.over_budget_categories_count,
+                overBudgetCount,
+                overBudgetCount);
+        binding.textBudgetHealthMeta.setText(remainingText + " • " + overBudgetText);
+    }
+
+    private int getBudgetIndicatorColor(int usagePercent) {
+        if (usagePercent >= 100) {
+            return com.google.android.material.color.MaterialColors.getColor(
+                    requireContext(),
+                    com.google.android.material.R.attr.colorError,
+                    Color.RED);
+        }
+        if (usagePercent >= 80) {
+            return com.google.android.material.color.MaterialColors.getColor(
+                    requireContext(),
+                    com.google.android.material.R.attr.colorSecondary,
+                    Color.YELLOW);
+        }
+        return com.google.android.material.color.MaterialColors.getColor(
+                requireContext(),
+                com.google.android.material.R.attr.colorPrimary,
+                Color.GREEN);
     }
 
     @Override

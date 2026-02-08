@@ -25,6 +25,7 @@ import org.threeten.bp.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -41,6 +42,11 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
     private ExpenseEditorViewModel viewModel;
     private List<Category> categories = new ArrayList<>();
     private Map<String, Long> categoryNameToId = new HashMap<>();
+    private Map<Long, String> categoryIdToName = new HashMap<>();
+    private Map<Long, String> merchantIdToName = new HashMap<>();
+    private Long pendingCategoryId;
+    private Long pendingMerchantId;
+    private boolean editFieldsInitialized = false;
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("EEE, MMM d, yyyy");
 
@@ -117,12 +123,13 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
     private void setupMerchantAutocomplete() {
         // Load all merchants for autocomplete
         viewModel.getAllMerchants().observe(getViewLifecycleOwner(), merchants -> {
-            if (merchants == null || merchants.isEmpty())
-                return;
-
             List<String> merchantNames = new ArrayList<>();
-            for (com.spendwise.ai.data.entity.Merchant merchant : merchants) {
-                merchantNames.add(merchant.getName());
+            merchantIdToName.clear();
+            if (merchants != null) {
+                for (com.spendwise.ai.data.entity.Merchant merchant : merchants) {
+                    merchantNames.add(merchant.getName());
+                    merchantIdToName.put(merchant.getId(), merchant.getName());
+                }
             }
 
             ArrayAdapter<String> adapter = new ArrayAdapter<>(
@@ -130,6 +137,7 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
                     android.R.layout.simple_dropdown_item_1line,
                     merchantNames);
             binding.editMerchant.setAdapter(adapter);
+            applyPendingMerchantSelection();
         });
     }
 
@@ -168,19 +176,19 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
                 "coffee")) {
             suggestedCategory = "Food & Dining";
         } else if (containsAny(description, "grocery", "groceries", "supermarket", "vegetables", "fruits")) {
-            suggestedCategory = "Groceries";
+            suggestedCategory = "Food & Dining";
         } else if (containsAny(description, "uber", "ola", "taxi", "bus", "train", "metro", "petrol", "fuel", "gas")) {
             suggestedCategory = "Transportation";
         } else if (containsAny(description, "electric", "water", "internet", "wifi", "phone", "mobile", "recharge")) {
-            suggestedCategory = "Utilities";
+            suggestedCategory = "Bills & Utilities";
         } else if (containsAny(description, "movie", "netflix", "spotify", "concert", "game", "entertainment")) {
             suggestedCategory = "Entertainment";
         } else if (containsAny(description, "clothes", "shoes", "fashion", "shopping", "amazon", "flipkart")) {
             suggestedCategory = "Shopping";
         } else if (containsAny(description, "doctor", "medicine", "hospital", "pharmacy", "health")) {
-            suggestedCategory = "Healthcare";
+            suggestedCategory = "Health & Fitness";
         } else if (containsAny(description, "rent", "maintenance", "repair", "home")) {
-            suggestedCategory = "Housing";
+            suggestedCategory = "Bills & Utilities";
         }
 
         if (suggestedCategory != null) {
@@ -204,11 +212,15 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
         viewModel.getAllCategories().observe(getViewLifecycleOwner(), categoryList -> {
             this.categories = categoryList;
             categoryNameToId.clear();
+            categoryIdToName.clear();
 
             List<String> categoryNames = new ArrayList<>();
-            for (Category category : categoryList) {
-                categoryNames.add(category.getName());
-                categoryNameToId.put(category.getName(), category.getId());
+            if (categoryList != null) {
+                for (Category category : categoryList) {
+                    categoryNames.add(category.getName());
+                    categoryNameToId.put(category.getName(), category.getId());
+                    categoryIdToName.put(category.getId(), category.getName());
+                }
             }
 
             ArrayAdapter<String> adapter = new ArrayAdapter<>(
@@ -216,6 +228,7 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
                     android.R.layout.simple_dropdown_item_1line,
                     categoryNames);
             binding.dropdownCategory.setAdapter(adapter);
+            applyPendingCategorySelection();
         });
 
         binding.dropdownCategory.setOnItemClickListener((parent, view, position, id) -> {
@@ -253,7 +266,7 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
         binding.btnCancel.setOnClickListener(v -> dismiss());
 
         binding.btnDelete.setOnClickListener(v -> {
-            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+            new MaterialAlertDialogBuilder(requireContext())
                     .setTitle("Delete Expense")
                     .setMessage("Are you sure you want to delete this expense?")
                     .setNegativeButton("Cancel", null)
@@ -280,6 +293,21 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
     }
 
     private void observeViewModel() {
+        viewModel.getEditingExpense().observe(getViewLifecycleOwner(), expense -> {
+            if (expense == null || editFieldsInitialized) {
+                return;
+            }
+
+            binding.editAmount.setText(String.format(Locale.getDefault(), "%.2f", expense.getAmountCents() / 100.0));
+            binding.editDescription.setText(expense.getDescription() != null ? expense.getDescription() : "");
+
+            pendingCategoryId = expense.getCategoryId();
+            pendingMerchantId = expense.getMerchantId();
+            applyPendingCategorySelection();
+            applyPendingMerchantSelection();
+            editFieldsInitialized = true;
+        });
+
         // Observe selected date
         viewModel.getSelectedDate().observe(getViewLifecycleOwner(), date -> {
             binding.editDate.setText(date.format(DATE_FORMAT));
@@ -302,6 +330,33 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
                 dismiss();
             }
         });
+    }
+
+    private void applyPendingCategorySelection() {
+        if (pendingCategoryId == null) {
+            return;
+        }
+        String categoryName = categoryIdToName.get(pendingCategoryId);
+        if (categoryName == null) {
+            return;
+        }
+
+        binding.dropdownCategory.setText(categoryName, false);
+        viewModel.setSelectedCategoryId(pendingCategoryId);
+        pendingCategoryId = null;
+    }
+
+    private void applyPendingMerchantSelection() {
+        if (pendingMerchantId == null) {
+            return;
+        }
+        String merchantName = merchantIdToName.get(pendingMerchantId);
+        if (merchantName == null) {
+            return;
+        }
+
+        binding.editMerchant.setText(merchantName, false);
+        pendingMerchantId = null;
     }
 
     @Override

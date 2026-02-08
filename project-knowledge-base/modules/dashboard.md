@@ -4,69 +4,69 @@
 
 ---
 
-## 📌 Status: NOT YET IMPLEMENTED
-
-This module will be implemented in Phase 3.
+## 📌 Status: ✅ IMPLEMENTED + ENHANCED (v1.1.1)
 
 ---
 
 ## 🎯 What This Screen Does
 
-The Dashboard is the **home screen** of the app. It shows:
-- **Monthly total** - How much you spent this month
-- **Category pie chart** - Visual breakdown by category
-- **Budget progress bars** - How much of each budget is used
-- **Top 5 categories** - List of biggest spending areas
-- **Month navigation** - Switch between months
+Dashboard is the home analytics view. It shows:
+- Monthly total spent
+- Budget health summary (used vs limit, remaining/overshoot, over-budget count)
+- Spending pace (average/day and projected month total)
+- Category pie chart
+- Budget progress bar chart
+- Top spending categories list
+- Month navigation
 
 ---
 
-## 🖼️ Screen Layout (Planned)
+## 🔄 How It Works
 
-```
-┌─────────────────────────────────┐
-│  ← January 2026 →               │  ← Month navigation
-├─────────────────────────────────┤
-│  Total Spent                    │
-│  ₹45,230                        │  ← Monthly total
-├─────────────────────────────────┤
-│      ┌───┐                      │
-│     /     \   Food 40%          │
-│    │       │  Transport 25%     │  ← Pie chart
-│     \     /   Shopping 20%      │
-│      └───┘    Other 15%         │
-├─────────────────────────────────┤
-│  Budget Progress                │
-│  Food      ████████░░  80%      │  ← Bar chart
-│  Transport ██████░░░░  60%      │
-├─────────────────────────────────┤
-│  Top Categories                 │
-│  1. Food         ₹18,000        │  ← Top 5 list
-│  2. Transport    ₹11,300        │
-│  ...                            │
-└─────────────────────────────────┘
-```
+### Data Loading
+1. `DashboardViewModel` stores `currentMonth` (`YearMonth`).
+2. Month changes trigger `switchMap` queries for:
+   - monthly total
+   - category totals
+   - budgets with spend
+3. Fragment observers update cards, charts, and lists reactively.
+
+### Insight Cards
+- Budget health is computed from `BudgetWithSpend` aggregates.
+- Spending pace is computed from:
+  - current month total
+  - elapsed day count for current month
+  - month length for projection
+
+### Charts
+- Pie chart: category distribution for selected month.
+- Horizontal bar chart: budget usage percentage with status colors.
 
 ---
 
-## 🔄 How It Will Work
-
-1. Screen loads → ViewModel fetches current month's data
-2. ViewModel queries expenses grouped by category
-3. Charts are populated with data
-4. User taps ← or → → Month changes, data refreshes
-
----
-
-## 📁 Files (After Implementation)
+## 📁 Files
 
 | File | Purpose |
 |------|---------|
-| `dashboard/DashboardFragment.java` | UI logic and chart setup |
-| `dashboard/DashboardViewModel.java` | Data loading and month tracking |
-| `res/layout/fragment_dashboard.xml` | Screen layout |
+| `dashboard/DashboardFragment.java` | Dashboard UI logic, observers, insight calculations |
+| `dashboard/DashboardViewModel.java` | Month state + reactive data loading |
+| `fragment_dashboard.xml` | Dashboard layout and cards |
+| `dashboard/CategoryTotalAdapter.java` | Top category list |
+| `data/dao/ExpenseDao.java` | Monthly total + category aggregate queries |
+| `data/dao/BudgetDao.java` | Budget usage query |
+
+---
+
+## 🐛 Common Issues
+
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Projected total looks high/low | Elapsed day logic | Check `DashboardFragment.updateSpendingPace()` |
+| Budget health empty | No budgets for selected month | Create budgets in Categories screen |
+| Chart not visible | Empty dataset | Verify month range and query result |
+| Wrong budget mapping | Category linkage issue | Confirm `BudgetWithSpend` includes `categoryId` |
 
 ---
 
 ## 📅 Last Updated
-2026-01-22 - Initial placeholder created
+2026-02-08 - v1.1.1 dashboard insights and budget health added

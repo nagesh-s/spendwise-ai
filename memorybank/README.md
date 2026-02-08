@@ -5,12 +5,13 @@ SpendWise AI is a modern, offline-first personal expense tracker built in Java f
 SpendWise AI emphasizes responsive Material design with dark mode support and clean information architecture to minimize friction in daily expense logging and monthly reviews.
 
 ## Key features
-- Dashboard: total monthly spend, category distribution pie chart, budget progress bar chart, top 5 categories, and month switching controls.
-- Calendar: interactive month view with per-day totals and color tiers, plus a modal dialog to view/add/edit expenses for a specific date.
-- Categories & Budgets: default non-deletable categories, custom category CRUD with icon/color, and per-category monthly budgets with month navigation.
-- Merchant analytics: top merchants by spend, per-merchant totals/average/count, and recent transactions with charts.
+- Dashboard: monthly spend, category distribution, budget progress, top categories, budget health card, and spending pace insights (avg/day + projected total).
+- Calendar: interactive month view with per-day totals, spending decorators, selected-day expense list, and one-tap jump to today.
+- Categories & Budgets: default non-deletable categories, budget progress per category, monthly summary card, and copy-previous-month budgets action.
+- Merchant analytics: top merchants by spend with ranking badges plus monthly merchant summary (total spend + top merchant).
 - Settings: dark mode toggle, JSON export/import through the Android Storage Access Framework, and a plain-text summary generator for a day or month.
-- Smart input: inline suggestions for category and merchant driven by local history and quick-add tiles for frequently logged items to speed entry.
+- Smart input: inline suggestions for category and merchant driven by local history, edit-mode prefill reliability, and quick-add tiles for frequent items.
+- Automation features: recurring expenses, bill reminders, QuickTiles home screen widget, biometric app lock, and receipt photo attachments.
 
 ## Architecture overview
 - Single-activity with BottomNavigationView hosting a NavHostFragment that navigates between Dashboard, Calendar, Categories & Budgets, Merchant Analytics, and Settings fragments for a cohesive “single-page” feel with proper back-stack handling.
@@ -26,7 +27,7 @@ SpendWise AI emphasizes responsive Material design with dark mode support and cl
 - Icons: Font Awesome via TTF for offline glyphs in bottom navigation, lists, and category badges.
 
 ## Data model
-- Expense(id, dateEpochDay, amountCents, description, categoryId, merchantId) captures atomic spend records for efficient monthly and daily aggregations.
+- Expense(id, dateEpochDay, amountCents, description, categoryId, merchantId, photoPath) captures atomic spend records and optional receipts for monthly/daily aggregations.
 - Category(id, name, colorArgb, iconKey, isDefault) defines visual identity and protects default system categories from deletion in UI logic.
 - Merchant(id, name) enables merchant-level analytics and suggestions from local history without network calls.
 - Budget(id, monthKeyYYYYMM, categoryId, limitCents) stores per-category monthly budgets to compute progress and thresholds.

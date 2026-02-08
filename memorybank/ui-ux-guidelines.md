@@ -1,4 +1,8 @@
-- Dark mode: support system default + manual toggle
-- Typography/colors: use theme attributes for light/dark parity
-- Lists: MaterialCardView and shape appearance for modern look
-- Charts: avoid overcrowding labels; provide legends where needed
+- Dark mode: support system default + manual toggle and verify all cards/charts have contrast parity.
+- Navigation: keep primary tabs discoverable with stateful icon/text tint and labeled bottom navigation.
+- Information hierarchy: place high-value financial insights (budget health, pace, summary metrics) above exploratory charts.
+- Actionability: every empty state should include a clear next step (e.g., add expense, create tile, set budget).
+- Budget UX: show category-level progress and month-level aggregate health in the same screen.
+- Calendar UX: provide quick return-to-today and keep day total visible near selected date.
+- Lists: use MaterialCardView with consistent spacing, rounded surfaces, and readable amount emphasis.
+- Charts: avoid label crowding, use legends when needed, and pair charts with textual summaries for quick scanning.

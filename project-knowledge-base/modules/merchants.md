@@ -4,32 +4,32 @@
 
 ---
 
-## 📌 Status: ✅ IMPLEMENTED (v1.0.0)
+## 📌 Status: ✅ IMPLEMENTED + ENHANCED (v1.1.1)
 
 ---
 
 ## 🎯 What This Screen Does
 
 Merchants screen shows:
-- Top merchants by total spending for the month
-- Transaction count per merchant
-- Average transaction amount
-- Ranking with colored badges (gold/silver/bronze)
+- Top merchants by total spending for selected month
+- Transaction count and average per merchant
+- Ranking badges (gold/silver/bronze/default)
+- Merchant summary card:
+  - total merchant spend for month
+  - top merchant with spend amount
 
 ---
 
 ## 🔄 How It Works
 
-### Loading Top Merchants
-1. `MerchantsFragment` observes `getTopMerchants()` from ViewModel
-2. ViewModel calls `getTopMerchants(startDay, endDay, limit)` on repository
-3. DAO runs aggregate query joining merchants with expenses
-4. Returns `MerchantAgg` with name, txn count, total, average
+### Loading Data
+1. `MerchantsViewModel` tracks `analyticsMonth`.
+2. `switchMap` loads `getTopMerchants(startDay, endDay, limit)`.
+3. Fragment observes list and updates summary + recycler state.
 
-### Display
-1. `MerchantAdapter` shows merchants in ranked list
-2. Rank 1 gets gold badge, 2 silver, 3 bronze
-3. Stats show: "12 transactions • Avg ₹450"
+### Summary Card
+- If list is empty: show guidance text.
+- Else: compute list total + use first row as top merchant highlight.
 
 ---
 
@@ -37,14 +37,13 @@ Merchants screen shows:
 
 | File | Purpose |
 |------|---------|
-| `merchants/MerchantsFragment.java` | UI, month navigation |
-| `merchants/MerchantsViewModel.java` | Data loading |
-| `merchants/MerchantAdapter.java` | RecyclerView with rank badges |
+| `merchants/MerchantsFragment.java` | UI, month navigation, summary card |
+| `merchants/MerchantsViewModel.java` | Month state + merchant aggregate query |
+| `merchants/MerchantAdapter.java` | Ranked merchant rows |
 | `fragment_merchants.xml` | Screen layout |
 | `item_merchant.xml` | Merchant list item |
-| `data/entity/Merchant.java` | Merchant table entity |
-| `data/dao/MerchantDao.java` | CRUD + getTopMerchants query |
-| `data/pojo/MerchantAgg.java` | Query result with stats |
+| `data/dao/MerchantDao.java` | Merchant aggregate query |
+| `data/pojo/MerchantAgg.java` | Merchant aggregate model |
 
 ---
 
@@ -57,19 +56,17 @@ Merchants screen shows:
 | 3 | 🥉 Bronze | `#CD7F32` |
 | 4+ | Gray | `#607D8B` |
 
-Colors defined in `MerchantAdapter.RANK_COLORS`.
-
 ---
 
 ## 🐛 Common Issues
 
 | Issue | Cause | Solution |
 |-------|-------|----------|
-| No merchants showing | No expenses with merchants | Add expenses with merchant field |
-| Wrong month data | Date range wrong | Check getMonthStartEpochDay/EndEpochDay |
-| Totals incorrect | Query grouping issue | Check MerchantDao.getTopMerchants query |
+| Summary card says no data | Expenses missing merchant values | Save merchant names while adding expenses |
+| Totals differ from dashboard | Merchant-only subset | Dashboard includes all expenses, not only merchant-tagged |
+| Wrong month data | Month range mismatch | Check `analyticsMonth` and date range calculations |
 
 ---
 
 ## 📅 Last Updated
-2026-01-23 - v1.0.0 Complete
+2026-02-08 - v1.1.1 merchant summary card added

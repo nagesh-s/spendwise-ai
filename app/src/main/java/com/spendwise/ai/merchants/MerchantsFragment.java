@@ -11,8 +11,12 @@ import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.spendwise.ai.R;
+import com.spendwise.ai.data.pojo.MerchantAgg;
 import com.spendwise.ai.databinding.FragmentMerchantsBinding;
 import com.spendwise.ai.util.DateUtils;
+
+import java.util.List;
 
 /**
  * Fragment for viewing merchant analytics with top merchants list.
@@ -62,7 +66,9 @@ public class MerchantsFragment extends Fragment {
 
         // Observe top merchants
         viewModel.getTopMerchants().observe(getViewLifecycleOwner(), merchants -> {
+            updateSummary(merchants);
             if (merchants == null || merchants.isEmpty()) {
+                adapter.submitList(java.util.Collections.emptyList());
                 binding.recyclerMerchants.setVisibility(View.GONE);
                 binding.layoutEmptyState.setVisibility(View.VISIBLE);
             } else {
@@ -71,6 +77,28 @@ public class MerchantsFragment extends Fragment {
                 adapter.submitList(merchants);
             }
         });
+    }
+
+    private void updateSummary(List<MerchantAgg> merchants) {
+        if (merchants == null || merchants.isEmpty()) {
+            binding.textMerchantSummaryTotal.setText(getString(R.string.no_merchant_data_summary));
+            binding.textMerchantSummaryTop.setText(getString(R.string.add_expense_with_merchant_hint));
+            return;
+        }
+
+        long total = 0L;
+        for (MerchantAgg merchant : merchants) {
+            total += merchant.getTotalCents();
+        }
+        MerchantAgg topMerchant = merchants.get(0);
+
+        binding.textMerchantSummaryTotal.setText(
+                getString(R.string.merchant_total_summary_format, DateUtils.formatAmountCents(total)));
+        binding.textMerchantSummaryTop.setText(
+                getString(
+                        R.string.top_merchant_summary_format,
+                        topMerchant.getName(),
+                        DateUtils.formatAmountCents(topMerchant.getTotalCents())));
     }
 
     @Override

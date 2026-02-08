@@ -4,46 +4,45 @@
 
 ---
 
-## 📌 Status: ✅ IMPLEMENTED (v1.0.0)
+## 📌 Status: ✅ IMPLEMENTED + FIXED (v1.1.1)
 
 ---
 
 ## 🎯 What This Dialog Does
 
-The Expense Editor is a **dialog** for creating and editing expenses with:
-- Amount input with ₹ prefix
-- Description (optional) with smart category suggestions
-- Category dropdown (required)
-- Merchant autocomplete from history
-- Date picker
+Expense Editor supports:
+- Add new expense for selected date
+- Edit existing expense (with reliable prefill)
+- Amount, description, category, merchant, and date fields
+- Smart category suggestion from description keywords
+- Merchant autocomplete from local history
 
 ---
 
 ## 🔄 How It Works
 
 ### Opening Dialog
-1. User taps FAB on Calendar or "Add" button
-2. `ExpenseEditorDialogFragment.newInstance(expenseId, dateEpochDay)` called
-3. If `expenseId` is null → new expense mode
-4. If `expenseId` provided → edit mode (loads existing expense)
+1. Caller provides `(expenseId?, dateEpochDay)` via `newInstance(...)`.
+2. No `expenseId` → new expense mode.
+3. With `expenseId` → edit mode.
 
-### Smart Category Suggestions
-1. User starts typing description
-2. `TextWatcher` in `setupDescriptionSuggestions()` fires
-3. Keyword matching checks for food/transport/shopping terms
-4. Category dropdown auto-fills if match found
+### Edit Prefill (v1.1.1 Fix)
+1. ViewModel loads existing expense synchronously on background executor.
+2. Fragment observes `editingExpense`.
+3. UI fields prefill amount/category/date/description/merchant before user saves.
 
-### Merchant Autocomplete
-1. ViewModel loads `getAllMerchants()` from database
-2. `AutoCompleteTextView` shows suggestions as user types
-3. Threshold is 1 character
+### Smart Category Suggestion
+- Description keywords map to seeded categories:
+  - Food/grocery terms → `Food & Dining`
+  - Utility/home terms → `Bills & Utilities`
+  - Health terms → `Health & Fitness`
+  - Transport/shopping/entertainment map directly
 
-### Saving Expense
-1. User taps Save button
-2. `validate()` checks: amount > 0, category selected
-3. If valid, `saveExpense()` creates/updates Expense entity
-4. Merchant created if new (insertOrGetId)
-5. Dialog dismisses on success
+### Save
+1. Validate amount and category.
+2. Resolve merchant ID (create/find).
+3. Insert or update `Expense`.
+4. Signal `saveComplete` and dismiss dialog.
 
 ---
 
@@ -51,28 +50,11 @@ The Expense Editor is a **dialog** for creating and editing expenses with:
 
 | File | Purpose |
 |------|---------|
-| `common/ExpenseEditorDialogFragment.java` | Dialog UI, form validation |
-| `common/ExpenseEditorViewModel.java` | Form state, save logic |
-| `fragment_expense_editor_dialog.xml` | Layout with input fields |
-| `data/repository/ExpenseRepository.java` | Insert/update operations |
-| `data/repository/MerchantRepository.java` | insertOrGetId for merchants |
-
----
-
-## 🧠 Smart Category Keywords
-
-| Category | Trigger Words |
-|----------|---------------|
-| Food & Dining | food, lunch, dinner, breakfast, restaurant, pizza, burger, coffee |
-| Groceries | grocery, groceries, supermarket, vegetables, fruits |
-| Transportation | uber, ola, taxi, bus, train, metro, petrol, fuel, gas |
-| Utilities | electric, water, internet, wifi, phone, mobile, recharge |
-| Entertainment | movie, netflix, spotify, concert, game, entertainment |
-| Shopping | clothes, shoes, fashion, shopping, amazon, flipkart |
-| Healthcare | doctor, medicine, hospital, pharmacy, health |
-| Housing | rent, maintenance, repair, home |
-
-Defined in `ExpenseEditorDialogFragment.suggestCategoryFromDescription()`.
+| `common/ExpenseEditorDialogFragment.java` | Dialog UI + observers + keyword suggestion |
+| `common/ExpenseEditorViewModel.java` | Form state, validation, load/save/delete |
+| `fragment_expense_editor_dialog.xml` | Dialog layout |
+| `data/repository/ExpenseRepository.java` | Insert/update/delete + sync lookup |
+| `data/repository/MerchantRepository.java` | Merchant lookup/create |
 
 ---
 
@@ -80,12 +62,12 @@ Defined in `ExpenseEditorDialogFragment.suggestCategoryFromDescription()`.
 
 | Issue | Cause | Solution |
 |-------|-------|----------|
-| "Please enter valid amount" | Empty or 0 amount | Amount must be > 0 |
-| "Please select a category" | No category selected | User must pick from dropdown |
-| Merchant not saving | Insert failed | Check MerchantRepository.insertOrGetId() |
-| Date wrong | Epoch day conversion | Check DateUtils.epochDayToDate() |
+| Edit dialog shows blank fields | Edit prefill not observed | Verify `getEditingExpense()` observer |
+| Merchant not prefilled | Merchant map not loaded yet | Check pending merchant selection logic |
+| Wrong suggestion category | Keyword mapping mismatch | Verify seeded category name constants |
+| Save fails validation | Missing amount/category | Check `validate()` errors in ViewModel |
 
 ---
 
 ## 📅 Last Updated
-2026-01-23 - v1.0.0 with smart features
+2026-02-08 - v1.1.1 fixed edit prefill and category mapping alignment

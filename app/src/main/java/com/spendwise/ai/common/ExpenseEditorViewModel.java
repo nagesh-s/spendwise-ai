@@ -8,6 +8,7 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
+import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.entity.Category;
 import com.spendwise.ai.data.entity.Expense;
 import com.spendwise.ai.data.entity.Merchant;
@@ -51,6 +52,9 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
     // Save result
     private final MutableLiveData<Boolean> saveComplete = new MutableLiveData<>();
 
+    // Loaded expense when editing
+    private final MutableLiveData<Expense> editingExpense = new MutableLiveData<>();
+
     public ExpenseEditorViewModel(@NonNull Application application) {
         super(application);
         expenseRepository = new ExpenseRepository(application);
@@ -76,6 +80,7 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
         selectedCategoryId.setValue(null);
         merchantName.setValue("");
         selectedDate.setValue(DateUtils.epochDayToDate(dateEpochDay));
+        editingExpense.setValue(null);
         clearErrors();
     }
 
@@ -83,11 +88,24 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
      * Initialize for editing an existing expense.
      */
     public void initForEdit(long existingExpenseId) {
-        // Load expense in background and populate form
-        // This would need to be done via a callback or by observing
         expenseId.setValue(existingExpenseId);
-        // Note: Actual loading would happen when the fragment observes and calls
-        // loadExpense()
+        clearErrors();
+        loadExpense(existingExpenseId);
+    }
+
+    private void loadExpense(long existingExpenseId) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            Expense existingExpense = expenseRepository.getExpenseByIdSync(existingExpenseId);
+            if (existingExpense == null) {
+                return;
+            }
+
+            editingExpense.postValue(existingExpense);
+            amountCents.postValue(existingExpense.getAmountCents());
+            description.postValue(existingExpense.getDescription() != null ? existingExpense.getDescription() : "");
+            selectedCategoryId.postValue(existingExpense.getCategoryId());
+            selectedDate.postValue(DateUtils.epochDayToDate(existingExpense.getDateEpochDay()));
+        });
     }
 
     // ==================== Form Getters/Setters ====================
@@ -102,6 +120,10 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
 
     public MutableLiveData<Long> getAmountCents() {
         return amountCents;
+    }
+
+    public LiveData<Expense> getEditingExpense() {
+        return editingExpense;
     }
 
     public void setAmountCents(long cents) {

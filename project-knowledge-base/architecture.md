@@ -68,12 +68,21 @@
 | Merchants | `merchants/MerchantsFragment.java` | `MerchantsViewModel.java` | `fragment_merchants.xml` |
 | Settings | `settings/SettingsFragment.java` | `SettingsViewModel.java` | `fragment_settings.xml` |
 
+### Secondary Screens (from Settings)
+
+| Screen | Fragment | ViewModel | Layout |
+|--------|----------|-----------|--------|
+| Quick Tiles | `quicktiles/QuickTilesFragment.java` | `QuickTilesViewModel.java` | `fragment_quick_tiles.xml` |
+| Recurring Expenses | `recurring/RecurringExpensesFragment.java` | `RecurringExpensesViewModel.java` | `fragment_recurring_expenses.xml` |
+
 ### Dialogs
 
 | Dialog | Purpose | File |
 |--------|---------|------|
 | Expense Editor | Add/edit expenses | `common/ExpenseEditorDialogFragment.java` |
 | Budget Editor | Set category budgets | `categories/BudgetEditorDialog.java` |
+| QuickTile Editor | Add/edit quick tiles | `quicktiles/QuickTileEditorDialog.java` |
+| Recurring Editor | Add/edit recurring expenses | `recurring/RecurringExpenseEditorDialog.java` |
 
 ### Data Layer
 
@@ -208,8 +217,10 @@ Fragment observers update UI
 | v0.4.0 | Import/Export JSON | 01-23 |
 | v0.5.0 | Smart features | 01-23 |
 | v1.0.0 | Calendar decorators, final | 01-23 |
+| v1.1.0 | QuickTiles, recurring expenses, reminders | 02-08 |
+| v1.1.1 | UX refinement + edit-flow reliability fixes | 02-08 |
 
 ---
 
 ## 📅 Last Updated
-2026-01-23 - v1.0.0 Complete
+2026-02-08 - v1.1.1 docs updated

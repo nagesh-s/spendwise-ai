@@ -13,8 +13,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
-import com.prolificinteractive.materialcalendarview.OnDateSelectedListener;
-import com.prolificinteractive.materialcalendarview.OnMonthChangedListener;
 import com.spendwise.ai.common.ExpenseAdapter;
 import com.spendwise.ai.common.ExpenseEditorDialogFragment;
 import com.spendwise.ai.data.entity.Category;
@@ -111,6 +109,15 @@ public class CalendarFragment extends Fragment {
     private void setupFab() {
         binding.fabAddExpense.setOnClickListener(v -> openExpenseEditor(null));
         binding.btnAddExpenseEmpty.setOnClickListener(v -> openExpenseEditor(null));
+        binding.btnToday.setOnClickListener(v -> jumpToToday());
+    }
+
+    private void jumpToToday() {
+        CalendarDay today = CalendarDay.today();
+        binding.calendarView.setCurrentDate(today, true);
+        binding.calendarView.setSelectedDate(today);
+        viewModel.selectToday();
+        viewModel.setDisplayedMonth(YearMonth.now());
     }
 
     private void openExpenseEditor(@Nullable Long expenseId) {

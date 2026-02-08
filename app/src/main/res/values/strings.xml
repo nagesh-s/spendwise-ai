@@ -6,6 +6,23 @@
     <string name="title_categories">Categories</string>
     <string name="title_merchants">Merchants</string>
     <string name="title_settings">Settings</string>
+    <string name="today">Today</string>
+    <string name="avg_per_day">Avg / Day</string>
+    <string name="projected_total">Projected Total</string>
+    <string name="budget_health_title">Budget Health</string>
+    <string name="month_budget_summary">Month Budget Summary</string>
+    <string name="copy_previous_month_budgets">Copy Previous Month Budgets</string>
+    <string name="copy_previous_month_hint">Copied previous month budgets when current month is empty</string>
+    <string name="no_budgets_set">No budgets set yet</string>
+    <string name="no_budgets_summary_meta">Set budgets per category for better control</string>
+    <string name="budget_usage_format">%1$s of %2$s used</string>
+    <string name="remaining_budget_format">%1$s remaining</string>
+    <string name="over_budget_amount_format">%1$s over budget</string>
+    <string name="merchant_summary_title">Merchant Summary</string>
+    <string name="no_merchant_data_summary">No merchant spend data this month</string>
+    <string name="add_expense_with_merchant_hint">Add merchant details to unlock richer insights</string>
+    <string name="merchant_total_summary_format">%1$s total spend</string>
+    <string name="top_merchant_summary_format">Top merchant: %1$s (%2$s)</string>
 
     <!-- QuickTiles Widget -->
     <string name="widget_description">Add expenses quickly with one tap</string>
@@ -13,6 +30,7 @@
     <string name="add_quick_tile">Add Quick Tile</string>
     <string name="no_quick_tiles">No quick tiles yet.\nTap + to add one.</string>
     <string name="quick_tiles">Quick Tiles</string>
+    <string name="quick_tiles_subtitle">Build one-tap presets for your most frequent expenses</string>
     <string name="manage_quick_tiles">Manage Quick Tiles</string>
     <string name="tile_label">Label</string>
     <string name="tile_amount">Amount</string>
@@ -22,6 +40,7 @@
 
     <!-- Recurring Expenses -->
     <string name="recurring_expenses">Recurring Expenses</string>
+    <string name="recurring_expenses_subtitle">Track subscriptions and automate regular bills</string>
     <string name="add_recurring_expense">Add Recurring Expense</string>
     <string name="no_recurring_expenses">No recurring expenses yet.\nAdd subscriptions, rent, and regular bills.</string>
     <string name="description">Description</string>
@@ -37,4 +56,9 @@
     <string name="unlock">Unlock</string>
     <string name="biometric_lock">Biometric Lock</string>
     <string name="biometric_lock_summary">Require fingerprint or face to open app</string>
+
+    <plurals name="over_budget_categories_count">
+        <item quantity="one">%d category over budget</item>
+        <item quantity="other">%d categories over budget</item>
+    </plurals>
 </resources>

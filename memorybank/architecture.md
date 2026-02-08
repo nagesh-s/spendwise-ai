@@ -1,4 +1,7 @@
-- Single Activity: MainActivity hosts NavHostFragment; BottomNavigationView wired to NavController
-- Fragments: DashboardFragment, CalendarFragment, CategoriesBudgetsFragment, MerchantsFragment, SettingsFragment
-- Data layer: Room database with Entities + DAOs; LiveData/observers drive UI updates
-- Smart features: lightweight heuristics computed from local history (no network)
+- Single Activity: `MainActivity` hosts `NavHostFragment`; `BottomNavigationView` wired to `NavController`.
+- Primary tabs: `DashboardFragment`, `CalendarFragment`, `CategoriesFragment`, `MerchantsFragment`, `SettingsFragment`.
+- Secondary flows: `QuickTilesFragment` and `RecurringExpensesFragment` are routed from Settings.
+- Dialog flows: `ExpenseEditorDialogFragment` supports create/edit with date + id arguments; budget editor dialog is launched from categories list.
+- Data layer: Room entities + DAOs + repositories; LiveData/observers drive reactive screen updates.
+- Background work: WorkManager handles recurring expense generation and reminder notifications.
+- Smart features: local heuristic category suggestions and merchant autocomplete (offline, no network).

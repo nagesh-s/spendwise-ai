@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.1] - 2026-02-08
+### Added
+- **Dashboard Budget Health Card** - usage, remaining/overshoot, and over-budget category count
+- **Dashboard Spending Pace Insights** - average/day and projected monthly total cards
+- **Calendar “Today” Jump Action** - one-tap return to current day and month
+- **Categories Budget Summary** - monthly aggregate summary with progress indicator
+- **Copy Previous Month Budgets Action** - one-tap carry-forward when current month has no budgets
+- **Merchant Summary Card** - total merchant spend and top merchant highlight for selected month
+- **QuickTiles & Recurring Screen Headers** - clearer context and empty-state guidance
+
+### Changed
+- Improved bottom navigation state styling for better tab affordance
+- Updated text and empty-state messaging across key screens for better user guidance
+
+### Fixed
+- **Expense edit prefill flow** now reliably loads amount, date, category, description, and merchant
+- Smart category keyword mapping now aligns with seeded default category names
+- Budget-to-category mapping now uses `categoryId` instead of category name matching to avoid mismatches
+
+### Technical
+- Added `bottom_nav_item_colors.xml` for state-aware nav colors
+- Extended budget aggregate query to return `categoryId` in `BudgetWithSpend`
+- Added sync expense lookup in repository for edit-mode data loading
+
+---
+
 ## [1.1.0] - 2026-02-08
 ### Added - Phase 1 Complete
 - **QuickTiles Home Screen Widget** - One-tap expense creation from home screen
@@ -108,3 +134,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | 0.2.0 | TBD | Dashboard functional |
 | 0.3.0 | TBD | Expense creation working |
 | 1.0.0 | TBD | First production release |
+| 1.1.0 | 2026-02-08 | QuickTiles, recurring expenses, reminders, biometric lock |
+| 1.1.1 | 2026-02-08 | UX refinement + dashboard/category/merchant insights + edit-flow fixes |

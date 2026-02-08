@@ -4,7 +4,6 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -44,13 +43,7 @@ public class CategoryBudgetAdapter extends RecyclerView.Adapter<CategoryBudgetAd
         budgetMap.clear();
         if (budgets != null) {
             for (BudgetWithSpend budget : budgets) {
-                // Map by category name since we don't have category ID directly
-                for (Category cat : categories) {
-                    if (cat.getName().equals(budget.getCategoryName())) {
-                        budgetMap.put(cat.getId(), budget);
-                        break;
-                    }
-                }
+                budgetMap.put(budget.getCategoryId(), budget);
             }
         }
         notifyDataSetChanged();
