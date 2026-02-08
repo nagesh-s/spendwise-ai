@@ -44,6 +44,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void checkBiometricLock() {
+        // Skip if returning from successful authentication
+        Intent intent = getIntent();
+        if (intent != null && intent.getBooleanExtra("skip_lock_check", false)) {
+            // Clear the flag so future launches still check
+            intent.removeExtra("skip_lock_check");
+            return;
+        }
+
         if (com.spendwise.ai.security.BiometricHelper.isBiometricEnabled(this) &&
                 com.spendwise.ai.security.BiometricHelper.isLockRequired(this)) {
             // Launch lock screen

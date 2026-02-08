@@ -45,8 +45,11 @@ public class LockScreenActivity extends AppCompatActivity implements BiometricHe
 
     @Override
     public void onSuccess() {
-        // Go to main activity
+        // Record unlock time
+        BiometricHelper.recordUnlock(this);
+        // Go to main activity with skip-lock flag
         Intent intent = new Intent(this, MainActivity.class);
+        intent.putExtra("skip_lock_check", true);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
         finish();
