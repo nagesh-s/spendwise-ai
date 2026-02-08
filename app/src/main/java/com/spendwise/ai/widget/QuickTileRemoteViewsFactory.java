@@ -68,10 +68,7 @@ public class QuickTileRemoteViewsFactory implements RemoteViewsService.RemoteVie
         // Set up fill-in intent for click handling
         Intent fillInIntent = new Intent();
         fillInIntent.putExtra(QuickTilesWidgetProvider.EXTRA_TILE_ID, tile.getId());
-        views.setOnClickFillInIntent(R.id.text_tile_label, fillInIntent);
-
-        // Set click on the entire item
-        views.setOnClickFillInIntent(android.R.id.background, fillInIntent);
+        views.setOnClickFillInIntent(R.id.tile_container, fillInIntent);
 
         return views;
     }

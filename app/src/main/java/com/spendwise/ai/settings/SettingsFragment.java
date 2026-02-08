@@ -48,8 +48,7 @@ public class SettingsFragment extends Fragment {
                             exportData(uri);
                         }
                     }
-                }
-        );
+                });
 
         // Register import launcher
         importLauncher = registerForActivityResult(
@@ -61,15 +60,14 @@ public class SettingsFragment extends Fragment {
                             importData(uri);
                         }
                     }
-                }
-        );
+                });
     }
 
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
-                             @Nullable ViewGroup container,
-                             @Nullable Bundle savedInstanceState) {
+            @Nullable ViewGroup container,
+            @Nullable Bundle savedInstanceState) {
         binding = FragmentSettingsBinding.inflate(inflater, container, false);
         return binding.getRoot();
     }
@@ -82,6 +80,7 @@ public class SettingsFragment extends Fragment {
         backupManager = new DataBackupManager(requireContext());
 
         setupDarkModeToggle();
+        setupFeatureNavigation();
         setupDataButtons();
         setupAppVersion();
         observeData();
@@ -90,6 +89,47 @@ public class SettingsFragment extends Fragment {
     private void setupDarkModeToggle() {
         binding.switchDarkMode.setOnCheckedChangeListener((buttonView, isChecked) -> {
             viewModel.setDarkModeEnabled(isChecked);
+        });
+    }
+
+    private void setupFeatureNavigation() {
+        // Quick Tiles
+        binding.cardQuickTiles.setOnClickListener(v -> {
+            androidx.navigation.Navigation.findNavController(v)
+                    .navigate(com.spendwise.ai.R.id.navigation_quick_tiles);
+        });
+
+        // Recurring Expenses
+        binding.cardRecurring.setOnClickListener(v -> {
+            androidx.navigation.Navigation.findNavController(v)
+                    .navigate(com.spendwise.ai.R.id.navigation_recurring);
+        });
+
+        // Biometric Lock toggle
+        setupBiometricToggle();
+    }
+
+    private void setupBiometricToggle() {
+        // Check if biometric is available
+        boolean available = com.spendwise.ai.security.BiometricHelper.isBiometricAvailable(requireContext());
+        binding.cardBiometric.setEnabled(available);
+        binding.switchBiometric.setEnabled(available);
+
+        if (!available) {
+            binding.switchBiometric.setChecked(false);
+            return;
+        }
+
+        // Set initial state
+        boolean enabled = com.spendwise.ai.security.BiometricHelper.isBiometricEnabled(requireContext());
+        binding.switchBiometric.setChecked(enabled);
+
+        binding.switchBiometric.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            com.spendwise.ai.security.BiometricHelper.setBiometricEnabled(requireContext(), isChecked);
+            if (isChecked) {
+                android.widget.Toast.makeText(requireContext(),
+                        "Biometric lock enabled", android.widget.Toast.LENGTH_SHORT).show();
+            }
         });
     }
 
@@ -115,7 +155,7 @@ public class SettingsFragment extends Fragment {
 
     private void exportData(Uri destinationUri) {
         Toast.makeText(requireContext(), "Exporting data...", Toast.LENGTH_SHORT).show();
-        
+
         backupManager.exportData(destinationUri, new DataBackupManager.BackupCallback() {
             @Override
             public void onSuccess(String message) {
@@ -139,7 +179,7 @@ public class SettingsFragment extends Fragment {
 
     private void importData(Uri sourceUri) {
         Toast.makeText(requireContext(), "Importing data...", Toast.LENGTH_SHORT).show();
-        
+
         backupManager.importData(sourceUri, new DataBackupManager.BackupCallback() {
             @Override
             public void onSuccess(String message) {
