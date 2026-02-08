@@ -8,31 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [1.1.0] - 2026-02-08
-### Added
+### Added - Phase 1 Complete
 - **QuickTiles Home Screen Widget** - One-tap expense creation from home screen
-- **QuickTiles Management** - In-app fragment to create, edit, and delete quick tiles
-- **Recurring Expenses System** - Auto-generate expenses for subscriptions, rent, and regular bills
-- Supports daily, weekly, monthly, and yearly frequencies
-- WorkManager-based background processing for automatic expense generation
-- Recurring expenses management UI with toggle and delete
+- **Recurring Expenses System** - Auto-generate daily/weekly/monthly/yearly expenses
+- **Bill Reminders & Notifications** - WorkManager-based reminders with configurable lead time
+- **Photo Attachments** - Attach and store receipt photos with expenses
+- **Biometric Lock** - Fingerprint/face authentication with 5-minute timeout
 
 ### Technical
-- Added `widget/` package with widget provider, service, and factory
-- Added `quicktiles/` package with fragment, ViewModel, adapter, and editor dialog
-- Added `recurring/` package with fragment, ViewModel, adapter, and editor dialog
-- Added `work/` package with `RecurringExpenseWorker` and `WorkScheduler`
-- Added `RecurringExpense` entity to database (version 2)
-- Added WorkManager dependency
-- Updated `MainActivity` for widget intent handling
-- Updated `SpendWiseApplication` to schedule recurring work
+- Added `widget/`, `quicktiles/`, `recurring/`, `work/`, `notifications/`, `security/`, `util/` packages
+- Added `RecurringExpense` entity, `photoPath` field to `Expense` entity
+- Database version 3 with destructive migration
+- Added WorkManager, Biometric dependencies
+- Added FileProvider for photo storage
+- Added POST_NOTIFICATIONS permission
 
 ---
 
 ## [Unreleased]
-### Planned
-- Recurring Expenses System
-- Bill Reminders & Notifications
-- Photo Attachments for Expenses
+### Planned - Phase 2
+- Auto Transaction Reader (SMS + Notifications)
 - Biometric Lock (App Security)
 - Auto Transaction Reader (SMS + Notifications)
 

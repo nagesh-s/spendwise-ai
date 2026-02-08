@@ -31,4 +31,10 @@
     <string name="day_of_period">Day</string>
     <string name="save">Save</string>
     <string name="delete">Delete</string>
+
+    <!-- Biometric Lock -->
+    <string name="unlock_to_continue">Unlock to continue</string>
+    <string name="unlock">Unlock</string>
+    <string name="biometric_lock">Biometric Lock</string>
+    <string name="biometric_lock_summary">Require fingerprint or face to open app</string>
 </resources>

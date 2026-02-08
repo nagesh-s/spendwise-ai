@@ -14,28 +14,14 @@ import androidx.room.PrimaryKey;
  * a date (stored as epoch day for efficient date-based queries),
  * an optional description, and links to a category and optionally a merchant.
  */
-@Entity(
-    tableName = "expenses",
-    foreignKeys = {
-        @ForeignKey(
-            entity = Category.class,
-            parentColumns = "id",
-            childColumns = "categoryId",
-            onDelete = ForeignKey.RESTRICT
-        ),
-        @ForeignKey(
-            entity = Merchant.class,
-            parentColumns = "id",
-            childColumns = "merchantId",
-            onDelete = ForeignKey.SET_NULL
-        )
-    },
-    indices = {
+@Entity(tableName = "expenses", foreignKeys = {
+        @ForeignKey(entity = Category.class, parentColumns = "id", childColumns = "categoryId", onDelete = ForeignKey.RESTRICT),
+        @ForeignKey(entity = Merchant.class, parentColumns = "id", childColumns = "merchantId", onDelete = ForeignKey.SET_NULL)
+}, indices = {
         @Index(value = "dateEpochDay"),
         @Index(value = "categoryId"),
         @Index(value = "merchantId")
-    }
-)
+})
 public class Expense {
 
     @PrimaryKey(autoGenerate = true)
@@ -61,9 +47,16 @@ public class Expense {
     @Nullable
     private Long merchantId;
 
+    /**
+     * Path to attached photo/receipt image.
+     * Stored as relative path within app's private storage.
+     */
+    @Nullable
+    private String photoPath;
+
     // Constructor
     public Expense(long dateEpochDay, long amountCents, @Nullable String description,
-                   long categoryId, @Nullable Long merchantId) {
+            long categoryId, @Nullable Long merchantId) {
         this.dateEpochDay = dateEpochDay;
         this.amountCents = amountCents;
         this.description = description;
@@ -120,5 +113,14 @@ public class Expense {
 
     public void setMerchantId(@Nullable Long merchantId) {
         this.merchantId = merchantId;
+    }
+
+    @Nullable
+    public String getPhotoPath() {
+        return photoPath;
+    }
+
+    public void setPhotoPath(@Nullable String photoPath) {
+        this.photoPath = photoPath;
     }
 }

@@ -2,6 +2,7 @@ package com.spendwise.ai;
 
 import android.app.Application;
 import com.jakewharton.threetenabp.AndroidThreeTen;
+import com.spendwise.ai.notifications.NotificationHelper;
 import com.spendwise.ai.work.WorkScheduler;
 
 public class SpendWiseApplication extends Application {
@@ -10,13 +11,20 @@ public class SpendWiseApplication extends Application {
         super.onCreate();
         AndroidThreeTen.init(this);
 
+        // Create notification channels
+        NotificationHelper.createNotificationChannels(this);
+
         // Apply saved dark mode preference on app startup
         com.spendwise.ai.settings.SettingsViewModel.applySavedDarkMode(this);
 
         // Schedule recurring expense processing
         WorkScheduler.scheduleRecurringExpenseWork(this);
 
-        // Also run immediately to catch up on any missed expenses
+        // Schedule reminder notifications
+        WorkScheduler.scheduleReminderWork(this);
+
+        // Run immediately to catch up on any missed work
         WorkScheduler.runRecurringExpenseWorkNow(this);
+        WorkScheduler.runReminderWorkNow(this);
     }
 }

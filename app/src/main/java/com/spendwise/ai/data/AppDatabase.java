@@ -40,7 +40,7 @@ import java.util.concurrent.Executors;
         Budget.class,
         QuickTile.class,
         RecurringExpense.class
-}, version = 2, exportSchema = true)
+}, version = 3, exportSchema = true)
 public abstract class AppDatabase extends RoomDatabase {
 
     private static final String DATABASE_NAME = "spendwise_db";
