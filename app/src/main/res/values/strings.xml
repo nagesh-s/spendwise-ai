@@ -9,6 +9,10 @@
     <string name="today">Today</string>
     <string name="avg_per_day">Avg / Day</string>
     <string name="projected_total">Projected Total</string>
+    <string name="add_expense">Add Expense</string>
+    <string name="date">Date</string>
+    <string name="merchant">Merchant</string>
+    <string name="description_optional">Description (optional)</string>
     <string name="budget_health_title">Budget Health</string>
     <string name="month_budget_summary">Month Budget Summary</string>
     <string name="copy_previous_month_budgets">Copy Previous Month Budgets</string>
@@ -31,12 +35,16 @@
     <string name="no_quick_tiles">No quick tiles yet.\nTap + to add one.</string>
     <string name="quick_tiles">Quick Tiles</string>
     <string name="quick_tiles_subtitle">Build one-tap presets for your most frequent expenses</string>
+    <string name="quick_tiles_hint">Tap tile to add expense. Long-press to edit or delete.</string>
     <string name="manage_quick_tiles">Manage Quick Tiles</string>
     <string name="tile_label">Label</string>
     <string name="tile_amount">Amount</string>
     <string name="save_tile">Save Tile</string>
     <string name="delete_tile">Delete Tile</string>
+    <string name="edit_tile">Edit Tile</string>
+    <string name="delete_tile_confirm">Delete "%1$s"?</string>
     <string name="expense_added">Expense added!</string>
+    <string name="expense_added_from_tile">%1$s added: %2$s</string>
 
     <!-- Recurring Expenses -->
     <string name="recurring_expenses">Recurring Expenses</string>
@@ -49,13 +57,19 @@
     <string name="frequency">Frequency</string>
     <string name="day_of_period">Day</string>
     <string name="save">Save</string>
+    <string name="cancel">Cancel</string>
     <string name="delete">Delete</string>
+    <string name="set_budget">Set Budget</string>
+    <string name="edit_budget">Edit Budget</string>
+    <string name="budget_spent_of_limit">%1$s of %2$s</string>
 
     <!-- Biometric Lock -->
     <string name="unlock_to_continue">Unlock to continue</string>
     <string name="unlock">Unlock</string>
     <string name="biometric_lock">Biometric Lock</string>
     <string name="biometric_lock_summary">Require fingerprint or face to open app</string>
+    <string name="biometric_not_supported">Biometric authentication is not supported on this device</string>
+    <string name="biometric_setup_required">Set up fingerprint/face lock in device settings first</string>
 
     <plurals name="over_budget_categories_count">
         <item quantity="one">%d category over budget</item>

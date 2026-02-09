@@ -6,6 +6,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -110,27 +111,53 @@ public class SettingsFragment extends Fragment {
     }
 
     private void setupBiometricToggle() {
-        // Check if biometric is available
-        boolean available = com.spendwise.ai.security.BiometricHelper.isBiometricAvailable(requireContext());
-        binding.cardBiometric.setEnabled(available);
-        binding.switchBiometric.setEnabled(available);
-
-        if (!available) {
-            binding.switchBiometric.setChecked(false);
-            return;
-        }
+        boolean capability = com.spendwise.ai.security.BiometricHelper.hasBiometricCapability(requireContext());
+        binding.cardBiometric.setEnabled(true);
+        binding.switchBiometric.setEnabled(capability);
 
         // Set initial state
         boolean enabled = com.spendwise.ai.security.BiometricHelper.isBiometricEnabled(requireContext());
         binding.switchBiometric.setChecked(enabled);
 
+        if (!capability) {
+            binding.switchBiometric.setChecked(false);
+            com.spendwise.ai.security.BiometricHelper.setBiometricEnabled(requireContext(), false);
+            binding.cardBiometric.setOnClickListener(v -> Toast.makeText(
+                    requireContext(),
+                    getString(com.spendwise.ai.R.string.biometric_not_supported),
+                    Toast.LENGTH_LONG).show());
+            return;
+        }
+
+        binding.cardBiometric.setOnClickListener(v -> binding.switchBiometric.toggle());
         binding.switchBiometric.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (isChecked && !com.spendwise.ai.security.BiometricHelper.isBiometricAvailable(requireContext())) {
+                binding.switchBiometric.setChecked(false);
+                Toast.makeText(requireContext(),
+                        getString(com.spendwise.ai.R.string.biometric_setup_required),
+                        Toast.LENGTH_LONG).show();
+                openSecuritySettings();
+                return;
+            }
+
             com.spendwise.ai.security.BiometricHelper.setBiometricEnabled(requireContext(), isChecked);
             if (isChecked) {
                 android.widget.Toast.makeText(requireContext(),
                         "Biometric lock enabled", android.widget.Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void openSecuritySettings() {
+        Intent enrollIntent = new Intent(Settings.ACTION_BIOMETRIC_ENROLL);
+        enrollIntent.putExtra(Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
+                        | androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL);
+        try {
+            startActivity(enrollIntent);
+        } catch (Exception ignored) {
+            startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
+        }
     }
 
     private void setupDataButtons() {

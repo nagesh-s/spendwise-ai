@@ -111,11 +111,11 @@ public class CategoryBudgetAdapter extends RecyclerView.Adapter<CategoryBudgetAd
             if (budget != null && budget.getLimitCents() > 0) {
                 // Show budget progress
                 budgetLayout.setVisibility(View.VISIBLE);
-                setBudgetBtn.setText("Edit Budget");
+                setBudgetBtn.setText(R.string.edit_budget);
 
                 String spent = DateUtils.formatAmountCents(budget.getSpentCents());
                 String limit = DateUtils.formatAmountCents(budget.getLimitCents());
-                spentText.setText(spent + " of " + limit);
+                spentText.setText(itemView.getContext().getString(R.string.budget_spent_of_limit, spent, limit));
 
                 int percent = budget.getUsagePercent();
                 percentText.setText(percent + "%");
@@ -132,7 +132,7 @@ public class CategoryBudgetAdapter extends RecyclerView.Adapter<CategoryBudgetAd
             } else {
                 // No budget set
                 budgetLayout.setVisibility(View.GONE);
-                setBudgetBtn.setText("Set Budget");
+                setBudgetBtn.setText(R.string.set_budget);
             }
 
             setBudgetBtn.setOnClickListener(v -> {

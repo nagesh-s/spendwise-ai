@@ -4,7 +4,7 @@
 
 ---
 
-## 📌 Status: ✅ IMPLEMENTED + FIXED (v1.1.1)
+## 📌 Status: ✅ IMPLEMENTED + FIXED (v1.1.2)
 
 ---
 
@@ -14,6 +14,7 @@ Expense Editor supports:
 - Add new expense for selected date
 - Edit existing expense (with reliable prefill)
 - Amount, description, category, merchant, and date fields
+- Scroll-safe layout for compact screens (prevents field clipping)
 - Smart category suggestion from description keywords
 - Merchant autocomplete from local history
 
@@ -44,6 +45,11 @@ Expense Editor supports:
 3. Insert or update `Expense`.
 4. Signal `saveComplete` and dismiss dialog.
 
+### Date Field Readability (v1.1.2)
+- Date display format uses compact form (`dd MMM yyyy`) for safer rendering.
+- Date and merchant inputs are stacked vertically to avoid horizontal truncation.
+- Dialog content is wrapped in a scroll container for smaller devices and text-scale scenarios.
+
 ---
 
 ## 📁 Files
@@ -64,10 +70,11 @@ Expense Editor supports:
 |-------|-------|----------|
 | Edit dialog shows blank fields | Edit prefill not observed | Verify `getEditingExpense()` observer |
 | Merchant not prefilled | Merchant map not loaded yet | Check pending merchant selection logic |
+| Date text appears clipped in modal | Tight horizontal row / long text | Verify stacked date+merchant layout and compact date format |
 | Wrong suggestion category | Keyword mapping mismatch | Verify seeded category name constants |
 | Save fails validation | Missing amount/category | Check `validate()` errors in ViewModel |
 
 ---
 
 ## 📅 Last Updated
-2026-02-08 - v1.1.1 fixed edit prefill and category mapping alignment
+2026-02-08 - v1.1.2 date-field readability and modal layout resilience documented

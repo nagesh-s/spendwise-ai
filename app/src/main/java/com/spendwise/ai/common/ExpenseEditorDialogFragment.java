@@ -48,7 +48,7 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
     private Long pendingMerchantId;
     private boolean editFieldsInitialized = false;
 
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("EEE, MMM d, yyyy");
+    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd MMM yyyy");
 
     /**
      * Create new instance for adding expense on a specific date.

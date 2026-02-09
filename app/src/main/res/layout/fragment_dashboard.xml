@@ -184,7 +184,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:textAppearance="?attr/textAppearanceTitleLarge"
-                            android:textColor="@color/sw_expense"
+                            android:textColor="?attr/colorPrimary"
                             android:textStyle="bold"
                             tools:text="₹450" />
 
@@ -221,7 +221,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="4dp"
                             android:textAppearance="?attr/textAppearanceTitleLarge"
-                            android:textColor="@color/sw_expense"
+                            android:textColor="?attr/colorPrimary"
                             android:textStyle="bold"
                             tools:text="₹2,840" />
 

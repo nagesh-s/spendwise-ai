@@ -37,6 +37,7 @@
 | `Unable to locate a Java Runtime` | Java not in PATH | Build in Android Studio or set JAVA_HOME |
 | Cannot resolve JitPack dependency | Missing repository | Add `maven { url 'https://jitpack.io' }` to settings.gradle |
 | `attr/mcv_*` not found | Invalid theme attributes | Remove `mcv_*` items from themes.xml |
+| `attribute itemActiveIndicatorColor not found` | Material component version lacks this attribute | Use `app:itemBackground` state selector instead of active indicator attr |
 
 ---
 
@@ -57,6 +58,13 @@
 | "Enter valid amount" error | Amount validation | `ExpenseEditorViewModel.validate()` |
 | "Select category" error | Category selected? | Check dropdown selection |
 | Silent failure | DB write failing | Check Logcat for Room errors |
+
+### Quick Tiles Not Adding Expenses
+
+| Symptom | Check | File |
+|---------|-------|------|
+| Tile tap only opens edit flow | Tile click handler target | `QuickTilesFragment.onTileClick()` |
+| Widget tile tap does nothing | Intent extras/action handling | `MainActivity.handleWidgetIntent()` + `QuickTilesWidgetProvider` |
 
 ### Budget Progress Wrong
 
@@ -84,6 +92,14 @@
 |-------|------|----------|
 | Using light colors in dark | `values-night/themes.xml` | Use `md_theme_dark_*` colors |
 | Progress bar wrong color | `CategoryBudgetAdapter.java` | Check indicator color logic |
+| Dark UI looks red/harsh | `values-night/colors.xml` | Rebalance secondary/container colors to brand teal range |
+
+### Security Toggle Issues
+
+| Symptom | Cause | Solution |
+|---------|-------|----------|
+| Biometric switch appears disabled | Enrollment missing or no capability | Use enrollment flow (`Settings.ACTION_BIOMETRIC_ENROLL`) and capability checks |
+| Biometric toggle cannot be turned on | `isBiometricAvailable()` too strict for unenrolled devices | Use `hasBiometricCapability()` for UI enablement and gate actual enable on availability |
 
 ---
 
@@ -133,4 +149,4 @@ For ANY issue:
 ---
 
 ## 📅 Last Updated
-2026-01-23 - v1.0.0 with comprehensive issues
+2026-02-08 - v1.1.2 with biometric, quick-tile, and Material attr compatibility issues

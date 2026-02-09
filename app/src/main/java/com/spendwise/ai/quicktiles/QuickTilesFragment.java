@@ -12,9 +12,16 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.spendwise.ai.R;
+import com.spendwise.ai.data.AppDatabase;
+import com.spendwise.ai.data.entity.Expense;
 import com.spendwise.ai.data.entity.QuickTile;
+import com.spendwise.ai.util.DateUtils;
+import com.spendwise.ai.widget.QuickTilesWidgetProvider;
+
+import org.threeten.bp.LocalDate;
 
 /**
  * Fragment for managing QuickTiles.
@@ -69,20 +76,55 @@ public class QuickTilesFragment extends Fragment implements QuickTileAdapter.OnT
 
     @Override
     public void onTileClick(QuickTile tile) {
-        showTileEditor(tile);
+        addExpenseFromTile(tile);
     }
 
     @Override
     public void onTileLongClick(QuickTile tile) {
-        // Show delete confirmation
-        new androidx.appcompat.app.AlertDialog.Builder(requireContext())
+        new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(tile.getLabel())
+                .setItems(new String[] { getString(R.string.edit_tile), getString(R.string.delete_tile) },
+                        (dialog, which) -> {
+                            if (which == 0) {
+                                showTileEditor(tile);
+                            } else {
+                                confirmDelete(tile);
+                            }
+                        })
+                .show();
+    }
+
+    private void confirmDelete(QuickTile tile) {
+        new MaterialAlertDialogBuilder(requireContext())
                 .setTitle(R.string.delete_tile)
-                .setMessage("Delete \"" + tile.getLabel() + "\"?")
-                .setPositiveButton(android.R.string.ok, (dialog, which) -> {
-                    viewModel.deleteTile(tile);
-                })
+                .setMessage(getString(R.string.delete_tile_confirm, tile.getLabel()))
+                .setPositiveButton(android.R.string.ok, (dialog, which) -> viewModel.deleteTile(tile))
                 .setNegativeButton(android.R.string.cancel, null)
                 .show();
+    }
+
+    private void addExpenseFromTile(QuickTile tile) {
+        android.content.Context appContext = requireContext().getApplicationContext();
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            Expense expense = new Expense(
+                    LocalDate.now().toEpochDay(),
+                    tile.getAmountCents(),
+                    tile.getLabel(),
+                    tile.getCategoryId(),
+                    tile.getMerchantId());
+            AppDatabase.getInstance(appContext).expenseDao().insert(expense);
+            QuickTilesWidgetProvider.requestUpdate(appContext);
+
+            if (isAdded()) {
+                requireActivity().runOnUiThread(() -> android.widget.Toast.makeText(
+                        requireContext(),
+                        getString(
+                                R.string.expense_added_from_tile,
+                                tile.getLabel(),
+                                DateUtils.formatAmountCents(tile.getAmountCents())),
+                        android.widget.Toast.LENGTH_SHORT).show());
+            }
+        });
     }
 
     private void showTileEditor(@Nullable QuickTile existingTile) {

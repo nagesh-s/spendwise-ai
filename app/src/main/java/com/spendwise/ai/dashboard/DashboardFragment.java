@@ -103,10 +103,14 @@ public class DashboardFragment extends Fragment {
                 requireContext(),
                 com.google.android.material.R.attr.colorOnSurface,
                 Color.BLACK);
+        int textSecondaryColor = com.google.android.material.color.MaterialColors.getColor(
+                requireContext(),
+                com.google.android.material.R.attr.colorOnSurfaceVariant,
+                Color.DKGRAY);
 
         // Configure Pie Chart
         PieChart pieChart = binding.pieChartCategories;
-        pieChart.setUsePercentValues(true);
+        pieChart.setUsePercentValues(false);
         pieChart.getDescription().setEnabled(false);
         pieChart.setDrawHoleEnabled(true);
         pieChart.setHoleColor(Color.TRANSPARENT);
@@ -116,8 +120,11 @@ public class DashboardFragment extends Fragment {
         pieChart.setRotationAngle(0f);
         pieChart.setRotationEnabled(true);
         pieChart.setHighlightPerTapEnabled(true);
-        pieChart.setEntryLabelTextSize(12f);
-        pieChart.setEntryLabelColor(Color.WHITE);
+        pieChart.setDrawEntryLabels(false);
+        pieChart.setEntryLabelTextSize(11f);
+        pieChart.setEntryLabelColor(textSecondaryColor);
+        pieChart.setMinAngleForSlices(12f);
+        pieChart.setExtraBottomOffset(8f);
 
         Legend pieLegend = pieChart.getLegend();
         pieLegend.setEnabled(true);
@@ -127,6 +134,7 @@ public class DashboardFragment extends Fragment {
         pieLegend.setDrawInside(false);
         pieLegend.setWordWrapEnabled(true);
         pieLegend.setTextColor(textColor);
+        pieLegend.setTextSize(11f);
 
         // Configure Bar Chart
         HorizontalBarChart barChart = binding.barChartBudgets;
@@ -238,18 +246,15 @@ public class DashboardFragment extends Fragment {
             colors.add(category.getColorArgb());
         }
 
-        PieDataSet dataSet = new PieDataSet(entries, "Categories");
+        PieDataSet dataSet = new PieDataSet(entries, getString(com.spendwise.ai.R.string.category));
         dataSet.setColors(colors);
-        dataSet.setSliceSpace(2f);
-        dataSet.setValueLinePart1OffsetPercentage(80f);
-        dataSet.setValueLinePart1Length(0.3f);
-        dataSet.setValueLinePart2Length(0.4f);
-        dataSet.setYValuePosition(PieDataSet.ValuePosition.OUTSIDE_SLICE);
+        dataSet.setSliceSpace(3f);
+        dataSet.setSelectionShift(6f);
         dataSet.setValueTextSize(10f);
-        dataSet.setValueTextColor(Color.BLACK);
+        dataSet.setValueTextColor(Color.TRANSPARENT);
 
         PieData data = new PieData(dataSet);
-        data.setValueFormatter(new PercentFormatter(binding.pieChartCategories));
+        data.setDrawValues(false);
 
         binding.pieChartCategories.setData(data);
         binding.pieChartCategories.animateY(1000, Easing.EaseInOutQuad);

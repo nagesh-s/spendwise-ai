@@ -1,8 +1,12 @@
 - Dark mode: support system default + manual toggle and verify all cards/charts have contrast parity.
+- Dark theme palette: avoid alert-like red secondary tones for default controls; prefer calm trust-forward teal surfaces.
 - Navigation: keep primary tabs discoverable with stateful icon/text tint and labeled bottom navigation.
+- Navigation compatibility: use stateful item backgrounds for selected tabs when Material active-indicator attributes are unavailable.
 - Information hierarchy: place high-value financial insights (budget health, pace, summary metrics) above exploratory charts.
 - Actionability: every empty state should include a clear next step (e.g., add expense, create tile, set budget).
 - Budget UX: show category-level progress and month-level aggregate health in the same screen.
 - Calendar UX: provide quick return-to-today and keep day total visible near selected date.
 - Lists: use MaterialCardView with consistent spacing, rounded surfaces, and readable amount emphasis.
+- Forms: keep add/edit dialogs scroll-safe and avoid tight horizontal input rows for date/merchant fields.
+- Quick actions: single-tap quick tiles must perform immediate add; reserve long-press for management actions.
 - Charts: avoid label crowding, use legends when needed, and pair charts with textual summaries for quick scanning.

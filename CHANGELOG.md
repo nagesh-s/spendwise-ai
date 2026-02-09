@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.1.2] - 2026-02-08
+### Added
+- Quick Tiles usage hint text: tap to add expense, long-press to edit/delete
+- Version-compatible bottom navigation checked-state background drawables
+
+### Changed
+- Rebalanced dark theme palette to teal-forward surfaces for calmer finance UX
+- Unified card styling (surface container + outline) across categories, merchants, quick tiles, and recurring lists
+- Switched budget action buttons (`Set Budget`, `Copy Previous Month Budgets`) to outlined style for better visual hierarchy
+- Updated dashboard spend-highlight amounts (Today/This Week) to primary brand color for consistent emphasis
+- Pie chart presentation now favors legend readability over crowded in-chart labels
+- Add Expense dialog layout is now scrollable with stacked Date and Merchant fields
+
+### Fixed
+- Quick Tile tap now immediately inserts an expense and refreshes widget state
+- Biometric lock toggle is no longer hard-disabled when enrollment is missing; users are guided to system setup
+- Added biometric permissions to manifest for broader device compatibility
+- Add Expense date text clipping in modal resolved (shorter format + single-line ellipsize)
+- Replaced unsupported `BottomNavigationView` attribute to fix resource linking on older Material component versions
+
+### Technical
+- Build verified with `./gradlew :app:assembleDebug`
+
+---
+
 ## [1.1.1] - 2026-02-08
 ### Added
 - **Dashboard Budget Health Card** - usage, remaining/overshoot, and over-budget category count
@@ -136,3 +161,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | 1.0.0 | TBD | First production release |
 | 1.1.0 | 2026-02-08 | QuickTiles, recurring expenses, reminders, biometric lock |
 | 1.1.1 | 2026-02-08 | UX refinement + dashboard/category/merchant insights + edit-flow fixes |
+| 1.1.2 | 2026-02-08 | UX polish + quick-tile action fix + biometric/setup + modal layout fixes |

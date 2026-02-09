@@ -35,10 +35,10 @@
     <color name="md_theme_primaryContainer">#B2DFDB</color>
     <color name="md_theme_onPrimaryContainer">#00251A</color>
     
-    <color name="md_theme_secondary">#FF6F61</color>
+    <color name="md_theme_secondary">#146C63</color>
     <color name="md_theme_onSecondary">#FFFFFF</color>
-    <color name="md_theme_secondaryContainer">#FFE4E1</color>
-    <color name="md_theme_onSecondaryContainer">#3B0000</color>
+    <color name="md_theme_secondaryContainer">#BDECE5</color>
+    <color name="md_theme_onSecondaryContainer">#00201C</color>
     
     <color name="md_theme_tertiary">#1A237E</color>
     <color name="md_theme_onTertiary">#FFFFFF</color>
@@ -58,11 +58,16 @@
     <color name="md_theme_onSurfaceVariant">#49454F</color>
     <color name="md_theme_outline">#79747E</color>
     <color name="md_theme_outlineVariant">#B2DFDB</color>
-    
+    <color name="md_theme_surfaceContainer">#F4F7F7</color>
+    <color name="md_theme_surfaceContainerHigh">#EDF2F2</color>
+
     <!-- Card & Surface -->
     <color name="card_background">#FFFFFF</color>
     <color name="card_elevated">#FFFFFF</color>
     <color name="surface_dim">#F5F5F5</color>
+    <color name="nav_item_checked">#0A7B6F</color>
+    <color name="nav_item_unchecked">#66757A</color>
+    <color name="nav_active_indicator">#D6EEEA</color>
     
     <!-- Legacy colors for compatibility -->
     <color name="black">#FF000000</color>

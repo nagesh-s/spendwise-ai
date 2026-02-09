@@ -4,7 +4,7 @@
 
 ---
 
-## 📌 Status: ✅ IMPLEMENTED + ENHANCED (v1.1.1)
+## 📌 Status: ✅ IMPLEMENTED + ENHANCED (v1.1.2)
 
 ---
 
@@ -17,6 +17,7 @@ Categories screen lets users:
 - See month-level budget summary (aggregate usage + over-budget count)
 - Copy previous month budgets into current month
 - Navigate budget month
+- Use lower-emphasis outlined budget action buttons for cleaner hierarchy
 
 ---
 
@@ -68,4 +69,4 @@ Categories screen lets users:
 ---
 
 ## 📅 Last Updated
-2026-02-08 - v1.1.1 month summary and budget copy action documented
+2026-02-08 - v1.1.2 budget action hierarchy styling documented

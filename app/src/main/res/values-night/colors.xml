@@ -19,10 +19,10 @@
     <color name="md_theme_primaryContainer">#004D40</color>
     <color name="md_theme_onPrimaryContainer">#B2DFDB</color>
     
-    <color name="md_theme_secondary">#FF8A80</color>
-    <color name="md_theme_onSecondary">#3B0000</color>
-    <color name="md_theme_secondaryContainer">#5C0000</color>
-    <color name="md_theme_onSecondaryContainer">#FFE4E1</color>
+    <color name="md_theme_secondary">#5CCFC3</color>
+    <color name="md_theme_onSecondary">#003731</color>
+    <color name="md_theme_secondaryContainer">#0F4D46</color>
+    <color name="md_theme_onSecondaryContainer">#BDECE5</color>
     
     <color name="md_theme_tertiary">#9FA8DA</color>
     <color name="md_theme_onTertiary">#000051</color>
@@ -42,9 +42,14 @@
     <color name="md_theme_onSurfaceVariant">#CAC4D0</color>
     <color name="md_theme_outline">#938F99</color>
     <color name="md_theme_outlineVariant">#37474F</color>
+    <color name="md_theme_surfaceContainer">#1B2728</color>
+    <color name="md_theme_surfaceContainerHigh">#243133</color>
     
     <!-- Card & Surface -->
     <color name="card_background">#1E1E1E</color>
     <color name="card_elevated">#2D2D2D</color>
     <color name="surface_dim">#0D0D0D</color>
+    <color name="nav_item_checked">#5CCFC3</color>
+    <color name="nav_item_unchecked">#9AA5AA</color>
+    <color name="nav_active_indicator">#123B37</color>
 </resources>

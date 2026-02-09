@@ -85,7 +85,7 @@ public class QuickTileEditorDialog extends DialogFragment {
         });
 
         long tileId = getArguments() != null ? getArguments().getLong(ARG_TILE_ID, -1) : -1;
-        String title = tileId == -1 ? getString(R.string.add_quick_tile) : "Edit Quick Tile";
+        String title = tileId == -1 ? getString(R.string.add_quick_tile) : getString(R.string.edit_tile);
 
         return new AlertDialog.Builder(requireContext())
                 .setTitle(title)

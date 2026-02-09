@@ -20,15 +20,17 @@ public class BiometricHelper {
     private static final String KEY_BIOMETRIC_ENABLED = "biometric_enabled";
     private static final String KEY_LAST_UNLOCK_TIME = "last_unlock_time";
     private static final long LOCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+    private static final int AUTHENTICATORS =
+            BiometricManager.Authenticators.BIOMETRIC_WEAK |
+                    BiometricManager.Authenticators.BIOMETRIC_STRONG |
+                    BiometricManager.Authenticators.DEVICE_CREDENTIAL;
 
     /**
      * Check if biometric hardware is available.
      */
     public static boolean isBiometricAvailable(Context context) {
         BiometricManager biometricManager = BiometricManager.from(context);
-        int result = biometricManager.canAuthenticate(
-                BiometricManager.Authenticators.BIOMETRIC_STRONG |
-                        BiometricManager.Authenticators.BIOMETRIC_WEAK);
+        int result = biometricManager.canAuthenticate(AUTHENTICATORS);
         return result == BiometricManager.BIOMETRIC_SUCCESS;
     }
 
@@ -37,9 +39,7 @@ public class BiometricHelper {
      */
     public static boolean hasBiometricCapability(Context context) {
         BiometricManager biometricManager = BiometricManager.from(context);
-        int result = biometricManager.canAuthenticate(
-                BiometricManager.Authenticators.BIOMETRIC_STRONG |
-                        BiometricManager.Authenticators.BIOMETRIC_WEAK);
+        int result = biometricManager.canAuthenticate(AUTHENTICATORS);
         return result == BiometricManager.BIOMETRIC_SUCCESS ||
                 result == BiometricManager.BIOMETRIC_ERROR_NONE_ENROLLED;
     }
@@ -105,10 +105,7 @@ public class BiometricHelper {
         BiometricPrompt.PromptInfo promptInfo = new BiometricPrompt.PromptInfo.Builder()
                 .setTitle("Unlock SpendWise")
                 .setSubtitle("Authenticate to access your expenses")
-                .setNegativeButtonText("Cancel")
-                .setAllowedAuthenticators(
-                        BiometricManager.Authenticators.BIOMETRIC_STRONG |
-                                BiometricManager.Authenticators.BIOMETRIC_WEAK)
+                .setAllowedAuthenticators(AUTHENTICATORS)
                 .build();
 
         BiometricPrompt biometricPrompt = new BiometricPrompt(activity, executor,

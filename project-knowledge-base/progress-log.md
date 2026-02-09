@@ -4,17 +4,30 @@
 
 ---
 
-## 🎯 Current State: ✅ ENHANCED (v1.1.1)
+## 🎯 Current State: ✅ ENHANCED (v1.1.2)
 
 | Metric | Value |
 |--------|-------|
-| **Version** | v1.1.1 |
-| **Status** | Feature-complete baseline + UX refinement pass |
+| **Version** | v1.1.2 |
+| **Status** | Feature-complete baseline + UX refinement + usability bug-fix pass |
 | **Last Updated** | 2026-02-08 |
 
 ---
 
-## ✅ Latest Completed Work (v1.1.1)
+## ✅ Latest Completed Work (v1.1.2)
+
+### Usability & Reliability Fixes
+- ✅ Quick Tiles now add expenses on tap (long-press opens edit/delete actions).
+- ✅ Biometric lock toggle now handles non-enrolled devices by guiding users to system security settings.
+- ✅ Added biometric manifest permissions for better device compatibility.
+- ✅ Add Expense modal date field clipping fixed via compact date format and stacked/scrollable form layout.
+- ✅ Bottom navigation active-state styling switched to backward-compatible resources to avoid resource-linking failures.
+
+### UI/UX Polish
+- ✅ Dark mode palette rebalanced to remove aggressive red secondary tones.
+- ✅ Unified card treatment across key lists (surface container + outline).
+- ✅ Category budget action buttons changed to outlined style for clearer visual hierarchy.
+- ✅ Dashboard pie chart label overlap reduced by moving detail emphasis to legend.
 
 ### Reliability Fixes
 - ✅ Expense edit mode now pre-fills amount, date, category, description, and merchant.
@@ -46,6 +59,7 @@
 | v1.0.0 | Calendar decorators, polish | 2026-01-23 |
 | v1.1.0 | QuickTiles widget, recurring expenses, reminders, biometric lock | 2026-02-08 |
 | v1.1.1 | UX refinement + dashboard/category/merchant insights + edit-flow fixes | 2026-02-08 |
+| v1.1.2 | UX polish + quick tile, biometric, modal-date, nav compatibility fixes | 2026-02-08 |
 
 ---
 
@@ -59,4 +73,4 @@
 ---
 
 ## 📅 Last Updated
-2026-02-08 - v1.1.1 UX and reliability enhancement pass
+2026-02-08 - v1.1.2 usability and UI polish stabilization pass

@@ -4,7 +4,7 @@
 
 ---
 
-## 📌 Status: ✅ IMPLEMENTED + ENHANCED (v1.1.1)
+## 📌 Status: ✅ IMPLEMENTED + ENHANCED (v1.1.2)
 
 ---
 
@@ -40,6 +40,7 @@ Dashboard is the home analytics view. It shows:
 
 ### Charts
 - Pie chart: category distribution for selected month.
+- Pie chart labels are intentionally de-crowded (legend-first) to avoid overlap on small screens.
 - Horizontal bar chart: budget usage percentage with status colors.
 
 ---
@@ -63,10 +64,11 @@ Dashboard is the home analytics view. It shows:
 |-------|-------|----------|
 | Projected total looks high/low | Elapsed day logic | Check `DashboardFragment.updateSpendingPace()` |
 | Budget health empty | No budgets for selected month | Create budgets in Categories screen |
+| Pie chart labels overlap | Dense category slices | Keep labels hidden and rely on legend readability |
 | Chart not visible | Empty dataset | Verify month range and query result |
 | Wrong budget mapping | Category linkage issue | Confirm `BudgetWithSpend` includes `categoryId` |
 
 ---
 
 ## 📅 Last Updated
-2026-02-08 - v1.1.1 dashboard insights and budget health added
+2026-02-08 - v1.1.2 pie chart readability behavior documented

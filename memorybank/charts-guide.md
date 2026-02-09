@@ -1,6 +1,12 @@
-dependencies { implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0' }
-
-PieDataSet ds = new PieDataSet(entries, "By Category");
-ds.setColors(colors);
-pieChart.setData(new PieData(ds));
-pieChart.invalidate();
+- Library: `com.github.PhilJay:MPAndroidChart:v3.1.0`
+- Dashboard pie chart rules:
+  - Prefer legend-first readability on small screens.
+  - Avoid outside-slice value labels when category count is dense.
+  - Keep slice spacing modest and animation smooth (`EaseInOutQuad`).
+- Budget chart rules:
+  - Use horizontal bars for category labels with long names.
+  - Apply semantic thresholds: green (<80%), orange (80-99%), red (>=100%).
+- Theming:
+  - Pull chart text colors from theme attributes (`colorOnSurface`, `colorOnSurfaceVariant`) instead of hardcoded colors.
+- Empty states:
+  - Hide chart views when datasets are empty and show explicit guidance text.
