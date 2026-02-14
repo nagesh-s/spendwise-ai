@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.4.0] - 2026-02-14
+### Added
+- **Voice Input for Expenses** - Tap the mic on Dashboard to add expenses by speaking (e.g., "500 for lunch at cafe").
+- **Smart Parsing** - Automatically extracts amount, category, and merchant from speech.
+
+---
+
 ## [1.3.0] - 2026-02-14
 ### Added - Phase 3 (Partial)
 - **AI-Powered Insights** - Dashboard cards for spending spikes, budget alerts, streaks, and month comparisons (InsightsEngine, Insight entities)

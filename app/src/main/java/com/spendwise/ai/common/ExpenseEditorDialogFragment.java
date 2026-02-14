@@ -37,6 +37,10 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
 
     private static final String ARG_EXPENSE_ID = "expense_id";
     private static final String ARG_DATE_EPOCH_DAY = "date_epoch_day";
+    private static final String ARG_VOICE_AMOUNT = "voice_amount";
+    private static final String ARG_VOICE_MERCHANT = "voice_merchant";
+    private static final String ARG_VOICE_CATEGORY = "voice_category";
+    private static final String ARG_VOICE_DESC = "voice_desc";
 
     private FragmentExpenseEditorDialogBinding binding;
     private ExpenseEditorViewModel viewModel;
@@ -60,6 +64,23 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
             args.putLong(ARG_EXPENSE_ID, expenseId);
         }
         args.putLong(ARG_DATE_EPOCH_DAY, dateEpochDay);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    public static ExpenseEditorDialogFragment newInstanceForVoice(long dateEpochDay, long amount, String merchant,
+            String category, String desc) {
+        ExpenseEditorDialogFragment fragment = new ExpenseEditorDialogFragment();
+        Bundle args = new Bundle();
+        args.putLong(ARG_DATE_EPOCH_DAY, dateEpochDay);
+        if (amount > 0)
+            args.putLong(ARG_VOICE_AMOUNT, amount);
+        if (merchant != null)
+            args.putString(ARG_VOICE_MERCHANT, merchant);
+        if (category != null)
+            args.putString(ARG_VOICE_CATEGORY, category);
+        if (desc != null)
+            args.putString(ARG_VOICE_DESC, desc);
         fragment.setArguments(args);
         return fragment;
     }
@@ -97,7 +118,18 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
                 binding.btnDelete.setVisibility(View.VISIBLE);
             } else {
                 long dateEpochDay = args.getLong(ARG_DATE_EPOCH_DAY, DateUtils.getTodayEpochDay());
-                viewModel.initForNewExpense(dateEpochDay);
+
+                if (args.containsKey(ARG_VOICE_AMOUNT) || args.containsKey(ARG_VOICE_MERCHANT)) {
+                    // Voice init
+                    long amount = args.getLong(ARG_VOICE_AMOUNT, 0);
+                    String merchant = args.getString(ARG_VOICE_MERCHANT);
+                    String category = args.getString(ARG_VOICE_CATEGORY);
+                    String desc = args.getString(ARG_VOICE_DESC);
+                    viewModel.initForVoiceExpense(dateEpochDay, amount, merchant, category, desc);
+                } else {
+                    // Normal new expense
+                    viewModel.initForNewExpense(dateEpochDay);
+                }
                 binding.textDialogTitle.setText("Add Expense");
                 binding.btnDelete.setVisibility(View.GONE);
             }
@@ -309,6 +341,8 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
                     categoryNameToId.put(category.getName(), category.getId());
                     categoryIdToName.put(category.getId(), category.getName());
                 }
+                // Notify VM to resolve pending voice category if any
+                viewModel.onCategoriesLoaded(categoryList);
             }
 
             ArrayAdapter<String> adapter = new ArrayAdapter<>(

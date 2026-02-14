@@ -98,13 +98,57 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
      */
     public void initForNewExpense(long dateEpochDay) {
         expenseId.setValue(null);
-        amountCents.setValue(0L);
-        description.setValue("");
+        selectedDate.setValue(LocalDate.ofEpochDay(dateEpochDay));
+        // Reset fields
+        amountCents.setValue(null);
+        description.setValue(null);
+        merchantName.setValue(null);
         selectedCategoryId.setValue(null);
-        merchantName.setValue("");
-        selectedDate.setValue(DateUtils.epochDayToDate(dateEpochDay));
+        selectedAccountId.setValue(null);
         editingExpense.setValue(null);
         clearErrors();
+    }
+
+    /**
+     * Initialize for creating a new expense from voice input.
+     */
+    public void initForVoiceExpense(long dateEpochDay, long amount, String merchant, String category, String desc) {
+        initForNewExpense(dateEpochDay);
+        if (amount > 0)
+            amountCents.setValue(amount);
+        if (merchant != null)
+            merchantName.setValue(merchant);
+        if (desc != null)
+            description.setValue(desc);
+
+        if (category != null) {
+            // Try to resolve category immediately if list is loaded, or wait
+            List<Category> currentCats = allCategories.getValue();
+            if (currentCats != null) {
+                resolveCategory(currentCats, category);
+            } else {
+                // Will resolve when observed
+                pendingVoiceCategory = category;
+            }
+        }
+    }
+
+    private String pendingVoiceCategory;
+
+    public void onCategoriesLoaded(List<Category> categories) {
+        if (pendingVoiceCategory != null) {
+            resolveCategory(categories, pendingVoiceCategory);
+            pendingVoiceCategory = null;
+        }
+    }
+
+    private void resolveCategory(List<Category> categories, String name) {
+        for (Category cat : categories) {
+            if (cat.getName().equalsIgnoreCase(name)) {
+                selectedCategoryId.setValue(cat.getId());
+                return;
+            }
+        }
     }
 
     /**

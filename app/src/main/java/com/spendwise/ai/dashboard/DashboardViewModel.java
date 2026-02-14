@@ -29,6 +29,7 @@ public class DashboardViewModel extends AndroidViewModel {
 
     private final ExpenseRepository expenseRepository;
     private final BudgetRepository budgetRepository;
+    private final com.spendwise.ai.data.repository.CategoryRepository categoryRepository;
 
     // Current selected month
     private final MutableLiveData<YearMonth> currentMonth = new MutableLiveData<>();
@@ -50,6 +51,7 @@ public class DashboardViewModel extends AndroidViewModel {
         super(application);
         expenseRepository = new ExpenseRepository(application);
         budgetRepository = new BudgetRepository(application);
+        categoryRepository = new com.spendwise.ai.data.repository.CategoryRepository(application);
 
         // Initialize with current month
         currentMonth.setValue(YearMonth.now());
@@ -114,6 +116,10 @@ public class DashboardViewModel extends AndroidViewModel {
 
     public LiveData<List<Prediction>> getPredictions() {
         return predictions;
+    }
+
+    public LiveData<List<com.spendwise.ai.data.entity.Category>> getAllCategories() {
+        return categoryRepository.getAllCategories();
     }
 
     // ==================== Month Navigation ====================

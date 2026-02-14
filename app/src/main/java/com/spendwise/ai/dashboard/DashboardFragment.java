@@ -40,6 +40,13 @@ import org.threeten.bp.YearMonth;
 
 import java.util.ArrayList;
 import java.util.List;
+import android.Manifest;
+import android.widget.Toast;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
+import com.spendwise.ai.voice.VoiceExpenseParser;
+import com.spendwise.ai.voice.VoiceInputHelper;
+import com.spendwise.ai.common.ExpenseEditorDialogFragment;
 
 /**
  * Dashboard fragment showing monthly overview with charts and category
@@ -56,6 +63,20 @@ public class DashboardFragment extends Fragment {
     private long monthlyTotalCents = 0L;
     private List<BudgetWithSpend> latestBudgets = new ArrayList<>();
 
+    private VoiceInputHelper voiceInputHelper;
+    private final VoiceExpenseParser voiceParser = new VoiceExpenseParser();
+    private List<String> availableCategories = new ArrayList<>();
+
+    private final ActivityResultLauncher<String> requestPermissionLauncher = registerForActivityResult(
+            new ActivityResultContracts.RequestPermission(), isGranted -> {
+                if (isGranted) {
+                    startVoiceInput();
+                } else {
+                    Toast.makeText(getContext(), "Microphone permission needed for voice input", Toast.LENGTH_SHORT)
+                            .show();
+                }
+            });
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -71,6 +92,9 @@ public class DashboardFragment extends Fragment {
 
         viewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
 
+        voiceInputHelper = new VoiceInputHelper(requireContext());
+        setupVoiceListener();
+
         setupCharts();
         setupRecyclerView();
         setupInsights();
@@ -82,9 +106,17 @@ public class DashboardFragment extends Fragment {
 
     private void setupFab() {
         binding.fabAddExpense.setOnClickListener(v -> {
-            // Navigate to add expense dialog
-            androidx.navigation.Navigation.findNavController(v)
-                    .navigate(com.spendwise.ai.R.id.expenseEditorDialogFragment);
+            ExpenseEditorDialogFragment.newInstance(null, DateUtils.getTodayEpochDay())
+                    .show(getParentFragmentManager(), "add_expense");
+        });
+
+        binding.fabVoiceInput.setOnClickListener(v -> {
+            if (androidx.core.content.ContextCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.RECORD_AUDIO) == android.content.pm.PackageManager.PERMISSION_GRANTED) {
+                startVoiceInput();
+            } else {
+                requestPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO);
+            }
         });
 
         // Animate FAB entrance
@@ -103,6 +135,57 @@ public class DashboardFragment extends Fragment {
                 requireContext(), com.spendwise.ai.R.anim.card_slide_up);
         anim.setStartOffset(delay);
         card.startAnimation(anim);
+    }
+
+    @Override
+    public void onDestroyView() {
+        super.onDestroyView();
+        if (voiceInputHelper != null) {
+            voiceInputHelper.destroy();
+        }
+        binding = null;
+    }
+
+    private void setupVoiceListener() {
+        voiceInputHelper.setListener(new VoiceInputHelper.VoiceListener() {
+            @Override
+            public void onVoiceText(String text) {
+                processVoiceInput(text);
+            }
+
+            @Override
+            public void onVoiceError(String error) {
+                Toast.makeText(getContext(), "Voice Error: " + error, Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    private void startVoiceInput() {
+        Toast.makeText(getContext(), "Listening...", Toast.LENGTH_SHORT).show();
+        voiceInputHelper.startListening();
+    }
+
+    private void processVoiceInput(String text) {
+        // Parse the text
+        VoiceExpenseParser.ParsedExpense parsed = voiceParser.parse(text, availableCategories);
+
+        if (parsed.isValid()) {
+            ExpenseEditorDialogFragment.newInstanceForVoice(
+                    DateUtils.getTodayEpochDay(),
+                    parsed.amountCents,
+                    parsed.merchant,
+                    parsed.category,
+                    parsed.description).show(getParentFragmentManager(), "add_voice_expense");
+        } else {
+            Toast.makeText(getContext(), "Could not extract amount. Try saying '500 for Lunch'", Toast.LENGTH_LONG)
+                    .show();
+            ExpenseEditorDialogFragment.newInstanceForVoice(
+                    DateUtils.getTodayEpochDay(),
+                    0,
+                    null,
+                    null,
+                    text).show(getParentFragmentManager(), "add_voice_expense");
+        }
     }
 
     private void setupCharts() {
@@ -276,6 +359,16 @@ public class DashboardFragment extends Fragment {
                 binding.predictionsSection.setVisibility(View.VISIBLE);
             } else {
                 binding.predictionsSection.setVisibility(View.GONE);
+            }
+        });
+
+        // Observe categories for voice parser
+        viewModel.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
+            availableCategories.clear();
+            if (categories != null) {
+                for (com.spendwise.ai.data.entity.Category cat : categories) {
+                    availableCategories.add(cat.getName());
+                }
             }
         });
     }
@@ -462,9 +555,4 @@ public class DashboardFragment extends Fragment {
                 Color.GREEN);
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
-    }
 }
