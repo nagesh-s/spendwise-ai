@@ -72,4 +72,9 @@
     <!-- Legacy colors for compatibility -->
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+
+    <!-- AI Insight Card Colors -->
+    <color name="insight_info">#42A5F5</color>        <!-- Blue -->
+    <color name="insight_warning">#FFA726</color>      <!-- Orange -->
+    <color name="insight_positive">#66BB6A</color>     <!-- Green -->
 </resources>

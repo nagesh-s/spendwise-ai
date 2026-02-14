@@ -29,6 +29,10 @@ import com.github.mikephil.charting.formatter.PercentFormatter;
 import com.spendwise.ai.data.pojo.BudgetWithSpend;
 import com.spendwise.ai.data.pojo.CategoryTotal;
 import com.spendwise.ai.databinding.FragmentDashboardBinding;
+import com.spendwise.ai.insights.Insight;
+import com.spendwise.ai.insights.InsightsAdapter;
+import com.spendwise.ai.insights.Prediction;
+import com.spendwise.ai.insights.PredictionAdapter;
 import com.spendwise.ai.util.DateUtils;
 
 import org.threeten.bp.LocalDate;
@@ -46,6 +50,8 @@ public class DashboardFragment extends Fragment {
     private FragmentDashboardBinding binding;
     private DashboardViewModel viewModel;
     private CategoryTotalAdapter categoryAdapter;
+    private InsightsAdapter insightsAdapter;
+    private PredictionAdapter predictionAdapter;
     private YearMonth currentMonth = YearMonth.now();
     private long monthlyTotalCents = 0L;
     private List<BudgetWithSpend> latestBudgets = new ArrayList<>();
@@ -67,6 +73,8 @@ public class DashboardFragment extends Fragment {
 
         setupCharts();
         setupRecyclerView();
+        setupInsights();
+        setupPredictions();
         setupMonthNavigation();
         setupFab();
         observeData();
@@ -169,6 +177,47 @@ public class DashboardFragment extends Fragment {
         binding.recyclerTopCategories.setAdapter(categoryAdapter);
     }
 
+    private void setupInsights() {
+        insightsAdapter = new InsightsAdapter();
+        LinearLayoutManager layoutManager = new LinearLayoutManager(
+                requireContext(), LinearLayoutManager.HORIZONTAL, false);
+        binding.recyclerInsights.setLayoutManager(layoutManager);
+        binding.recyclerInsights.setAdapter(insightsAdapter);
+
+        insightsAdapter.setActionListener(new InsightsAdapter.OnInsightActionListener() {
+            @Override
+            public void onActionClicked(Insight insight) {
+                String action = insight.getActionLabel();
+                if (action == null)
+                    return;
+                View v = binding.getRoot();
+                if (action.equals("View Analytics")) {
+                    androidx.navigation.Navigation.findNavController(v)
+                            .navigate(com.spendwise.ai.R.id.navigation_analytics);
+                } else if (action.equals("View Goals")) {
+                    androidx.navigation.Navigation.findNavController(v)
+                            .navigate(com.spendwise.ai.R.id.navigation_goals);
+                }
+            }
+
+            @Override
+            public void onDismissed(Insight insight, int position) {
+                // Card already removed by adapter
+                if (insightsAdapter.getItemCount() == 0) {
+                    binding.insightsSection.setVisibility(View.GONE);
+                }
+            }
+        });
+    }
+
+    private void setupPredictions() {
+        predictionAdapter = new PredictionAdapter();
+        LinearLayoutManager layoutManager = new LinearLayoutManager(
+                requireContext(), LinearLayoutManager.HORIZONTAL, false);
+        binding.recyclerPredictions.setLayoutManager(layoutManager);
+        binding.recyclerPredictions.setAdapter(predictionAdapter);
+    }
+
     private void setupMonthNavigation() {
         binding.btnPrevMonth.setOnClickListener(v -> viewModel.goToPreviousMonth());
         binding.btnNextMonth.setOnClickListener(v -> viewModel.goToNextMonth());
@@ -208,6 +257,26 @@ public class DashboardFragment extends Fragment {
             latestBudgets = budgets != null ? budgets : new ArrayList<>();
             updateBudgetChart(budgets);
             updateBudgetHealth();
+        });
+
+        // Observe AI insights
+        viewModel.getInsights().observe(getViewLifecycleOwner(), insights -> {
+            if (insights != null && !insights.isEmpty()) {
+                insightsAdapter.setInsights(insights);
+                binding.insightsSection.setVisibility(View.VISIBLE);
+            } else {
+                binding.insightsSection.setVisibility(View.GONE);
+            }
+        });
+
+        // Observe Smart Predictions
+        viewModel.getPredictions().observe(getViewLifecycleOwner(), predictions -> {
+            if (predictions != null && !predictions.isEmpty()) {
+                predictionAdapter.setPredictions(predictions);
+                binding.predictionsSection.setVisibility(View.VISIBLE);
+            } else {
+                binding.predictionsSection.setVisibility(View.GONE);
+            }
         });
     }
 
@@ -365,7 +434,8 @@ public class DashboardFragment extends Fragment {
         long remaining = totalLimit - totalSpent;
         String remainingText = remaining >= 0
                 ? getString(com.spendwise.ai.R.string.remaining_budget_format, DateUtils.formatAmountCents(remaining))
-                : getString(com.spendwise.ai.R.string.over_budget_amount_format, DateUtils.formatAmountCents(Math.abs(remaining)));
+                : getString(com.spendwise.ai.R.string.over_budget_amount_format,
+                        DateUtils.formatAmountCents(Math.abs(remaining)));
         String overBudgetText = getResources().getQuantityString(
                 com.spendwise.ai.R.plurals.over_budget_categories_count,
                 overBudgetCount,

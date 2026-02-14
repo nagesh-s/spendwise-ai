@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.3.0] - 2026-02-14
+### Added - Phase 3 (Partial)
+- **AI-Powered Insights** - Dashboard cards for spending spikes, budget alerts, streaks, and month comparisons (InsightsEngine, Insight entities)
+- **Smart Predictions** - Month-end spending forecasts and budget risk alerts (PredictionEngine, Prediction entities)
+- **Dashboard Integration** - Horizontal scrollable insight and prediction cards integrated into the main dashboard
+
+### Technical
+- **InsightsEngine** - On-device SQL aggregation for generating insights
+- **PredictionEngine** - Daily run-rate extrapolation logic for forecasting
+- **New Pattern** - `Engine` classes for domain logic separation from ViewModels
+- **UI Entry Points** - Verified reachability via Dashboard
+
+---
+
 ## [1.2.2] - 2026-02-14
 ### Added
 - **Android CI Workflow** - New GitHub Actions gate for `assembleDebug`, `testDebugUnitTest`, and `assembleDebugAndroidTest`

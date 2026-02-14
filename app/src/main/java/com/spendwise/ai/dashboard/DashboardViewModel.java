@@ -12,6 +12,10 @@ import com.spendwise.ai.data.pojo.BudgetWithSpend;
 import com.spendwise.ai.data.pojo.CategoryTotal;
 import com.spendwise.ai.data.repository.BudgetRepository;
 import com.spendwise.ai.data.repository.ExpenseRepository;
+import com.spendwise.ai.insights.Insight;
+import com.spendwise.ai.insights.InsightsEngine;
+import com.spendwise.ai.insights.Prediction;
+import com.spendwise.ai.insights.PredictionEngine;
 import com.spendwise.ai.util.DateUtils;
 
 import org.threeten.bp.YearMonth;
@@ -37,6 +41,10 @@ public class DashboardViewModel extends AndroidViewModel {
     // Today and this week totals (always current)
     private final LiveData<Long> todayTotal;
     private final LiveData<Long> weekTotal;
+
+    // AI Insights & Predictions
+    private final MutableLiveData<List<Insight>> insights = new MutableLiveData<>();
+    private final MutableLiveData<List<Prediction>> predictions = new MutableLiveData<>();
 
     public DashboardViewModel(@NonNull Application application) {
         super(application);
@@ -78,6 +86,34 @@ public class DashboardViewModel extends AndroidViewModel {
         org.threeten.bp.LocalDate weekStart = now
                 .with(org.threeten.bp.temporal.TemporalAdjusters.previousOrSame(org.threeten.bp.DayOfWeek.MONDAY));
         weekTotal = expenseRepository.getTotalForRangeLive(weekStart.toEpochDay(), today);
+
+        // Generate AI insights and predictions on background thread
+        refreshInsights();
+    }
+
+    /**
+     * Regenerate AI insights and predictions from current data.
+     */
+    public void refreshInsights() {
+        com.spendwise.ai.data.AppDatabase.databaseWriteExecutor.execute(() -> {
+            // Insights
+            InsightsEngine insightsEngine = new InsightsEngine(getApplication());
+            List<Insight> generatedInsights = insightsEngine.generateInsights();
+            insights.postValue(generatedInsights);
+
+            // Predictions
+            PredictionEngine predictionEngine = new PredictionEngine(getApplication());
+            List<Prediction> generatedPredictions = predictionEngine.generatePredictions();
+            predictions.postValue(generatedPredictions);
+        });
+    }
+
+    public LiveData<List<Insight>> getInsights() {
+        return insights;
+    }
+
+    public LiveData<List<Prediction>> getPredictions() {
+        return predictions;
     }
 
     // ==================== Month Navigation ====================
