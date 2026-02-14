@@ -4,17 +4,30 @@
 
 ---
 
-## 🎯 Current State: ✅ Phase 2 COMPLETE (v1.2.0)
+## 🎯 Current State: ✅ Phase 2 COMPLETE + STABILIZED (v1.2.1)
 
 | Metric | Value |
 |--------|-------|
-| **Version** | v1.2.0 |
-| **Status** | Phase 2 complete — Tags, Accounts, Goals, Analytics, SMS Reader |
+| **Version** | v1.2.1 |
+| **Status** | Phase 2 complete + stabilization fixes on category creation and settings routing |
 | **Last Updated** | 2026-02-14 |
 
 ---
 
-## ✅ Latest Completed Work (v1.2.0 — Phase 2)
+## ✅ Latest Completed Work (v1.2.1 — Stabilization)
+
+### UI/Flow Fixes
+- ✅ Categories FAB now opens a working add-category dialog
+- ✅ Add-category validation added for empty and duplicate names
+- ✅ New categories get deterministic palette color assignment
+
+### Stability Follow-up
+- ✅ Expense save operations kept on background executor (main-thread safety)
+- ✅ Settings routing for newly added Phase 2 feature screens is wired
+
+---
+
+## ✅ Phase 2 Feature Delivery (v1.2.0)
 
 ### Tags & Custom Labels
 - ✅ Tag/ExpenseTag entities with many-to-many join table
@@ -64,6 +77,7 @@
 | v1.1.1 | UX refinement + dashboard/category/merchant insights + edit-flow fixes | 2026-02-08 |
 | v1.1.2 | UX polish + quick tile, biometric, modal-date, nav compatibility fixes | 2026-02-08 |
 | v1.2.0 | Phase 2: Tags, multi-account, goals, analytics, SMS reader | 2026-02-14 |
+| v1.2.1 | Stabilization: category add flow + settings wiring + cleanup | 2026-02-14 |
 
 ---
 
@@ -78,5 +92,4 @@
 ---
 
 ## 📅 Last Updated
-2026-02-14 - v1.2.0 Phase 2 complete
-
+2026-02-14 - v1.2.1 stabilization pass completed

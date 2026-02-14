@@ -15,6 +15,12 @@
     <string name="description_optional">Description (optional)</string>
     <string name="budget_health_title">Budget Health</string>
     <string name="month_budget_summary">Month Budget Summary</string>
+    <string name="add_category">Add Category</string>
+    <string name="category_name">Category Name</string>
+    <string name="add_category_hint">A color will be assigned automatically. You can set budget right after adding.</string>
+    <string name="error_category_name_required">Enter a category name</string>
+    <string name="error_category_exists">Category already exists</string>
+    <string name="category_added">%1$s added</string>
     <string name="copy_previous_month_budgets">Copy Previous Month Budgets</string>
     <string name="copy_previous_month_hint">Copied previous month budgets when current month is empty</string>
     <string name="no_budgets_set">No budgets set yet</string>

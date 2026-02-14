@@ -4,7 +4,7 @@
 
 ---
 
-## 📌 Status: ✅ IMPLEMENTED + ENHANCED (v1.1.2)
+## 📌 Status: ✅ IMPLEMENTED + ENHANCED (v1.2.1)
 
 ---
 
@@ -12,6 +12,7 @@
 
 Categories screen lets users:
 - View all categories
+- Add new custom categories from the FAB dialog
 - Set/edit/remove monthly budgets per category
 - See category-level progress bars (spent vs limit)
 - See month-level budget summary (aggregate usage + over-budget count)
@@ -27,6 +28,11 @@ Categories screen lets users:
 1. `CategoriesViewModel` exposes all categories and `budgetMonth`.
 2. `switchMap` on `budgetMonth` loads `getBudgetsWithSpend(monthKey, startDay, endDay)`.
 3. `CategoryBudgetAdapter` binds per-category progress.
+
+### Add Category Flow
+1. User taps categories FAB.
+2. Dialog validates category name (non-empty + no case-insensitive duplicates).
+3. `viewModel.addCategory(...)` inserts category with deterministic palette color.
 
 ### Month Summary
 - Fragment computes:
@@ -61,6 +67,8 @@ Categories screen lets users:
 
 | Issue | Cause | Solution |
 |-------|-------|----------|
+| FAB does nothing | Dialog flow not wired | Check `CategoriesFragment.setupFab()` |
+| Cannot add a category | Empty/duplicate name validation | Provide unique non-empty category name |
 | Summary card shows empty | No budgets for month | Add budget rows via Set Budget |
 | Copy action seems no-op | Current month already has budgets | Clear current month budgets first or edit existing |
 | Row progress on wrong category | Mapping mismatch | Ensure adapter maps by `categoryId` |
@@ -69,4 +77,4 @@ Categories screen lets users:
 ---
 
 ## 📅 Last Updated
-2026-02-08 - v1.1.2 budget action hierarchy styling documented
+2026-02-14 - v1.2.1 add-category FAB flow documented

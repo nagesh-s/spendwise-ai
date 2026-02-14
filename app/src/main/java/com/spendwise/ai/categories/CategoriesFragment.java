@@ -8,17 +8,23 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.color.MaterialColors;
 import com.spendwise.ai.R;
+import com.spendwise.ai.data.entity.Category;
 import com.spendwise.ai.data.pojo.BudgetWithSpend;
+import com.spendwise.ai.databinding.DialogAddCategoryBinding;
 import com.spendwise.ai.databinding.FragmentCategoriesBinding;
 import com.spendwise.ai.util.DateUtils;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Fragment for managing categories and viewing/setting budgets.
@@ -28,6 +34,7 @@ public class CategoriesFragment extends Fragment {
     private FragmentCategoriesBinding binding;
     private CategoriesViewModel viewModel;
     private CategoryBudgetAdapter adapter;
+    private List<Category> latestCategories = new ArrayList<>();
 
     @Nullable
     @Override
@@ -83,9 +90,7 @@ public class CategoriesFragment extends Fragment {
     }
 
     private void setupFab() {
-        binding.fabAddCategory.setOnClickListener(v -> {
-            // TODO: Show category editor dialog
-        });
+        binding.fabAddCategory.setOnClickListener(v -> showAddCategoryDialog());
     }
 
     private void setupBudgetActions() {
@@ -103,7 +108,8 @@ public class CategoriesFragment extends Fragment {
 
         // Observe categories
         viewModel.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
-            adapter.setCategories(categories);
+            latestCategories = categories != null ? new ArrayList<>(categories) : new ArrayList<>();
+            adapter.setCategories(latestCategories);
         });
 
         // Observe budgets with spend
@@ -156,6 +162,70 @@ public class CategoriesFragment extends Fragment {
             return MaterialColors.getColor(requireContext(), com.google.android.material.R.attr.colorSecondary, 0);
         }
         return MaterialColors.getColor(requireContext(), com.google.android.material.R.attr.colorPrimary, 0);
+    }
+
+    private void showAddCategoryDialog() {
+        DialogAddCategoryBinding dialogBinding = DialogAddCategoryBinding.inflate(getLayoutInflater());
+
+        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(requireContext())
+                .setTitle(R.string.add_category)
+                .setView(dialogBinding.getRoot())
+                .setNegativeButton(R.string.cancel, null)
+                .setPositiveButton(R.string.save, null)
+                .create();
+
+        dialog.setOnShowListener(d -> dialog.getButton(androidx.appcompat.app.AlertDialog.BUTTON_POSITIVE)
+                .setOnClickListener(v -> {
+                    String name = "";
+                    if (dialogBinding.editCategoryName.getText() != null) {
+                        name = dialogBinding.editCategoryName.getText().toString().trim();
+                    }
+
+                    if (name.isEmpty()) {
+                        dialogBinding.layoutCategoryName.setError(getString(R.string.error_category_name_required));
+                        return;
+                    }
+
+                    if (isCategoryNameTaken(name)) {
+                        dialogBinding.layoutCategoryName.setError(getString(R.string.error_category_exists));
+                        return;
+                    }
+
+                    dialogBinding.layoutCategoryName.setError(null);
+                    viewModel.addCategory(name, pickCategoryColor(name), "fa_tag");
+                    Toast.makeText(requireContext(),
+                            getString(R.string.category_added, name),
+                            Toast.LENGTH_SHORT).show();
+                    dialog.dismiss();
+                }));
+
+        dialog.show();
+    }
+
+    private boolean isCategoryNameTaken(String candidate) {
+        for (Category category : latestCategories) {
+            if (category.getName().equalsIgnoreCase(candidate)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private int pickCategoryColor(String categoryName) {
+        int[] palette = new int[] {
+                ContextCompat.getColor(requireContext(), R.color.category_food),
+                ContextCompat.getColor(requireContext(), R.color.category_transport),
+                ContextCompat.getColor(requireContext(), R.color.category_shopping),
+                ContextCompat.getColor(requireContext(), R.color.category_entertainment),
+                ContextCompat.getColor(requireContext(), R.color.category_bills),
+                ContextCompat.getColor(requireContext(), R.color.category_health),
+                ContextCompat.getColor(requireContext(), R.color.category_travel),
+                ContextCompat.getColor(requireContext(), R.color.category_education),
+                ContextCompat.getColor(requireContext(), R.color.category_personal),
+                ContextCompat.getColor(requireContext(), R.color.category_other)
+        };
+        int hash = categoryName.toLowerCase(Locale.US).hashCode() & Integer.MAX_VALUE;
+        return palette[hash % palette.length];
     }
 
     @Override

@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.1] - 2026-02-14
+### Fixed
+- Categories FAB now opens an **Add Category** dialog instead of a TODO placeholder
+- Add Category flow now validates empty and duplicate names before insert
+- Added user feedback toast after successful category creation
+- Expense save path remains off main thread (stability follow-up)
+- Settings shortcuts for new Phase 2 screens (Goals, Analytics, SMS Reader) are wired
+
+### Changed
+- Category color selection is now deterministic from app palette for newly created categories
+- Cleaned stale `Unreleased` roadmap section (removed outdated Phase 2 placeholders)
+
+### Technical
+- Build verified with `./gradlew :app:assembleDebug`
+
+---
+
 ## [1.2.0] - 2026-02-14
 ### Added - Phase 2 Complete
 - **Tags & Custom Labels** - Flexible expense tagging beyond categories (Tag, ExpenseTag entities, TagDao, ChipGroup UI in expense editor)
@@ -94,10 +111,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased]
-### Planned - Phase 2
-- Auto Transaction Reader (SMS + Notifications)
-- Biometric Lock (App Security)
-- Auto Transaction Reader (SMS + Notifications)
+### Planned - Phase 3
+- Notification-based transaction parsing (beyond SMS inbox)
+- Automated test coverage for migration, parser, and core expense flows
+- Budget anomaly insights and proactive nudges
 
 ---
 
@@ -179,3 +196,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | 1.1.0 | 2026-02-08 | QuickTiles, recurring expenses, reminders, biometric lock |
 | 1.1.1 | 2026-02-08 | UX refinement + dashboard/category/merchant insights + edit-flow fixes |
 | 1.1.2 | 2026-02-08 | UX polish + quick-tile action fix + biometric/setup + modal layout fixes |
+| 1.2.0 | 2026-02-14 | Phase 2: tags, accounts, goals, analytics, SMS reader |
+| 1.2.1 | 2026-02-14 | Stabilization: category add flow + settings wiring + changelog cleanup |
