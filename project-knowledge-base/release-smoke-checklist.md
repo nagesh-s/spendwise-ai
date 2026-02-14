@@ -28,6 +28,7 @@ Use this checklist before publishing any build candidate.
 - [ ] Dashboard AI insights section renders with data and hides cleanly when empty
 - [ ] Dashboard prediction section renders month-end/category forecast cards
 - [ ] Voice input flow opens prefilled expense editor from parsed speech
+- [ ] Calendar tab opens without crash and month/date selection works
 - [ ] Profile screen opens from Dashboard and shows level/XP/achievements
 - [ ] XP is awarded only on new expense save (not edit)
 - [ ] CSV export produces valid rows with escaped values

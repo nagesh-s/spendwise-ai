@@ -8,6 +8,7 @@ Current baseline coverage:
 - `app/src/androidTest/java/com/spendwise/ai/data/AppDatabaseMigrationTest.java`
 - `app/src/androidTest/java/com/spendwise/ai/common/ExpenseEditorViewModelSaveTest.java`
 - `app/src/androidTest/java/com/spendwise/ai/categories/CategoryBudgetIntegrityTest.java`
+- `app/src/androidTest/java/com/spendwise/ai/calendar/CalendarInflationSmokeTest.java`
 
 Coverage notes:
 - Parser tests include sender filtering, amount/type extraction, merchant extraction, and invalid sender rejection.
@@ -16,6 +17,7 @@ Coverage notes:
 - Gamification tests cover leveling math, streak calculation, and achievement unlock paths.
 - Expense editor instrumentation covers save, edit, and delete paths with merchant/account/tag persistence checks.
 - Category/budget instrumentation validates default-category delete protection and categoryId-based budget spend joins.
+- Calendar smoke instrumentation validates navigation + successful `MaterialCalendarView` inflation.
 
 Verification commands:
 - `./gradlew :app:testDebugUnitTest`

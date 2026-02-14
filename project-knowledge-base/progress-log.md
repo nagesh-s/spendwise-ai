@@ -27,12 +27,15 @@
   - Lint `MissingSuperCall` in `LockScreenActivity`
   - Manifest telephony feature declaration for SMS permission compatibility
   - API-safe biometric enrollment settings routing with fallback
+  - Runtime Calendar crash due to legacy `android.support.v4` class resolution in `MaterialCalendarView`
 - Fixed implementation gap:
   - Expense edit flow no longer shows `+10 XP` save message
   - Streak + Early Bird achievement checks now wired on new-expense save events
 - Added unit coverage for post-v1.2.2 features:
   - `ReportGeneratorTest` (CSV escaping/fallback correctness)
   - `GamificationEngineTest` expansion for achievement unlock scenarios
+- Added instrumentation crash-regression coverage:
+  - `CalendarInflationSmokeTest` (navigates to Calendar and asserts view inflation)
 - Synced release metadata to actual latest release:
   - `versionCode 160`
   - `versionName "1.6.0"`

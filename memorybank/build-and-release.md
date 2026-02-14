@@ -15,7 +15,8 @@ Build and release baseline (v1.6.0):
   - `.github/workflows/android-ci.yml` enforces build + test APK + unit test gates on push/PR.
 
 - Dependency/build stability notes:
-  - `material-calendarview` pulls legacy support libraries transitively; exclude `com.android.support` in Gradle dependency declaration and rely on AndroidX.
+  - `material-calendarview` pulls legacy support references; keep `android.enableJetifier=true` in `gradle.properties` so legacy support calls are rewritten to AndroidX at build time.
+  - Keep `com.android.support` excluded from `material-calendarview` dependency declaration to avoid duplicate-class conflicts.
   - Java compile target is `VERSION_11` to avoid obsolete Java 8 source/target warnings.
   - Use `org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8` in `gradle.properties`.
   - **ProGuard/R8**: `minifyEnabled true` for release builds. Rules in `proguard-rules.pro`.

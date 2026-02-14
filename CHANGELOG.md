@@ -20,9 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Report Generator** - Fixed compilation errors by implementing synchronous Merchant/Category data fetching in SettingsViewModel.
 - **Release Metadata** - Synced app version to `versionCode 160` and `versionName 1.6.0`.
 - **Lint Blockers** - Resolved `MissingSuperCall` in lock screen back handling and telephony feature declaration warning for SMS permission.
+- **Calendar Crash** - Fixed `MaterialCalendarView` inflate crash (`NoClassDefFoundError: android.support.v4.view.ViewPager$OnPageChangeListener`) by enabling AndroidX Jetifier compatibility.
+- **Back Callback Warning** - Enabled `android:enableOnBackInvokedCallback="true"` in manifest application config.
 - **Biometric Setup Routing** - Added API-level guard for biometric enrollment intent with secure fallback to system security settings.
 - **Gamification Save UX** - Edit flow no longer shows incorrect `+10 XP` reward message.
 - **Gamification Logic** - Streak and Early Bird badge unlock checks are now wired during new-expense save events.
+- **Calendar Regression Coverage** - Added instrumentation smoke test to ensure calendar destination inflates without runtime crash.
 
 ---
 
