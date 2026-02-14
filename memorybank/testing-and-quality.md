@@ -2,13 +2,18 @@ Use unit tests for pure business logic (parsers, formatters, helpers) and androi
 
 Current baseline coverage:
 - `app/src/test/java/com/spendwise/ai/sms/TransactionParserTest.java`
+- `app/src/test/java/com/spendwise/ai/voice/VoiceExpenseParserTest.java`
 - `app/src/test/java/com/spendwise/ai/gamification/GamificationEngineTest.java`
+- `app/src/test/java/com/spendwise/ai/data/export/ReportGeneratorTest.java`
 - `app/src/androidTest/java/com/spendwise/ai/data/AppDatabaseMigrationTest.java`
 - `app/src/androidTest/java/com/spendwise/ai/common/ExpenseEditorViewModelSaveTest.java`
 - `app/src/androidTest/java/com/spendwise/ai/categories/CategoryBudgetIntegrityTest.java`
 
 Coverage notes:
 - Parser tests include sender filtering, amount/type extraction, merchant extraction, and invalid sender rejection.
+- Voice parser tests include amount/category/merchant extraction from spoken phrases.
+- Report export tests validate CSV formatting, escaping, and fallback field behavior.
+- Gamification tests cover leveling math, streak calculation, and achievement unlock paths.
 - Expense editor instrumentation covers save, edit, and delete paths with merchant/account/tag persistence checks.
 - Category/budget instrumentation validates default-category delete protection and categoryId-based budget spend joins.
 

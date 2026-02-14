@@ -9,6 +9,7 @@ Build and release baseline (v1.6.0):
   - `./gradlew :app:assembleDebug`
   - `./gradlew :app:assembleDebugAndroidTest`
   - `./gradlew :app:connectedDebugAndroidTest` (with emulator/device)
+  - `./gradlew :app:lintDebug`
 
 - CI automation:
   - `.github/workflows/android-ci.yml` enforces build + test APK + unit test gates on push/PR.

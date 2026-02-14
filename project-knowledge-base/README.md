@@ -23,7 +23,9 @@
 | Expense Editor | [expense-editor.md](./modules/expense-editor.md) | Add/edit expenses, smart suggestions |
 | Categories | [categories-budgets.md](./modules/categories-budgets.md) | Budget setting, progress tracking |
 | Merchants | [merchants.md](./modules/merchants.md) | Spending analytics by merchant |
-| Settings | [settings.md](./modules/settings.md) | Dark mode, import/export |
+| Settings | [settings.md](./modules/settings.md) | Dark mode, JSON/CSV/PDF export, feature entry points |
+| Profile & Gamification | [profile-gamification.md](./modules/profile-gamification.md) | XP, levels, badges, profile screen |
+| Onboarding | [onboarding.md](./modules/onboarding.md) | First-run intro flow and launch logic |
 
 ---
 
@@ -75,9 +77,13 @@ app/src/main/java/com/spendwise/ai/
 ├── MainActivity.java          # App entry
 ├── SpendWiseApplication.java  # ThreeTen init
 ├── dashboard/                 # Dashboard screen
+├── insights/                  # AI insight/prediction models + adapters
+├── voice/                     # Voice input and parser
 ├── calendar/                  # Calendar screen
 ├── categories/                # Categories & budgets
 ├── merchants/                 # Merchant analytics
+├── gamification/              # XP, levels, badges, profile
+├── onboarding/                # First-run onboarding flow
 ├── settings/                  # Settings screen
 ├── common/                    # Shared (ExpenseAdapter, ExpenseEditor)
 ├── data/
@@ -100,4 +106,4 @@ app/src/main/res/
 ---
 
 ## 📅 Last Updated
-2026-02-14 - v1.2.2 docs refreshed for CI gate + SMS hardening + expanded automated tests
+2026-02-14 - v1.6.0 docs refreshed for insights, voice, reports, gamification, onboarding, and release audit fixes

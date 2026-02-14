@@ -1,5 +1,6 @@
 package com.spendwise.ai.security;
 
+import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.os.Bundle;
 import android.view.View;
@@ -68,6 +69,7 @@ public class LockScreenActivity extends AppCompatActivity implements BiometricHe
     }
 
     @Override
+    @SuppressLint("MissingSuperCall")
     public void onBackPressed() {
         // Prevent back navigation - must authenticate
         finishAffinity();

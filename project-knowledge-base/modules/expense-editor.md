@@ -1,80 +1,62 @@
 # Expense Editor Module
 
-> **Purpose**: Explains how adding/editing expenses works.
+> Purpose: explain add/edit flows, voice-prefill behavior, and save-side effects.
 
 ---
 
-## 📌 Status: ✅ IMPLEMENTED + FIXED (v1.1.2)
+## Status: Implemented + Expanded (v1.6.0)
 
----
+## What This Dialog Does
 
-## 🎯 What This Dialog Does
+- Add and edit expenses with:
+  - amount
+  - date
+  - category
+  - merchant
+  - account
+  - tags
+  - optional description
+- Supports voice-prefilled launch from Dashboard.
+- Supports delete when editing existing expense.
+- Triggers gamification side effects for new expense saves.
 
-Expense Editor supports:
-- Add new expense for selected date
-- Edit existing expense (with reliable prefill)
-- Amount, description, category, merchant, and date fields
-- Scroll-safe layout for compact screens (prevents field clipping)
-- Smart category suggestion from description keywords
-- Merchant autocomplete from local history
+## Save Flow
 
----
+1. Validate amount/category/date.
+2. Resolve merchant ID (create/find if needed).
+3. Insert or update expense in background executor.
+4. Persist selected tags.
+5. If new expense:
+  - award XP
+  - evaluate achievement unlocks (first expense, streak, early bird, level)
+6. Post save result message and completion state to UI.
 
-## 🔄 How It Works
+## Voice Prefill
 
-### Opening Dialog
-1. Caller provides `(expenseId?, dateEpochDay)` via `newInstance(...)`.
-2. No `expenseId` → new expense mode.
-3. With `expenseId` → edit mode.
+- Dashboard parses speech text into structured fields and opens editor with:
+  - parsed amount
+  - parsed merchant
+  - parsed category hint
+  - description fallback
+- ViewModel resolves category name to ID when categories are available.
 
-### Edit Prefill (v1.1.1 Fix)
-1. ViewModel loads existing expense synchronously on background executor.
-2. Fragment observes `editingExpense`.
-3. UI fields prefill amount/category/date/description/merchant before user saves.
-
-### Smart Category Suggestion
-- Description keywords map to seeded categories:
-  - Food/grocery terms → `Food & Dining`
-  - Utility/home terms → `Bills & Utilities`
-  - Health terms → `Health & Fitness`
-  - Transport/shopping/entertainment map directly
-
-### Save
-1. Validate amount and category.
-2. Resolve merchant ID (create/find).
-3. Insert or update `Expense`.
-4. Signal `saveComplete` and dismiss dialog.
-
-### Date Field Readability (v1.1.2)
-- Date display format uses compact form (`dd MMM yyyy`) for safer rendering.
-- Date and merchant inputs are stacked vertically to avoid horizontal truncation.
-- Dialog content is wrapped in a scroll container for smaller devices and text-scale scenarios.
-
----
-
-## 📁 Files
+## Files
 
 | File | Purpose |
-|------|---------|
-| `common/ExpenseEditorDialogFragment.java` | Dialog UI + observers + keyword suggestion |
-| `common/ExpenseEditorViewModel.java` | Form state, validation, load/save/delete |
-| `fragment_expense_editor_dialog.xml` | Dialog layout |
-| `data/repository/ExpenseRepository.java` | Insert/update/delete + sync lookup |
-| `data/repository/MerchantRepository.java` | Merchant lookup/create |
+|---|---|
+| `common/ExpenseEditorDialogFragment.java` | dialog UI and user interactions |
+| `common/ExpenseEditorViewModel.java` | form state + save/update/delete logic |
+| `voice/VoiceExpenseParser.java` | spoken text parser |
+| `gamification/GamificationEngine.java` | XP and achievement logic invoked on save |
+| `res/layout/fragment_expense_editor_dialog.xml` | dialog layout |
 
----
+## Common Issues
 
-## 🐛 Common Issues
+| Issue | Likely Cause | Check |
+|---|---|---|
+| edit save shows XP message | stale save-message path | `ExpenseEditorViewModel.saveExpense()` |
+| voice category not preselected | no matching category name | `resolveCategory(...)` and incoming parsed text |
+| tag/account not persisted | selected IDs missing before save | ViewModel selected state and repository writes |
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Edit dialog shows blank fields | Edit prefill not observed | Verify `getEditingExpense()` observer |
-| Merchant not prefilled | Merchant map not loaded yet | Check pending merchant selection logic |
-| Date text appears clipped in modal | Tight horizontal row / long text | Verify stacked date+merchant layout and compact date format |
-| Wrong suggestion category | Keyword mapping mismatch | Verify seeded category name constants |
-| Save fails validation | Missing amount/category | Check `validate()` errors in ViewModel |
-
----
-
-## 📅 Last Updated
-2026-02-08 - v1.1.2 date-field readability and modal layout resilience documented
+## Last Updated
+2026-02-14

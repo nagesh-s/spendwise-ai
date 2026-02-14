@@ -23,6 +23,8 @@ import com.spendwise.ai.gamification.GamificationEngine;
 import com.spendwise.ai.util.DateUtils;
 
 import org.threeten.bp.LocalDate;
+import org.threeten.bp.LocalTime;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -348,6 +350,7 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
         final List<Long> tagIds = new ArrayList<>(selectedTagIds);
         final Long accountIdVal = selectedAccountId.getValue();
         final Long existingId = expenseId.getValue();
+        final boolean isNewExpense = existingId == null || existingId <= 0;
 
         // Run all DB operations on background thread
         AppDatabase.databaseWriteExecutor.execute(() -> {
@@ -373,11 +376,13 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
                 expense.setAccountId(accountIdVal);
             }
 
-            if (existingId != null && existingId > 0) {
+            String msg;
+            if (!isNewExpense) {
                 expense.setId(existingId);
                 expenseRepository.update(expense);
                 // Update tags
                 tagRepository.setTagsForExpense(existingId, new ArrayList<>(tagIds));
+                msg = "Expense updated.";
             } else {
                 long newId = expenseRepository.insertSync(expense);
                 // Save tags for new expense
@@ -387,15 +392,16 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
 
                 // Award XP for new expense
                 gamificationEngine.addXp(10);
-            }
 
-            // Check for achievements
-            List<Expense> allExpenses = expenseRepository.getAllExpensesSync();
-            List<String> unlocked = gamificationEngine.checkAchievements(allExpenses);
+                // Check achievements for new expense events only
+                List<Expense> allExpenses = expenseRepository.getAllExpensesSync();
+                boolean earlyBirdEvent = LocalTime.now().getHour() < 8;
+                List<String> unlocked = gamificationEngine.checkAchievements(allExpenses, earlyBirdEvent);
 
-            String msg = "Expense saved! +10 XP";
-            if (!unlocked.isEmpty()) {
-                msg += "\nUnlocks: " + unlocked.size() + " Badge(s)!";
+                msg = "Expense saved! +10 XP";
+                if (!unlocked.isEmpty()) {
+                    msg += "\nUnlocks: " + unlocked.size() + " Badge(s)!";
+                }
             }
             saveMessage.postValue(msg);
 

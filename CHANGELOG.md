@@ -13,10 +13,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **App Icon** - New vector drawable icon features a wallet with growth graph.
 - **Splash Screen** - Android 12+ splash screen support via themes.
 - **Unit Tests** - `GamificationEngine` logic fully verified (XP, Leveling, Streaks).
+- **Unit Tests** - `ReportGeneratorTest` for CSV export escaping/fallback behavior.
 - **ProGuard Optimization** - Enabled minification for release builds with custom rules for Room/Gson/Charts.
 
 ### Fixed
 - **Report Generator** - Fixed compilation errors by implementing synchronous Merchant/Category data fetching in SettingsViewModel.
+- **Release Metadata** - Synced app version to `versionCode 160` and `versionName 1.6.0`.
+- **Lint Blockers** - Resolved `MissingSuperCall` in lock screen back handling and telephony feature declaration warning for SMS permission.
+- **Biometric Setup Routing** - Added API-level guard for biometric enrollment intent with secure fallback to system security settings.
+- **Gamification Save UX** - Edit flow no longer shows incorrect `+10 XP` reward message.
+- **Gamification Logic** - Streak and Early Bird badge unlock checks are now wired during new-expense save events.
 
 ---
 
@@ -199,10 +205,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased]
-### Planned - Phase 3
+### Planned - Post v1.6
 - Notification-based transaction parsing (beyond SMS inbox)
-- Test coverage expansion for navigation, analytics calculations, and recurring scheduler edge cases
-- Budget anomaly insights and proactive nudges
+- Expanded test coverage for navigation flows and report export edge cases
+- Budget anomaly nudges with actionable recommendations
 
 ---
 
@@ -287,3 +293,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | 1.2.0 | 2026-02-14 | Phase 2: tags, accounts, goals, analytics, SMS reader |
 | 1.2.1 | 2026-02-14 | Stabilization: category add flow + settings wiring + changelog cleanup |
 | 1.2.2 | 2026-02-14 | CI + regression tests + SMS hardening + release prep |
+| 1.3.0 | 2026-02-14 | AI insights + smart predictions |
+| 1.4.0 | 2026-02-14 | Voice input for expenses |
+| 1.5.0 | 2026-02-14 | Export reports + gamification profile |
+| 1.6.0 | 2026-02-14 | Release prep: onboarding + icon/splash + release hardening |

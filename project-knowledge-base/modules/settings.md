@@ -1,73 +1,56 @@
 # Settings Module
 
-> **Purpose**: Explains how settings, feature entry points, and data backup work.
+> Purpose: explain preferences, feature entry points, backup/restore, and report export.
 
 ---
 
-## 📌 Status: ✅ IMPLEMENTED + EXPANDED (v1.1.2)
+## Status: Implemented + Expanded (v1.6.0)
 
----
+## What This Screen Does
 
-## 🎯 What This Screen Does
+- Appearance:
+  - dark mode toggle
+- Feature entry points:
+  - Quick Tiles
+  - Recurring Expenses
+  - Goals
+  - Analytics
+  - Auto Transactions (SMS)
+  - Biometric lock toggle/setup
+- Data actions:
+  - JSON backup/export
+  - JSON import/restore
+  - CSV report export
+  - PDF report export
+- About:
+  - dynamic app version display
 
-Settings provides:
-- **Dark mode toggle**
-- **Feature cards**:
-  - Quick Tiles management
-  - Recurring expenses management
-  - Biometric lock toggle
-- **Data controls**:
-  - Export data to JSON
-  - Import data from JSON
-- App version display
+## Data/Export Flow
 
----
+1. Fragment launches SAF create/open intents.
+2. `SettingsViewModel` loads sync lists (expenses/categories/accounts/merchants) on background threads.
+3. `ReportGenerator` creates CSV/PDF output and writes to selected URI.
+4. Export/import status is surfaced to user via LiveData + toasts.
 
-## 🔄 How It Works
-
-### Dark Mode
-1. Toggle updates `SettingsViewModel`.
-2. Value persists in SharedPreferences.
-3. App theme updates via `AppCompatDelegate`.
-
-### Feature Navigation
-- `card_quick_tiles` navigates to `navigation_quick_tiles`.
-- `card_recurring` navigates to `navigation_recurring`.
-- Biometric card is always tappable for discoverability.
-- Biometric switch behavior:
-  - Enabled if device supports biometric/device credential capability.
-  - If capability exists but enrollment is missing, enabling prompts user and opens system setup.
-  - If no capability, app disables biometric preference and shows unsupported message.
-
-### Export / Import
-1. Export uses SAF `ACTION_CREATE_DOCUMENT` and writes JSON through `DataBackupManager`.
-2. Import uses SAF `ACTION_OPEN_DOCUMENT` and parses JSON through `DataBackupManager`.
-3. Success/error toasts are shown on completion.
-
----
-
-## 📁 Files
+## Files
 
 | File | Purpose |
-|------|---------|
-| `settings/SettingsFragment.java` | UI wiring, feature navigation, SAF launchers |
-| `settings/SettingsViewModel.java` | Dark mode persistence |
-| `data/DataBackupManager.java` | Export/import JSON logic |
-| `security/BiometricHelper.java` | Biometric capability + preference handling |
-| `fragment_settings.xml` | Settings layout |
+|---|---|
+| `settings/SettingsFragment.java` | UI actions, navigation, SAF launchers |
+| `settings/SettingsViewModel.java` | Dark mode + CSV/PDF export orchestration |
+| `data/DataBackupManager.java` | JSON import/export |
+| `data/export/ReportGenerator.java` | CSV + PDF report generation |
+| `security/BiometricHelper.java` | biometric capability + lock preference |
+| `res/layout/fragment_settings.xml` | settings layout |
 
----
+## Common Issues
 
-## 🐛 Common Issues
+| Issue | Likely Cause | Check |
+|---|---|---|
+| CSV/PDF export fails | invalid SAF URI or stream failure | `SettingsViewModel.exportCsv/exportPdf` |
+| Biometric toggle resets | biometric not enrolled or unsupported | `setupBiometricToggle()` |
+| Feature card not opening | nav ID mismatch | `nav_graph.xml` + card click handlers |
+| Version display incorrect | package info fallback path | `setupAppVersion()` |
 
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| Biometric switch returns OFF after enabling | No biometric enrolled yet | Enroll fingerprint/face in system settings, then re-enable |
-| Biometric unavailable message shown | Device lacks hardware/capability | Device security stack does not support biometrics/credential auth |
-| Import/export does nothing | SAF URI unavailable | Check result callback and URI null-check path |
-| Feature card not opening screen | Nav ID mismatch | Check settings click handlers + nav graph IDs |
-
----
-
-## 📅 Last Updated
-2026-02-08 - v1.1.2 biometric toggle/enrollment behavior documented
+## Last Updated
+2026-02-14

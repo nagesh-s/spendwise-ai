@@ -1,132 +1,94 @@
 # Progress Log
 
-> **Purpose**: Track development history and provide context for resuming work.
+> Purpose: track shipped milestones and current release readiness status.
 
 ---
 
-## 🎯 Current State: ✅ Phase 2 COMPLETE + STABILIZED QA BASELINE (v1.2.2)
+## Current State: v1.6.0 (Release-Candidate Ready)
 
 | Metric | Value |
-|--------|-------|
-| **Version** | v1.2.2 |
-| **Status** | Phase 2 complete + stabilization + CI/test gate + SMS import hardening |
-| **Last Updated** | 2026-02-14 |
+|---|---|
+| Version | `v1.6.0` |
+| Status | Phase 1-6 features implemented, validated, and documented |
+| Last Updated | 2026-02-14 |
 
 ---
 
-## ✅ Latest Completed Work (v1.2.2 — CI + QA hardening)
+## Latest Validation Sweep (Post-v1.2.2 Audit)
 
-### CI Quality Gate
-- ✅ Added GitHub Actions workflow `.github/workflows/android-ci.yml`
-- ✅ CI now verifies:
-  - `./gradlew :app:assembleDebug`
-  - `./gradlew :app:testDebugUnitTest`
-  - `./gradlew :app:assembleDebugAndroidTest`
-
-### Automated Test Expansion
-- ✅ `TransactionParserTest` (unit): sender filtering, merchant extraction, debit/credit precedence, invalid sender handling
-- ✅ `AppDatabaseMigrationTest` (androidTest): migration `3→4` schema/data assertions
-- ✅ `ExpenseEditorViewModelSaveTest` (androidTest): save + edit + delete persistence coverage
-- ✅ `CategoryBudgetIntegrityTest` (androidTest): default-category delete protection + budget spend linking accuracy
-- ✅ Verification commands confirmed:
+- Verified full build gates:
   - `./gradlew :app:testDebugUnitTest`
   - `./gradlew :app:assembleDebug`
+  - `./gradlew :app:assembleRelease`
   - `./gradlew :app:assembleDebugAndroidTest`
   - `./gradlew :app:connectedDebugAndroidTest`
-
-### SMS Import Hardening
-- ✅ Added duplicate check before insert (date + amount + category + description)
-- ✅ Import failure path now preserves retryability (no false imported state)
-- ✅ Permission UX handles first-time deny, rationale, and permanently denied states with app-settings deep link
-
-### Release Prep
-- ✅ Version bumped to `versionCode 122` / `versionName 1.2.2`
-- ✅ Added release runbook: `project-knowledge-base/release-smoke-checklist.md`
-
-### Build/Tooling Cleanup
-- ✅ Switched compile target from Java 8 to Java 11 (removes obsolete source/target warnings)
-- ✅ Removed deprecated Gradle constraint flag usage
-- ✅ Fixed debug duplicate-class conflict by excluding legacy support transitive deps from `material-calendarview`
-
----
-
-## ✅ Stabilization Work (v1.2.1)
-
-### UI/Flow Fixes
-- ✅ Categories FAB now opens a working add-category dialog
-- ✅ Add-category validation added for empty and duplicate names
-- ✅ New categories get deterministic palette color assignment
-
-### Stability Follow-up
-- ✅ Expense save operations kept on background executor (main-thread safety)
-- ✅ Settings routing for newly added Phase 2 feature screens is wired
+  - `./gradlew :app:lintDebug`
+- Fixed release blockers:
+  - Lint `MissingSuperCall` in `LockScreenActivity`
+  - Manifest telephony feature declaration for SMS permission compatibility
+  - API-safe biometric enrollment settings routing with fallback
+- Fixed implementation gap:
+  - Expense edit flow no longer shows `+10 XP` save message
+  - Streak + Early Bird achievement checks now wired on new-expense save events
+- Added unit coverage for post-v1.2.2 features:
+  - `ReportGeneratorTest` (CSV escaping/fallback correctness)
+  - `GamificationEngineTest` expansion for achievement unlock scenarios
+- Synced release metadata to actual latest release:
+  - `versionCode 160`
+  - `versionName "1.6.0"`
 
 ---
 
-## ✅ Phase 2 Feature Delivery (v1.2.0)
+## Feature Delivery Timeline
 
-### Tags & Custom Labels
-- ✅ Tag/ExpenseTag entities with many-to-many join table
-- ✅ TagDao with CRUD + expense-tag linking queries
-- ✅ ChipGroup UI in expense editor with "New Tag" dialog
+### v1.6.0 (Release Prep)
+- Onboarding flow (`OnboardingActivity`, 3-slide pager)
+- Splash/theme polish and launcher icon refinement
+- Release minification enabled (R8/ProGuard)
 
-### Multi-Account Support
-- ✅ Account entity (CASH, BANK, CREDIT_CARD, WALLET, OTHER)
-- ✅ Account dropdown selector in expense editor
-- ✅ Default Cash account seeded during migration
+### v1.5.0 (Phase 4 + 5)
+- Export reports from Settings (CSV/PDF)
+- Gamification system (XP, levels, badges)
+- Profile screen with progress and achievements
 
-### Financial Goals Tracking
-- ✅ FinancialGoal entity (SAVINGS, LIMIT, DEBT types)
-- ✅ GoalsFragment with add goal / update progress dialogs
-- ✅ Progress bars and status tracking
+### v1.4.0 (Phase 3 Part 2)
+- Voice input on Dashboard
+- Voice text parsing into amount/category/merchant prefill
 
-### Advanced Analytics Dashboard
-- ✅ Period selection (week/month/quarter/year)
-- ✅ Spending trend LineChart + category PieChart
-- ✅ Top-5 categories breakdown
+### v1.3.0 (Phase 3 Part 1)
+- AI insights cards (spending spikes, budget alerts, streaks, month comparison)
+- Smart predictions (month-end forecast + budget risk)
 
-### Auto Transaction Reader (SMS)
-- ✅ TransactionParser with regex patterns for Indian banks (SBI, HDFC, ICICI, UPI)
-- ✅ SmsPermissionHelper with runtime permission flow
-- ✅ AutoTransactionsFragment with scan + one-tap import
-- ✅ READ_SMS permission in AndroidManifest
+### v1.2.2 (Stabilization + CI/Test Baseline)
+- CI workflow
+- SMS hardening
+- Unit + instrumentation baseline tests
 
-### Technical
-- ✅ Database v4 with explicit Migration(3→4)
-- ✅ Build verified: `./gradlew assembleDebug` passes
+### v1.2.0 - v1.2.1
+- Tags, accounts, goals, analytics, SMS reader
+- Category and settings stabilization fixes
+
+### v1.1.x
+- Quick tiles, recurring, reminders, biometric, photo attachments
+- UX and reliability refinements
 
 ---
 
-## 📦 Version History
+## Version Table
 
 | Version | Description | Date |
-|---------|-------------|------|
-| v0.0.1 | Project scaffold, navigation | 2026-01-22 |
-| v0.1.0 | Data layer - entities, DAOs | 2026-01-22 |
-| v0.2.0 | Repositories, ViewModels | 2026-01-22 |
-| v0.3.0 | Core screens + dialogs | 2026-01-22 |
-| v0.3.2 | Theme fixes, budget dialog | 2026-01-23 |
-| v0.4.0 | JSON import/export | 2026-01-23 |
-| v0.5.0 | Smart suggestions, autocomplete | 2026-01-23 |
-| v1.0.0 | Calendar decorators, polish | 2026-01-23 |
-| v1.1.0 | QuickTiles widget, recurring expenses, reminders, biometric lock | 2026-02-08 |
-| v1.1.1 | UX refinement + dashboard/category/merchant insights + edit-flow fixes | 2026-02-08 |
-| v1.1.2 | UX polish + quick tile, biometric, modal-date, nav compatibility fixes | 2026-02-08 |
-| v1.2.0 | Phase 2: Tags, multi-account, goals, analytics, SMS reader | 2026-02-14 |
-| v1.2.1 | Stabilization: category add flow + settings wiring + cleanup | 2026-02-14 |
-| v1.2.2 | CI gate + expanded tests + SMS hardening + release prep + build cleanup | 2026-02-14 |
-
----
-
-## 🔁 How to Resume Work
-
-1. Read `architecture.md` for the updated system overview.
-2. Open the relevant module guide in `modules/`.
-3. Follow existing patterns: Fragment → ViewModel → Repository → DAO.
-4. Use `troubleshooting.md` if an issue is symptom-driven.
-5. **After completing a phase**: Follow `.agent/workflows/post-phase-completion.md`
-
----
-
-## 📅 Last Updated
-2026-02-14 - v1.2.2 CI gate + QA hardening complete
+|---|---|---|
+| v0.0.1 | Scaffold + navigation shell | 2026-01-22 |
+| v0.1.0 | Data layer foundation | 2026-01-22 |
+| v0.2.0 | Repository + ViewModel architecture | 2026-01-22 |
+| v0.3.0 | Core UI screens and flows | 2026-01-22 |
+| v1.1.0 | QuickTiles, recurring, reminders, biometric, photos | 2026-02-08 |
+| v1.1.1 | UX + dashboard/category/merchant insights fixes | 2026-02-08 |
+| v1.1.2 | UI polish + quick add + biometric/modal/navigation fixes | 2026-02-08 |
+| v1.2.0 | Tags, multi-account, goals, analytics, SMS reader | 2026-02-14 |
+| v1.2.1 | Stabilization fixes | 2026-02-14 |
+| v1.2.2 | CI + tests + SMS hardening + release prep | 2026-02-14 |
+| v1.3.0 | AI insights + predictions | 2026-02-14 |
+| v1.4.0 | Voice input | 2026-02-14 |
+| v1.5.0 | Reports + gamification/profile | 2026-02-14 |
+| v1.6.0 | Onboarding + release polish + release audit fixes | 2026-02-14 |

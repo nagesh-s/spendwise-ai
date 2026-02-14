@@ -8,6 +8,9 @@
     <!-- SMS permission for auto transaction detection -->
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <uses-feature
+        android:name="android.hardware.telephony"
+        android:required="false" />
 
     <application
         android:name=".SpendWiseApplication"

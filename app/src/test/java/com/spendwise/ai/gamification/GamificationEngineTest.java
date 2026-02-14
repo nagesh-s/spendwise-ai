@@ -1,7 +1,7 @@
 package com.spendwise.ai.gamification;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -19,6 +19,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.junit.MockitoJUnitRunner;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -46,6 +47,9 @@ public class GamificationEngineTest {
         org.mockito.Mockito.lenient()
                 .when(editor.putStringSet(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any()))
                 .thenReturn(editor);
+        org.mockito.Mockito.lenient().when(sharedPreferences.getStringSet(
+                org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.any())).thenReturn(new HashSet<>());
 
         engine = new GamificationEngine(context);
     }
@@ -122,6 +126,41 @@ public class GamificationEngineTest {
             gapExpenses.add(createExpense(today - 1));
             gapExpenses.add(createExpense(today - 3));
             assertEquals(2, engine.calculateCurrentStreak(gapExpenses));
+        }
+    }
+
+    @Test
+    public void testCheckAchievements_unlocksFirstExpenseAndStreakBadges() {
+        try (MockedStatic<com.spendwise.ai.util.DateUtils> mockedDateUtils = org.mockito.Mockito
+                .mockStatic(com.spendwise.ai.util.DateUtils.class)) {
+            long today = 2000L;
+            mockedDateUtils.when(com.spendwise.ai.util.DateUtils::getTodayEpochDay).thenReturn(today);
+
+            List<Expense> expenses = new ArrayList<>();
+            for (int i = 0; i < 7; i++) {
+                expenses.add(createExpense(today - i));
+            }
+
+            List<String> unlocked = engine.checkAchievements(expenses, false);
+
+            assertTrue(unlocked.contains(GamificationEngine.ID_FIRST_EXPENSE));
+            assertTrue(unlocked.contains(GamificationEngine.ID_STREAK_3));
+            assertTrue(unlocked.contains(GamificationEngine.ID_STREAK_7));
+        }
+    }
+
+    @Test
+    public void testCheckAchievements_unlocksEarlyBirdWhenEventFlagTrue() {
+        try (MockedStatic<com.spendwise.ai.util.DateUtils> mockedDateUtils = org.mockito.Mockito
+                .mockStatic(com.spendwise.ai.util.DateUtils.class)) {
+            mockedDateUtils.when(com.spendwise.ai.util.DateUtils::getTodayEpochDay).thenReturn(3000L);
+
+            List<Expense> expenses = new ArrayList<>();
+            expenses.add(createExpense(3000L));
+
+            List<String> unlocked = engine.checkAchievements(expenses, true);
+
+            assertTrue(unlocked.contains(GamificationEngine.ID_EARLY_BIRD));
         }
     }
 

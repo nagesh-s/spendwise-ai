@@ -6,6 +6,7 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
 import android.provider.Settings;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -194,15 +195,19 @@ public class SettingsFragment extends Fragment {
     }
 
     private void openSecuritySettings() {
-        Intent enrollIntent = new Intent(Settings.ACTION_BIOMETRIC_ENROLL);
-        enrollIntent.putExtra(Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
-                androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
-                        | androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL);
-        try {
-            startActivity(enrollIntent);
-        } catch (Exception ignored) {
-            startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            Intent enrollIntent = new Intent(Settings.ACTION_BIOMETRIC_ENROLL);
+            enrollIntent.putExtra(Settings.EXTRA_BIOMETRIC_AUTHENTICATORS_ALLOWED,
+                    androidx.biometric.BiometricManager.Authenticators.BIOMETRIC_WEAK
+                            | androidx.biometric.BiometricManager.Authenticators.DEVICE_CREDENTIAL);
+            try {
+                startActivity(enrollIntent);
+                return;
+            } catch (Exception ignored) {
+                // Fallback below
+            }
         }
+        startActivity(new Intent(Settings.ACTION_SECURITY_SETTINGS));
     }
 
     private void setupDataButtons() {

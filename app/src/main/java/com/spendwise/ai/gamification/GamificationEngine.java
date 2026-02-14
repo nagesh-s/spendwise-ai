@@ -122,6 +122,10 @@ public class GamificationEngine {
     }
 
     public List<String> checkAchievements(List<Expense> recentExpenses) {
+        return checkAchievements(recentExpenses, false);
+    }
+
+    public List<String> checkAchievements(List<Expense> recentExpenses, boolean earlyBirdEvent) {
         List<String> newUnlocks = new ArrayList<>();
 
         // Check First Expense
@@ -130,15 +134,20 @@ public class GamificationEngine {
                 newUnlocks.add(ID_FIRST_EXPENSE);
         }
 
-        // Check Early Bird (check latest expense)
-        if (!recentExpenses.isEmpty()) {
-            Expense latest = recentExpenses.get(0);
-            // Assuming we have time? Expense only has dateEpochDay...
-            // Ah, we might need timestamp for Early Bird.
-            // If strictly date-based, we can't do time-of-day checks.
-            // I'll skip Early Bird logic implementation for now or use created_at if
-            // available.
-            // Expense entity has simplified date.
+        // Check streak achievements
+        int streak = calculateCurrentStreak(recentExpenses);
+        if (streak >= 3 && unlockAchievement(ID_STREAK_3)) {
+            newUnlocks.add(ID_STREAK_3);
+        }
+        if (streak >= 7 && unlockAchievement(ID_STREAK_7)) {
+            newUnlocks.add(ID_STREAK_7);
+        }
+
+        // Check Early Bird (event flag or current local time fallback)
+        if (!recentExpenses.isEmpty() && earlyBirdEvent) {
+            if (unlockAchievement(ID_EARLY_BIRD)) {
+                newUnlocks.add(ID_EARLY_BIRD);
+            }
         }
 
         // Check Level 5

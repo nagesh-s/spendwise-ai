@@ -12,5 +12,6 @@
   - `navigation_goals` -> `GoalsFragment` (financial goals tracking)
   - `navigation_analytics` -> `AnalyticsFragment` (spending analytics dashboard)
   - `navigation_auto_transactions` -> `AutoTransactionsFragment` (SMS transaction reader)
+  - `navigation_profile` -> `ProfileFragment` (gamification progress + badges)
 - Dialog route:
   - `expenseEditorDialogFragment` -> `ExpenseEditorDialogFragment` with args `(expenseId?, dateEpochDay)`

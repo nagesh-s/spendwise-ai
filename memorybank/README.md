@@ -6,16 +6,20 @@ SpendWise AI emphasizes responsive Material design with dark mode support and cl
 
 ## Key features
 - Dashboard: monthly spend, category distribution, budget progress, top categories, budget health card, and spending pace insights (avg/day + projected total).
+- AI insights + predictions: anomaly/spike cards, budget risk alerts, and month-end forecasts generated fully on-device.
+- Voice expense entry: mic-to-text parsing with amount/category/merchant prefill into the expense editor.
 - Calendar: interactive month view with per-day totals, spending decorators, selected-day expense list, and one-tap jump to today.
 - Categories & Budgets: default non-deletable categories, budget progress per category, monthly summary card, and copy-previous-month budgets action.
 - Merchant analytics: top merchants by spend with ranking badges plus monthly merchant summary (total spend + top merchant).
-- Settings: dark mode toggle, JSON export/import through the Android Storage Access Framework, and a plain-text summary generator for a day or month.
+- Settings: dark mode toggle, JSON export/import, and CSV/PDF report export through the Android Storage Access Framework.
 - Smart input: inline suggestions for category and merchant driven by local history, edit-mode prefill reliability, and quick-add tiles for frequent items.
 - Automation features: recurring expenses, bill reminders, QuickTiles home screen widget, biometric app lock, and receipt photo attachments.
+- Engagement features: profile screen with XP/level progress, achievements, and first-run onboarding flow.
 
 ## Architecture overview
 - Single-activity with BottomNavigationView hosting a NavHostFragment that navigates between Dashboard, Calendar, Categories & Budgets, Merchant Analytics, and Settings fragments for a cohesive “single-page” feel with proper back-stack handling.
 - Room provides the local database layer with entities, DAOs, and compile‑time query validation to ensure robust aggregates and fast offline workflows.
+- Domain engines (`InsightsEngine`, `PredictionEngine`, `GamificationEngine`) compute intelligence and engagement features on-device.
 
 ## Tech stack
 - Language/UI: Java + Android Views/XML with Material Components for consistent theming and accessibility across light/dark modes.
@@ -40,10 +44,12 @@ SpendWise AI emphasizes responsive Material design with dark mode support and cl
 
 ## Screens and flows
 - Dashboard: uses Room aggregates to render totals and category distributions in MPAndroidChart with smooth dataset updates on month switches.
+- Dashboard AI: renders insight and prediction card rails, plus voice-input and profile entry points.
 - Calendar: MaterialCalendarView decorators reflect spend tiers per day, with an on-click modal dialog for view/add/edit of day-specific expenses.
 - Categories & Budgets: category management with Font Awesome glyphs and budget bars for current/selected month.
 - Merchants: list and detail screens with totals, averages, counts, and recent expenses with charts.
-- Settings: dark mode toggle and JSON import/export via the system document pickers with scoped URIs for privacy.
+- Settings: dark mode, feature shortcuts, JSON backup/restore, and CSV/PDF report export.
+- Onboarding: first-run pager introducing insights and voice workflows before handing off to main app.
 
 ## Privacy and data
 - All data is stored locally in Room; export/import is user-initiated via SAF with no broad storage permissions required on modern Android.
