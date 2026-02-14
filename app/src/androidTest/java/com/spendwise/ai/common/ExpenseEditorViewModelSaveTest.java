@@ -62,19 +62,24 @@ public class ExpenseEditorViewModelSaveTest {
                         Color.parseColor("#4CAF50"), "fa_wallet", false));
         long tagId = db.tagDao().insert(new Tag("JUnit Tag " + suffix, Color.parseColor("#FF9800")));
 
-        ExpenseEditorViewModel viewModel = new ExpenseEditorViewModel(application);
+        final ExpenseEditorViewModel[] holder = new ExpenseEditorViewModel[1];
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(
+                () -> holder[0] = new ExpenseEditorViewModel(application));
+        ExpenseEditorViewModel viewModel = holder[0];
+        assertNotNull(viewModel);
         long dateEpochDay = LocalDate.of(2026, 2, 14).toEpochDay();
         int beforeCount = db.expenseDao().getExpenseCount();
 
-        viewModel.initForNewExpense(dateEpochDay);
-        viewModel.setAmountCents(12345L);
-        viewModel.setDescription("JUnit save flow");
-        viewModel.setSelectedCategoryId(categoryId);
-        viewModel.setMerchantName("JUnit Merchant " + suffix);
-        viewModel.setSelectedAccountId(accountId);
-        viewModel.toggleTag(tagId);
-
-        viewModel.saveExpense();
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            viewModel.initForNewExpense(dateEpochDay);
+            viewModel.setAmountCents(12345L);
+            viewModel.setDescription("JUnit save flow");
+            viewModel.setSelectedCategoryId(categoryId);
+            viewModel.setMerchantName("JUnit Merchant " + suffix);
+            viewModel.setSelectedAccountId(accountId);
+            viewModel.toggleTag(tagId);
+            viewModel.saveExpense();
+        });
 
         waitForCondition(() -> db.expenseDao().getExpenseCount() == beforeCount + 1, 5, TimeUnit.SECONDS);
 
