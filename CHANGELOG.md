@@ -26,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Gamification Save UX** - Edit flow no longer shows incorrect `+10 XP` reward message.
 - **Gamification Logic** - Streak and Early Bird badge unlock checks are now wired during new-expense save events.
 - **Calendar Regression Coverage** - Added instrumentation smoke test to ensure calendar destination inflates without runtime crash.
+- **PDF Statement UX** - Reworked PDF export to a cleaner statement-style layout with structured header, summary cards, zebra rows, repeated table headers, and proper row baselines (fixes text struck by lines).
 
 ---
 
