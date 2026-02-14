@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.5.0] - 2026-02-14
+### Added - Phase 4 & 5 (Complete)
+- **Gamification System** - Earn XP for logging expenses! Track progress with Levels and unlockable Badges (e.g., First Step, Streak Master).
+- **Profile Screen** - New profile view (Star icon on Dashboard) showing Level, XP, and Achievement collection.
+- **Export Reports** - Export your spending data as **CSV** (Spreadsheet) or **PDF** (Printable Report) from Settings.
+- **Save Feedback** - Immediate visual feedback (Toasts) when saving expenses shows XP gained and badges unlocked.
+
+### Technical
+- **GamificationEngine** - Core logic for XP calculation, leveling (sqrt formula), and achievement conditions.
+- **ReportGenerator** - Native PDF generation using `android.graphics.pdf` and CSV string building.
+- **ProfileFragment** - New UI destination in `nav_graph`.
+- **Dashboard Integration** - Header Profile button for quick access.
+
+---
+
 ## [1.4.0] - 2026-02-14
 ### Added
 - **Voice Input for Expenses** - Tap the mic on Dashboard to add expenses by speaking (e.g., "500 for lunch at cafe").

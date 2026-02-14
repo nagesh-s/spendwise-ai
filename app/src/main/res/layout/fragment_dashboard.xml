@@ -55,6 +55,21 @@
                     android:src="@drawable/ic_chevron_right"
                     app:tint="?attr/colorOnSurface" />
 
+                <View
+                    android:layout_width="16dp"
+                    android:layout_height="match_parent" />
+
+                <com.google.android.material.imageview.ShapeableImageView
+                    android:id="@+id/btn_profile"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
+                    android:background="?attr/colorSecondaryContainer"
+                    android:contentDescription="Profile"
+                    android:padding="8dp"
+                    app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
+                    app:srcCompat="@drawable/ic_star"
+                    app:tint="?attr/colorOnSecondaryContainer" />
+
             </LinearLayout>
 
             <!-- AI Insights Cards (horizontal scroll) -->

@@ -66,4 +66,10 @@
         android:label="Auto Transactions"
         tools:layout="@layout/fragment_auto_transactions" />
 
+    <fragment
+        android:id="@+id/navigation_profile"
+        android:name="com.spendwise.ai.gamification.ProfileFragment"
+        android:label="Profile"
+        tools:layout="@layout/fragment_profile" />
+
 </navigation>

@@ -302,8 +302,13 @@ public class DashboardFragment extends Fragment {
     }
 
     private void setupMonthNavigation() {
-        binding.btnPrevMonth.setOnClickListener(v -> viewModel.goToPreviousMonth());
-        binding.btnNextMonth.setOnClickListener(v -> viewModel.goToNextMonth());
+        binding.btnPrevMonth.setOnClickListener(v -> viewModel.previousMonth());
+        binding.btnNextMonth.setOnClickListener(v -> viewModel.nextMonth());
+
+        binding.btnProfile.setOnClickListener(v -> {
+            androidx.navigation.Navigation.findNavController(v)
+                    .navigate(com.spendwise.ai.R.id.navigation_profile);
+        });
     }
 
     private void observeData() {

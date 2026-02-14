@@ -19,6 +19,7 @@ import com.spendwise.ai.data.repository.CategoryRepository;
 import com.spendwise.ai.data.repository.ExpenseRepository;
 import com.spendwise.ai.data.repository.MerchantRepository;
 import com.spendwise.ai.data.repository.TagRepository;
+import com.spendwise.ai.gamification.GamificationEngine;
 import com.spendwise.ai.util.DateUtils;
 
 import org.threeten.bp.LocalDate;
@@ -39,6 +40,7 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
     private final MerchantRepository merchantRepository;
     private final TagRepository tagRepository;
     private final AccountRepository accountRepository;
+    private final GamificationEngine gamificationEngine;
 
     // All categories for dropdown
     private final LiveData<List<Category>> allCategories;
@@ -70,6 +72,7 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
 
     // Save result
     private final MutableLiveData<Boolean> saveComplete = new MutableLiveData<>();
+    private final MutableLiveData<String> saveMessage = new MutableLiveData<>();
 
     // Loaded expense when editing
     private final MutableLiveData<Expense> editingExpense = new MutableLiveData<>();
@@ -81,6 +84,7 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
         merchantRepository = new MerchantRepository(application);
         tagRepository = new TagRepository(application);
         accountRepository = new AccountRepository(application);
+        gamificationEngine = new GamificationEngine(application);
 
         allCategories = categoryRepository.getAllCategories();
         allMerchants = merchantRepository.getAllMerchants();
@@ -321,6 +325,10 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
         return saveComplete;
     }
 
+    public LiveData<String> getSaveMessage() {
+        return saveMessage;
+    }
+
     public void saveExpense() {
         if (!validate()) {
             return;
@@ -376,11 +384,25 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
                 if (!tagIds.isEmpty()) {
                     tagRepository.setTagsForExpense(newId, new ArrayList<>(tagIds));
                 }
+
+                // Award XP for new expense
+                gamificationEngine.addXp(10);
             }
+
+            // Check for achievements
+            List<Expense> allExpenses = expenseRepository.getAllExpensesSync();
+            List<String> unlocked = gamificationEngine.checkAchievements(allExpenses);
+
+            String msg = "Expense saved! +10 XP";
+            if (!unlocked.isEmpty()) {
+                msg += "\nUnlocks: " + unlocked.size() + " Badge(s)!";
+            }
+            saveMessage.postValue(msg);
 
             // Post result back to main thread
             new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> saveComplete.setValue(true));
         });
+
     }
 
     public void resetSaveComplete() {

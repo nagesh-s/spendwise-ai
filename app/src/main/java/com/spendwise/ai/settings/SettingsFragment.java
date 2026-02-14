@@ -32,15 +32,18 @@ public class SettingsFragment extends Fragment {
     private DataBackupManager backupManager;
 
     // SAF launchers for file operations
-    private ActivityResultLauncher<Intent> exportLauncher;
-    private ActivityResultLauncher<Intent> importLauncher;
+    private ActivityResultLauncher<Intent> jsonBackupLauncher;
+    private ActivityResultLauncher<Intent> jsonRestoreLauncher;
+    private ActivityResultLauncher<Intent> csvExportLauncher;
+    private ActivityResultLauncher<Intent> pdfExportLauncher;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
         // Register export launcher
-        exportLauncher = registerForActivityResult(
+        // Register JSON backup launcher
+        jsonBackupLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
@@ -51,14 +54,38 @@ public class SettingsFragment extends Fragment {
                     }
                 });
 
-        // Register import launcher
-        importLauncher = registerForActivityResult(
+        // Register JSON restore launcher
+        jsonRestoreLauncher = registerForActivityResult(
                 new ActivityResultContracts.StartActivityForResult(),
                 result -> {
                     if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                         Uri uri = result.getData().getData();
                         if (uri != null) {
                             importData(uri);
+                        }
+                    }
+                });
+
+        // Register CSV export launcher
+        csvExportLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        Uri uri = result.getData().getData();
+                        if (uri != null) {
+                            viewModel.exportCsv(uri);
+                        }
+                    }
+                });
+
+        // Register PDF export launcher
+        pdfExportLauncher = registerForActivityResult(
+                new ActivityResultContracts.StartActivityForResult(),
+                result -> {
+                    if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
+                        Uri uri = result.getData().getData();
+                        if (uri != null) {
+                            viewModel.exportPdf(uri);
                         }
                     }
                 });
@@ -179,23 +206,42 @@ public class SettingsFragment extends Fragment {
     }
 
     private void setupDataButtons() {
-        binding.cardExport.setOnClickListener(v -> launchExport());
-        binding.cardImport.setOnClickListener(v -> launchImport());
+        binding.cardExport.setOnClickListener(v -> launchJsonBackup());
+        binding.cardImport.setOnClickListener(v -> launchJsonRestore());
+
+        binding.cardExportCsv.setOnClickListener(v -> launchCsvExport());
+        binding.cardExportPdf.setOnClickListener(v -> launchPdfExport());
     }
 
-    private void launchExport() {
+    private void launchJsonBackup() {
         Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("application/json");
         intent.putExtra(Intent.EXTRA_TITLE, "spendwise_backup.json");
-        exportLauncher.launch(intent);
+        jsonBackupLauncher.launch(intent);
     }
 
-    private void launchImport() {
+    private void launchJsonRestore() {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("application/json");
-        importLauncher.launch(intent);
+        jsonRestoreLauncher.launch(intent);
+    }
+
+    private void launchCsvExport() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("text/csv");
+        intent.putExtra(Intent.EXTRA_TITLE, "spendwise_report.csv");
+        csvExportLauncher.launch(intent);
+    }
+
+    private void launchPdfExport() {
+        Intent intent = new Intent(Intent.ACTION_CREATE_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("application/pdf");
+        intent.putExtra(Intent.EXTRA_TITLE, "spendwise_report.pdf");
+        pdfExportLauncher.launch(intent);
     }
 
     private void exportData(Uri destinationUri) {
@@ -260,6 +306,13 @@ public class SettingsFragment extends Fragment {
         // Observe dark mode state
         viewModel.getDarkModeEnabled().observe(getViewLifecycleOwner(), enabled -> {
             binding.switchDarkMode.setChecked(enabled != null && enabled);
+        });
+
+        viewModel.getExportStatus().observe(getViewLifecycleOwner(), status -> {
+            if (status != null) {
+                Toast.makeText(requireContext(), status, Toast.LENGTH_LONG).show();
+                viewModel.clearStatus();
+            }
         });
     }
 

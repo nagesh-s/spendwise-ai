@@ -24,6 +24,11 @@ public class SettingsViewModel extends AndroidViewModel {
     private final MutableLiveData<String> exportStatus = new MutableLiveData<>();
     private final MutableLiveData<String> importStatus = new MutableLiveData<>();
 
+    private final com.spendwise.ai.data.repository.ExpenseRepository expenseRepository;
+    private final com.spendwise.ai.data.repository.CategoryRepository categoryRepository;
+    private final com.spendwise.ai.data.repository.AccountRepository accountRepository;
+    private final com.spendwise.ai.data.export.ReportGenerator reportGenerator;
+
     public SettingsViewModel(@NonNull Application application) {
         super(application);
         sharedPreferences = application.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
@@ -31,6 +36,81 @@ public class SettingsViewModel extends AndroidViewModel {
         // Load dark mode preference
         boolean isDarkMode = sharedPreferences.getBoolean(KEY_DARK_MODE, false);
         darkModeEnabled.setValue(isDarkMode);
+
+        // Initialize repositories
+        expenseRepository = new com.spendwise.ai.data.repository.ExpenseRepository(application);
+        categoryRepository = new com.spendwise.ai.data.repository.CategoryRepository(application);
+        accountRepository = new com.spendwise.ai.data.repository.AccountRepository(application);
+        reportGenerator = new com.spendwise.ai.data.export.ReportGenerator();
+    }
+
+    // ==================== Data Export ====================
+
+    public void exportCsv(android.net.Uri uri) {
+        exportStatus.setValue("Generating CSV...");
+        new Thread(() -> {
+            try {
+                java.util.List<com.spendwise.ai.data.entity.Expense> expenses = expenseRepository.getAllExpensesSync();
+                java.util.List<com.spendwise.ai.data.entity.Category> categories = categoryRepository
+                        .getAllCategoriesSync();
+                java.util.List<com.spendwise.ai.data.entity.Account> accounts = accountRepository.getAllAccountsSync();
+
+                java.util.Map<Long, String> categoryMap = new java.util.HashMap<>();
+                for (com.spendwise.ai.data.entity.Category c : categories)
+                    categoryMap.put(c.getId(), c.getName());
+
+                java.util.Map<Long, String> accountMap = new java.util.HashMap<>();
+                for (com.spendwise.ai.data.entity.Account a : accounts)
+                    accountMap.put(a.getId(), a.getName());
+
+                String csvData = reportGenerator.generateCsv(expenses, categoryMap, accountMap);
+
+                try (java.io.OutputStream os = getApplication().getContentResolver().openOutputStream(uri)) {
+                    if (os != null) {
+                        os.write(csvData.getBytes());
+                        exportStatus.postValue("CSV exported successfully");
+                    } else {
+                        exportStatus.postValue("Error: Could not open output stream");
+                    }
+                }
+            } catch (Exception e) {
+                exportStatus.postValue("Export failed: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }).start();
+    }
+
+    public void exportPdf(android.net.Uri uri) {
+        exportStatus.setValue("Generating PDF...");
+        new Thread(() -> {
+            try {
+                java.util.List<com.spendwise.ai.data.entity.Expense> expenses = expenseRepository.getAllExpensesSync();
+                java.util.List<com.spendwise.ai.data.entity.Category> categories = categoryRepository
+                        .getAllCategoriesSync();
+                java.util.List<com.spendwise.ai.data.entity.Account> accounts = accountRepository.getAllAccountsSync();
+
+                java.util.Map<Long, String> categoryMap = new java.util.HashMap<>();
+                for (com.spendwise.ai.data.entity.Category c : categories)
+                    categoryMap.put(c.getId(), c.getName());
+
+                java.util.Map<Long, String> accountMap = new java.util.HashMap<>();
+                for (com.spendwise.ai.data.entity.Account a : accounts)
+                    accountMap.put(a.getId(), a.getName());
+
+                try (java.io.OutputStream os = getApplication().getContentResolver().openOutputStream(uri)) {
+                    if (os != null) {
+                        reportGenerator.generatePdf(getApplication(), os, expenses, categoryMap, accountMap,
+                                "SpendWise Report");
+                        exportStatus.postValue("PDF exported successfully");
+                    } else {
+                        exportStatus.postValue("Error: Could not open output stream");
+                    }
+                }
+            } catch (Exception e) {
+                exportStatus.postValue("Export failed: " + e.getMessage());
+                e.printStackTrace();
+            }
+        }).start();
     }
 
     // ==================== Dark Mode ====================
@@ -49,8 +129,7 @@ public class SettingsViewModel extends AndroidViewModel {
 
         // Apply theme
         AppCompatDelegate.setDefaultNightMode(
-                enabled ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO
-        );
+                enabled ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
     }
 
     public void toggleDarkMode() {
@@ -66,8 +145,7 @@ public class SettingsViewModel extends AndroidViewModel {
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         boolean isDarkMode = prefs.getBoolean(KEY_DARK_MODE, false);
         AppCompatDelegate.setDefaultNightMode(
-                isDarkMode ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO
-        );
+                isDarkMode ? AppCompatDelegate.MODE_NIGHT_YES : AppCompatDelegate.MODE_NIGHT_NO);
     }
 
     // ==================== Export/Import Status ====================

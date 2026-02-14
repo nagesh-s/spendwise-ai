@@ -58,6 +58,10 @@ public class ExpenseRepository {
         return expenseDao.getAllExpenses();
     }
 
+    public List<Expense> getAllExpensesSync() {
+        return expenseDao.getAllExpensesSync();
+    }
+
     public Expense getExpenseByIdSync(long expenseId) {
         return expenseDao.getById(expenseId);
     }

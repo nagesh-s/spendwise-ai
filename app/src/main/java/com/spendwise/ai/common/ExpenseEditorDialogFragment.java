@@ -452,6 +452,13 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
                 dismiss();
             }
         });
+
+        // Observe save message (XP/Badges)
+        viewModel.getSaveMessage().observe(getViewLifecycleOwner(), message -> {
+            if (message != null) {
+                android.widget.Toast.makeText(requireContext(), message, android.widget.Toast.LENGTH_LONG).show();
+            }
+        });
     }
 
     private void applyPendingCategorySelection() {

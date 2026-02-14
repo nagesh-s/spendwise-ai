@@ -43,12 +43,24 @@ public class CategoryRepository {
 
     // ==================== Queries ====================
 
+    public LiveData<List<Expense>> getAllExpenses() {
+        return expenseDao.getAllExpenses();
+    }
+
+    public List<Expense> getAllExpensesSync() {
+        return expenseDao.getAllExpensesSync();
+    }
+
     public LiveData<List<Category>> getAllCategories() {
         return categoryDao.getAllCategories();
     }
 
     public LiveData<List<Category>> getCustomCategories() {
         return categoryDao.getCustomCategories();
+    }
+
+    public List<Category> getAllCategoriesSync() {
+        return categoryDao.getAllCategoriesSync();
     }
 
     /**
