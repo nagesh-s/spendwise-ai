@@ -1,4 +1,5 @@
 - Graph: `app/src/main/res/navigation/nav_graph.xml`
+- Launch: `OnboardingActivity` (First Run) -> `MainActivity`
 - Bottom nav mappings:
   - `navigation_dashboard` -> `DashboardFragment`
   - `navigation_calendar` -> `CalendarFragment`

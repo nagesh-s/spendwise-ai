@@ -39,6 +39,14 @@ public class MainActivity extends AppCompatActivity {
         // Check if biometric lock is enabled and required
         checkBiometricLock();
 
+        // Check for first run
+        android.content.SharedPreferences prefs = getSharedPreferences("spendwise_prefs", MODE_PRIVATE);
+        if (prefs.getBoolean("first_run", true)) {
+            startActivity(new Intent(this, com.spendwise.ai.onboarding.OnboardingActivity.class));
+            finish();
+            return;
+        }
+
         // Handle intent from widget
         handleWidgetIntent(getIntent());
     }

@@ -29,6 +29,11 @@
             android:exported="false"
             android:theme="@style/Theme.SpendWiseAI" />
 
+        <activity
+            android:name=".onboarding.OnboardingActivity"
+            android:theme="@style/Theme.SpendWiseAI"
+            android:exported="false" />
+
         <!-- QuickTiles Widget -->
         <receiver
             android:name=".widget.QuickTilesWidgetProvider"

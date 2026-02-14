@@ -24,22 +24,28 @@ public class ReportGenerator {
 
     private static final String CSV_HEADER = "Date,Category,Amount,Merchant,Account,Note\n";
 
-    public String generateCsv(List<Expense> expenses, Map<Long, String> categoryNames, Map<Long, String> accountNames) {
+    public String generateCsv(List<Expense> expenses, Map<Long, String> categoryNames, Map<Long, String> accountNames,
+            Map<Long, String> merchantNames) {
         StringBuilder sb = new StringBuilder();
         sb.append(CSV_HEADER);
 
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
         for (Expense expense : expenses) {
-            String date = expense.getDate().format(dateFormatter);
+            String date = DateUtils.epochDayToDate(expense.getDateEpochDay()).format(dateFormatter);
             String category = categoryNames.getOrDefault(expense.getCategoryId(), "Unknown");
             String account = accountNames.getOrDefault(expense.getAccountId(), "Unknown");
             double amount = expense.getAmountCents() / 100.0;
-            String merchant = escapeCsv(expense.getMerchantName());
+
+            String merchantName = "Unknown";
+            if (expense.getMerchantId() != null) {
+                merchantName = merchantNames.getOrDefault(expense.getMerchantId(), "Unknown");
+            }
+
             String note = escapeCsv(expense.getDescription());
 
             sb.append(String.format("%s,%s,%.2f,%s,%s,%s\n",
-                    date, escapeCsv(category), amount, merchant, escapeCsv(account), note));
+                    date, escapeCsv(category), amount, escapeCsv(merchantName), escapeCsv(account), note));
         }
 
         return sb.toString();
@@ -55,7 +61,8 @@ public class ReportGenerator {
     }
 
     public void generatePdf(Context context, OutputStream outputStream, List<Expense> expenses,
-            Map<Long, String> categoryNames, Map<Long, String> accountNames, String title) throws IOException {
+            Map<Long, String> categoryNames, Map<Long, String> accountNames, Map<Long, String> merchantNames,
+            String title) throws IOException {
 
         PdfDocument document = new PdfDocument();
         Paint paint = new Paint();
@@ -111,10 +118,15 @@ public class ReportGenerator {
             }
 
             xPosition = margin;
-            String date = expense.getDate().format(dateFormatter);
+            String date = DateUtils.epochDayToDate(expense.getDateEpochDay()).format(dateFormatter);
             String category = categoryNames.getOrDefault(expense.getCategoryId(), "-");
             String amount = DateUtils.formatAmountCents(expense.getAmountCents());
-            String merchant = expense.getMerchantName() != null ? expense.getMerchantName() : "-";
+
+            String merchant = "-";
+            if (expense.getMerchantId() != null) {
+                merchant = merchantNames.getOrDefault(expense.getMerchantId(), "-");
+            }
+
             String note = expense.getDescription() != null ? expense.getDescription() : "";
 
             // Truncate strings to fit

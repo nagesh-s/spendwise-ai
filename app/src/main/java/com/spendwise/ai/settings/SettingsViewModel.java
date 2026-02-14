@@ -27,6 +27,7 @@ public class SettingsViewModel extends AndroidViewModel {
     private final com.spendwise.ai.data.repository.ExpenseRepository expenseRepository;
     private final com.spendwise.ai.data.repository.CategoryRepository categoryRepository;
     private final com.spendwise.ai.data.repository.AccountRepository accountRepository;
+    private final com.spendwise.ai.data.repository.MerchantRepository merchantRepository;
     private final com.spendwise.ai.data.export.ReportGenerator reportGenerator;
 
     public SettingsViewModel(@NonNull Application application) {
@@ -41,6 +42,7 @@ public class SettingsViewModel extends AndroidViewModel {
         expenseRepository = new com.spendwise.ai.data.repository.ExpenseRepository(application);
         categoryRepository = new com.spendwise.ai.data.repository.CategoryRepository(application);
         accountRepository = new com.spendwise.ai.data.repository.AccountRepository(application);
+        merchantRepository = new com.spendwise.ai.data.repository.MerchantRepository(application);
         reportGenerator = new com.spendwise.ai.data.export.ReportGenerator();
     }
 
@@ -54,6 +56,8 @@ public class SettingsViewModel extends AndroidViewModel {
                 java.util.List<com.spendwise.ai.data.entity.Category> categories = categoryRepository
                         .getAllCategoriesSync();
                 java.util.List<com.spendwise.ai.data.entity.Account> accounts = accountRepository.getAllAccountsSync();
+                java.util.List<com.spendwise.ai.data.entity.Merchant> merchants = merchantRepository
+                        .getAllMerchantsSync();
 
                 java.util.Map<Long, String> categoryMap = new java.util.HashMap<>();
                 for (com.spendwise.ai.data.entity.Category c : categories)
@@ -63,7 +67,11 @@ public class SettingsViewModel extends AndroidViewModel {
                 for (com.spendwise.ai.data.entity.Account a : accounts)
                     accountMap.put(a.getId(), a.getName());
 
-                String csvData = reportGenerator.generateCsv(expenses, categoryMap, accountMap);
+                java.util.Map<Long, String> merchantMap = new java.util.HashMap<>();
+                for (com.spendwise.ai.data.entity.Merchant m : merchants)
+                    merchantMap.put(m.getId(), m.getName());
+
+                String csvData = reportGenerator.generateCsv(expenses, categoryMap, accountMap, merchantMap);
 
                 try (java.io.OutputStream os = getApplication().getContentResolver().openOutputStream(uri)) {
                     if (os != null) {
@@ -88,6 +96,8 @@ public class SettingsViewModel extends AndroidViewModel {
                 java.util.List<com.spendwise.ai.data.entity.Category> categories = categoryRepository
                         .getAllCategoriesSync();
                 java.util.List<com.spendwise.ai.data.entity.Account> accounts = accountRepository.getAllAccountsSync();
+                java.util.List<com.spendwise.ai.data.entity.Merchant> merchants = merchantRepository
+                        .getAllMerchantsSync();
 
                 java.util.Map<Long, String> categoryMap = new java.util.HashMap<>();
                 for (com.spendwise.ai.data.entity.Category c : categories)
@@ -97,9 +107,14 @@ public class SettingsViewModel extends AndroidViewModel {
                 for (com.spendwise.ai.data.entity.Account a : accounts)
                     accountMap.put(a.getId(), a.getName());
 
+                java.util.Map<Long, String> merchantMap = new java.util.HashMap<>();
+                for (com.spendwise.ai.data.entity.Merchant m : merchants)
+                    merchantMap.put(m.getId(), m.getName());
+
                 try (java.io.OutputStream os = getApplication().getContentResolver().openOutputStream(uri)) {
                     if (os != null) {
                         reportGenerator.generatePdf(getApplication(), os, expenses, categoryMap, accountMap,
+                                merchantMap,
                                 "SpendWise Report");
                         exportStatus.postValue("PDF exported successfully");
                     } else {

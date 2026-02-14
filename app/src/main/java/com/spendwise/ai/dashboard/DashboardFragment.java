@@ -302,8 +302,8 @@ public class DashboardFragment extends Fragment {
     }
 
     private void setupMonthNavigation() {
-        binding.btnPrevMonth.setOnClickListener(v -> viewModel.previousMonth());
-        binding.btnNextMonth.setOnClickListener(v -> viewModel.nextMonth());
+        binding.btnPrevMonth.setOnClickListener(v -> viewModel.goToPreviousMonth());
+        binding.btnNextMonth.setOnClickListener(v -> viewModel.goToNextMonth());
 
         binding.btnProfile.setOnClickListener(v -> {
             androidx.navigation.Navigation.findNavController(v)

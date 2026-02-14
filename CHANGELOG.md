@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.6.0] - 2026-02-14
+### Added - Phase 6 (Release Prep)
+- **Onboarding Flow** - 3-slide introduction (Welcome, Insights, Voice) for first-time users (OnboardingActivity, ViewPager2).
+- **App Icon** - New vector drawable icon features a wallet with growth graph.
+- **Splash Screen** - Android 12+ splash screen support via themes.
+- **Unit Tests** - `GamificationEngine` logic fully verified (XP, Leveling, Streaks).
+- **ProGuard Optimization** - Enabled minification for release builds with custom rules for Room/Gson/Charts.
+
+### Fixed
+- **Report Generator** - Fixed compilation errors by implementing synchronous Merchant/Category data fetching in SettingsViewModel.
+
+---
+
 ## [1.5.0] - 2026-02-14
 ### Added - Phase 4 & 5 (Complete)
 - **Gamification System** - Earn XP for logging expenses! Track progress with Levels and unlockable Badges (e.g., First Step, Streak Master).

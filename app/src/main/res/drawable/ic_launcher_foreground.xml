@@ -1,0 +1,32 @@
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Background Circle/Shape implied by adaptive icon, this is foreground -->
+    
+    <!-- Wallet Body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M24,34 C24,28.477 28.477,24 34,24 L74,24 C79.523,24 84,28.477 84,34 L84,74 C84,79.523 79.523,84 74,84 L34,84 C28.477,84 24,79.523 24,74 Z" />
+    
+    <!-- Inner Accent (Blue) -->
+    <path
+        android:fillColor="#2196F3"
+        android:pathData="M30,40 L78,40 L78,68 L30,68 Z" />
+        
+    <!-- Graph Line (Ascending) -->
+    <path
+        android:strokeColor="#4CAF50"
+        android:strokeWidth="4"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M34,60 L44,55 L54,62 L74,48" />
+
+    <!-- Coin/Chip -->
+    <path
+        android:fillColor="#FFC107"
+        android:pathData="M70,32 C72.209,32 74,33.791 74,36 C74,38.209 72.209,40 70,40 C67.791,40 66,38.209 66,36 C66,33.791 67.791,32 70,32 Z" />
+
+</vector>

@@ -2,6 +2,7 @@ Use unit tests for pure business logic (parsers, formatters, helpers) and androi
 
 Current baseline coverage:
 - `app/src/test/java/com/spendwise/ai/sms/TransactionParserTest.java`
+- `app/src/test/java/com/spendwise/ai/gamification/GamificationEngineTest.java`
 - `app/src/androidTest/java/com/spendwise/ai/data/AppDatabaseMigrationTest.java`
 - `app/src/androidTest/java/com/spendwise/ai/common/ExpenseEditorViewModelSaveTest.java`
 - `app/src/androidTest/java/com/spendwise/ai/categories/CategoryBudgetIntegrityTest.java`

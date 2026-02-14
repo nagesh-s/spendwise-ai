@@ -67,6 +67,10 @@ public class MerchantRepository {
         return merchantDao.getAllMerchants();
     }
 
+    public List<Merchant> getAllMerchantsSync() {
+        return merchantDao.getAllMerchantsSync();
+    }
+
     /**
      * Search merchants by name for autocomplete.
      */
