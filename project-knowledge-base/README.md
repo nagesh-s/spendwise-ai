@@ -99,4 +99,4 @@ app/src/main/res/
 ---
 
 ## 📅 Last Updated
-2026-02-08 - v1.1.2 docs refreshed for usability bug-fix and UI polish stabilization pass
+2026-02-14 - v1.2.2 docs refreshed for stabilization + initial automated test baseline

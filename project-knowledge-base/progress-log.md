@@ -4,17 +4,29 @@
 
 ---
 
-## 🎯 Current State: ✅ Phase 2 COMPLETE + STABILIZED (v1.2.1)
+## 🎯 Current State: ✅ Phase 2 COMPLETE + TEST BASELINE (v1.2.2)
 
 | Metric | Value |
 |--------|-------|
-| **Version** | v1.2.1 |
-| **Status** | Phase 2 complete + stabilization fixes on category creation and settings routing |
+| **Version** | v1.2.2 |
+| **Status** | Phase 2 complete + stabilization + initial automated test baseline |
 | **Last Updated** | 2026-02-14 |
 
 ---
 
-## ✅ Latest Completed Work (v1.2.1 — Stabilization)
+## ✅ Latest Completed Work (v1.2.2 — Test Baseline)
+
+### Automated Tests Added
+- ✅ `TransactionParserTest` (unit): valid detection + parse extraction + invalid input handling
+- ✅ `AppDatabaseMigrationTest` (androidTest): migration `3→4` schema/data assertions
+- ✅ `ExpenseEditorViewModelSaveTest` (androidTest): end-to-end save persistence assertions
+- ✅ Verification commands confirmed:
+  - `./gradlew :app:testDebugUnitTest`
+  - `./gradlew :app:assembleDebugAndroidTest`
+
+---
+
+## ✅ Stabilization Work (v1.2.1)
 
 ### UI/Flow Fixes
 - ✅ Categories FAB now opens a working add-category dialog
@@ -78,6 +90,7 @@
 | v1.1.2 | UX polish + quick tile, biometric, modal-date, nav compatibility fixes | 2026-02-08 |
 | v1.2.0 | Phase 2: Tags, multi-account, goals, analytics, SMS reader | 2026-02-14 |
 | v1.2.1 | Stabilization: category add flow + settings wiring + cleanup | 2026-02-14 |
+| v1.2.2 | Baseline tests: parser unit + migration + expense save instrumentation | 2026-02-14 |
 
 ---
 
@@ -92,4 +105,4 @@
 ---
 
 ## 📅 Last Updated
-2026-02-14 - v1.2.1 stabilization pass completed
+2026-02-14 - v1.2.2 automated test baseline added

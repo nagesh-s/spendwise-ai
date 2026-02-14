@@ -4,7 +4,7 @@
 
 ---
 
-## 📌 Status: ✅ IMPLEMENTED (Phase 1 + v1.1.x extensions)
+## 📌 Status: ✅ IMPLEMENTED + TESTED BASELINE (Phase 1 + v1.2.x extensions)
 
 ---
 
@@ -68,5 +68,21 @@ Date range/month state in ViewModel → DAO aggregate query (`SUM/COUNT/GROUP BY
 
 ---
 
+## 🧪 Test Coverage Baseline (v1.2.2)
+
+- `AppDatabaseMigrationTest` validates migration `3→4`:
+  - creates `tags`, `expense_tags`, `accounts`, `financial_goals`
+  - adds `accountId` column to `expenses`
+  - preserves existing expense rows
+  - seeds default Cash account
+
+- `ExpenseEditorViewModelSaveTest` validates save flow writes:
+  - expense row
+  - merchant lookup/creation
+  - account linkage
+  - expense-tag linkage
+
+---
+
 ## 📅 Last Updated
-2026-02-08 - v1.1.x data model and aggregate updates documented
+2026-02-14 - v1.2.2 migration and save-flow test baseline documented

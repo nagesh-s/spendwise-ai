@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.2] - 2026-02-14
+### Added
+- **SMS Parser Unit Tests** - Coverage for transaction detection and parse extraction in `TransactionParserTest`
+- **DB Migration Instrumentation Test** - Verifies migration `3→4` creates new tables and `expenses.accountId`
+- **Expense Save Flow Instrumentation Test** - Verifies `ExpenseEditorViewModel.saveExpense()` persists expense, merchant, account, and tags
+
+### Technical
+- Added first test suites under:
+  - `app/src/test/java/com/spendwise/ai/sms/`
+  - `app/src/androidTest/java/com/spendwise/ai/data/`
+  - `app/src/androidTest/java/com/spendwise/ai/common/`
+- Verification commands:
+  - `./gradlew :app:testDebugUnitTest`
+  - `./gradlew :app:assembleDebugAndroidTest`
+
+---
+
 ## [1.2.1] - 2026-02-14
 ### Fixed
 - Categories FAB now opens an **Add Category** dialog instead of a TODO placeholder
@@ -198,3 +215,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | 1.1.2 | 2026-02-08 | UX polish + quick-tile action fix + biometric/setup + modal layout fixes |
 | 1.2.0 | 2026-02-14 | Phase 2: tags, accounts, goals, analytics, SMS reader |
 | 1.2.1 | 2026-02-14 | Stabilization: category add flow + settings wiring + changelog cleanup |
+| 1.2.2 | 2026-02-14 | Baseline tests: parser unit + migration + expense save instrumentation |
