@@ -106,6 +106,24 @@ public class SettingsFragment extends Fragment {
                     .navigate(com.spendwise.ai.R.id.navigation_recurring);
         });
 
+        // Financial Goals
+        binding.cardGoals.setOnClickListener(v -> {
+            androidx.navigation.Navigation.findNavController(v)
+                    .navigate(com.spendwise.ai.R.id.navigation_goals);
+        });
+
+        // Analytics Dashboard
+        binding.cardAnalytics.setOnClickListener(v -> {
+            androidx.navigation.Navigation.findNavController(v)
+                    .navigate(com.spendwise.ai.R.id.navigation_analytics);
+        });
+
+        // Auto Transaction Reader
+        binding.cardAutoTransactions.setOnClickListener(v -> {
+            androidx.navigation.Navigation.findNavController(v)
+                    .navigate(com.spendwise.ai.R.id.navigation_auto_transactions);
+        });
+
         // Biometric Lock toggle
         setupBiometricToggle();
     }

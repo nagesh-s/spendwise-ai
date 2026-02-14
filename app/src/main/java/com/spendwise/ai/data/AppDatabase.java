@@ -115,6 +115,7 @@ public abstract class AppDatabase extends RoomDatabase {
         public void onCreate(@NonNull SupportSQLiteDatabase db) {
             super.onCreate(db);
             seedDefaultCategories();
+            seedDefaultAccount();
         }
 
         @Override
@@ -122,6 +123,7 @@ public abstract class AppDatabase extends RoomDatabase {
             super.onOpen(db);
             // Also check on open in case migration cleared the data
             seedDefaultCategories();
+            seedDefaultAccount();
         }
     };
 
@@ -134,6 +136,21 @@ public abstract class AppDatabase extends RoomDatabase {
             int count = categoryDao.getCategoryCount();
             if (count == 0) {
                 categoryDao.insertAll(getDefaultCategories());
+            }
+        });
+    }
+
+    /**
+     * Seed a default Cash account if no accounts exist.
+     */
+    private static void seedDefaultAccount() {
+        databaseWriteExecutor.execute(() -> {
+            if (INSTANCE == null)
+                return;
+            AccountDao accountDao = INSTANCE.accountDao();
+            if (accountDao.getAccountCount() == 0) {
+                Account cash = new Account("Cash", "CASH", 0, Color.parseColor("#4CAF50"), "fa_wallet", true);
+                accountDao.insert(cash);
             }
         });
     }
