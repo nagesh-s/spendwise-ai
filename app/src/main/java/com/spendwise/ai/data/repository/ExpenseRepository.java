@@ -32,6 +32,14 @@ public class ExpenseRepository {
         AppDatabase.databaseWriteExecutor.execute(() -> expenseDao.insert(expense));
     }
 
+    /**
+     * Insert expense synchronously and return the generated ID.
+     * Must be called from a background thread.
+     */
+    public long insertSync(Expense expense) {
+        return expenseDao.insert(expense);
+    }
+
     public void update(Expense expense) {
         AppDatabase.databaseWriteExecutor.execute(() -> expenseDao.update(expense));
     }

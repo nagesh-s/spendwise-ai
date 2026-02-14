@@ -9,16 +9,23 @@ import androidx.lifecycle.LiveData;
 import androidx.lifecycle.MutableLiveData;
 
 import com.spendwise.ai.data.AppDatabase;
+import com.spendwise.ai.data.entity.Account;
 import com.spendwise.ai.data.entity.Category;
 import com.spendwise.ai.data.entity.Expense;
 import com.spendwise.ai.data.entity.Merchant;
+import com.spendwise.ai.data.entity.Tag;
+import com.spendwise.ai.data.repository.AccountRepository;
 import com.spendwise.ai.data.repository.CategoryRepository;
 import com.spendwise.ai.data.repository.ExpenseRepository;
 import com.spendwise.ai.data.repository.MerchantRepository;
+import com.spendwise.ai.data.repository.TagRepository;
 import com.spendwise.ai.util.DateUtils;
 
 import org.threeten.bp.LocalDate;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * ViewModel for ExpenseEditorDialog.
@@ -30,12 +37,20 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
     private final ExpenseRepository expenseRepository;
     private final CategoryRepository categoryRepository;
     private final MerchantRepository merchantRepository;
+    private final TagRepository tagRepository;
+    private final AccountRepository accountRepository;
 
     // All categories for dropdown
     private final LiveData<List<Category>> allCategories;
 
     // All merchants for autocomplete
     private final LiveData<List<Merchant>> allMerchants;
+
+    // All tags
+    private final LiveData<List<Tag>> allTags;
+
+    // All accounts
+    private final LiveData<List<Account>> allAccounts;
 
     // Form state
     private final MutableLiveData<Long> expenseId = new MutableLiveData<>();
@@ -44,6 +59,10 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
     private final MutableLiveData<Long> selectedCategoryId = new MutableLiveData<>();
     private final MutableLiveData<String> merchantName = new MutableLiveData<>();
     private final MutableLiveData<LocalDate> selectedDate = new MutableLiveData<>();
+    private final MutableLiveData<Long> selectedAccountId = new MutableLiveData<>();
+
+    // Selected tags
+    private final Set<Long> selectedTagIds = new HashSet<>();
 
     // Validation errors
     private final MutableLiveData<String> amountError = new MutableLiveData<>();
@@ -60,9 +79,13 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
         expenseRepository = new ExpenseRepository(application);
         categoryRepository = new CategoryRepository(application);
         merchantRepository = new MerchantRepository(application);
+        tagRepository = new TagRepository(application);
+        accountRepository = new AccountRepository(application);
 
         allCategories = categoryRepository.getAllCategories();
         allMerchants = merchantRepository.getAllMerchants();
+        allTags = tagRepository.getAllTags();
+        allAccounts = accountRepository.getAllAccounts();
 
         // Initialize with today's date
         selectedDate.setValue(LocalDate.now());
@@ -171,6 +194,50 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
         selectedDate.setValue(date);
     }
 
+    // ==================== Account Operations ====================
+
+    public LiveData<List<Account>> getAllAccounts() {
+        return allAccounts;
+    }
+
+    public MutableLiveData<Long> getSelectedAccountId() {
+        return selectedAccountId;
+    }
+
+    public void setSelectedAccountId(Long accountId) {
+        selectedAccountId.setValue(accountId);
+    }
+
+    // ==================== Tag Operations ====================
+
+    public LiveData<List<Tag>> getAllTags() {
+        return allTags;
+    }
+
+    public Set<Long> getSelectedTagIds() {
+        return selectedTagIds;
+    }
+
+    public void toggleTag(long tagId) {
+        if (selectedTagIds.contains(tagId)) {
+            selectedTagIds.remove(tagId);
+        } else {
+            selectedTagIds.add(tagId);
+        }
+    }
+
+    public void loadTagsForExpense(long expId) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            List<Tag> tags = tagRepository.getTagsForExpenseSync(expId);
+            if (tags != null) {
+                selectedTagIds.clear();
+                for (Tag tag : tags) {
+                    selectedTagIds.add(tag.getId());
+                }
+            }
+        });
+    }
+
     // ==================== Validation ====================
 
     public LiveData<String> getAmountError() {
@@ -242,12 +309,24 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
                 categoryId,
                 merchantId);
 
+        // Set account if selected
+        Long accountId = selectedAccountId.getValue();
+        if (accountId != null && accountId > 0) {
+            expense.setAccountId(accountId);
+        }
+
         Long existingId = expenseId.getValue();
         if (existingId != null && existingId > 0) {
             expense.setId(existingId);
             expenseRepository.update(expense);
+            // Update tags
+            tagRepository.setTagsForExpense(existingId, new ArrayList<>(selectedTagIds));
         } else {
-            expenseRepository.insert(expense);
+            long newId = expenseRepository.insertSync(expense);
+            // Save tags for new expense
+            if (!selectedTagIds.isEmpty()) {
+                tagRepository.setTagsForExpense(newId, new ArrayList<>(selectedTagIds));
+            }
         }
 
         saveComplete.setValue(true);

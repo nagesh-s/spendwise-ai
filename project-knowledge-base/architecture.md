@@ -74,6 +74,9 @@
 |--------|----------|-----------|--------|
 | Quick Tiles | `quicktiles/QuickTilesFragment.java` | `QuickTilesViewModel.java` | `fragment_quick_tiles.xml` |
 | Recurring Expenses | `recurring/RecurringExpensesFragment.java` | `RecurringExpensesViewModel.java` | `fragment_recurring_expenses.xml` |
+| Goals | `goals/GoalsFragment.java` | `GoalsViewModel.java` | `fragment_goals.xml` |
+| Analytics | `analytics/AnalyticsFragment.java` | `AnalyticsViewModel.java` | `fragment_analytics.xml` |
+| Auto Transactions | `sms/AutoTransactionsFragment.java` | — | `fragment_auto_transactions.xml` |
 
 ### Dialogs
 
@@ -217,10 +220,12 @@ Fragment observers update UI
 | v0.4.0 | Import/Export JSON | 01-23 |
 | v0.5.0 | Smart features | 01-23 |
 | v1.0.0 | Calendar decorators, final | 01-23 |
-| v1.1.0 | QuickTiles, recurring expenses, reminders | 02-08 |
-| v1.1.1 | UX refinement + edit-flow reliability fixes | 02-08 |
+| v1.1.0 | QuickTiles, recurring, reminders | 02-08 |
+| v1.1.1 | UX refinement + edit-flow fixes | 02-08 |
+| v1.1.2 | UX polish + compatibility fixes | 02-08 |
+| v1.2.0 | Phase 2: Tags, accounts, goals, analytics, SMS reader | 02-14 |
 
 ---
 
 ## 📅 Last Updated
-2026-02-08 - v1.1.1 docs updated
+2026-02-14 - v1.2.0 Phase 2 complete

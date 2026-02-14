@@ -54,6 +54,13 @@ public class Expense {
     @Nullable
     private String photoPath;
 
+    /**
+     * Optional link to the account this expense was made from.
+     * Null means no account is assigned (backwards compatible).
+     */
+    @Nullable
+    private Long accountId;
+
     // Constructor
     public Expense(long dateEpochDay, long amountCents, @Nullable String description,
             long categoryId, @Nullable Long merchantId) {
@@ -122,5 +129,14 @@ public class Expense {
 
     public void setPhotoPath(@Nullable String photoPath) {
         this.photoPath = photoPath;
+    }
+
+    @Nullable
+    public Long getAccountId() {
+        return accountId;
+    }
+
+    public void setAccountId(@Nullable Long accountId) {
+        this.accountId = accountId;
     }
 }

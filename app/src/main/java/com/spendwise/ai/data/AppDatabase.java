@@ -9,18 +9,27 @@ import androidx.room.Room;
 import androidx.room.RoomDatabase;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
+import com.spendwise.ai.data.dao.AccountDao;
 import com.spendwise.ai.data.dao.BudgetDao;
 import com.spendwise.ai.data.dao.CategoryDao;
 import com.spendwise.ai.data.dao.ExpenseDao;
+import com.spendwise.ai.data.dao.FinancialGoalDao;
 import com.spendwise.ai.data.dao.MerchantDao;
 import com.spendwise.ai.data.dao.QuickTileDao;
 import com.spendwise.ai.data.dao.RecurringExpenseDao;
+import com.spendwise.ai.data.dao.TagDao;
+import com.spendwise.ai.data.entity.Account;
 import com.spendwise.ai.data.entity.Budget;
 import com.spendwise.ai.data.entity.Category;
 import com.spendwise.ai.data.entity.Expense;
 import com.spendwise.ai.data.entity.Merchant;
 import com.spendwise.ai.data.entity.QuickTile;
 import com.spendwise.ai.data.entity.RecurringExpense;
+import com.spendwise.ai.data.entity.Tag;
+import com.spendwise.ai.data.entity.ExpenseTag;
+import com.spendwise.ai.data.entity.FinancialGoal;
+
+import androidx.room.migration.Migration;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -39,8 +48,12 @@ import java.util.concurrent.Executors;
         Merchant.class,
         Budget.class,
         QuickTile.class,
-        RecurringExpense.class
-}, version = 3, exportSchema = true)
+        RecurringExpense.class,
+        Tag.class,
+        ExpenseTag.class,
+        Account.class,
+        FinancialGoal.class
+}, version = 4, exportSchema = true)
 public abstract class AppDatabase extends RoomDatabase {
 
     private static final String DATABASE_NAME = "spendwise_db";
@@ -65,6 +78,12 @@ public abstract class AppDatabase extends RoomDatabase {
 
     public abstract RecurringExpenseDao recurringExpenseDao();
 
+    public abstract TagDao tagDao();
+
+    public abstract AccountDao accountDao();
+
+    public abstract FinancialGoalDao financialGoalDao();
+
     /**
      * Get the singleton database instance.
      * Creates the database on first call, with default categories prepopulated.
@@ -77,6 +96,7 @@ public abstract class AppDatabase extends RoomDatabase {
                             context.getApplicationContext(),
                             AppDatabase.class,
                             DATABASE_NAME)
+                            .addMigrations(MIGRATION_3_4)
                             .addCallback(prepopulateCallback)
                             .fallbackToDestructiveMigration() // For development only
                             .build();
@@ -157,6 +177,68 @@ public abstract class AppDatabase extends RoomDatabase {
 
         return categories;
     }
+
+    /**
+     * Migration from version 3 to 4:
+     * - Creates 'tags' table
+     * - Creates 'expense_tags' join table
+     * All existing data is preserved.
+     */
+    static final Migration MIGRATION_3_4 = new Migration(3, 4) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // Create tags table
+            database.execSQL("CREATE TABLE IF NOT EXISTS `tags` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT NOT NULL, " +
+                    "`colorArgb` INTEGER NOT NULL)");
+
+            // Create expense_tags join table
+            database.execSQL("CREATE TABLE IF NOT EXISTS `expense_tags` (" +
+                    "`expenseId` INTEGER NOT NULL, " +
+                    "`tagId` INTEGER NOT NULL, " +
+                    "PRIMARY KEY(`expenseId`, `tagId`), " +
+                    "FOREIGN KEY(`expenseId`) REFERENCES `expenses`(`id`) ON DELETE CASCADE, " +
+                    "FOREIGN KEY(`tagId`) REFERENCES `tags`(`id`) ON DELETE CASCADE)");
+
+            // Create indices for expense_tags
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_expense_tags_expenseId` ON `expense_tags` (`expenseId`)");
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_expense_tags_tagId` ON `expense_tags` (`tagId`)");
+
+            // Create accounts table
+            database.execSQL("CREATE TABLE IF NOT EXISTS `accounts` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT NOT NULL, " +
+                    "`type` TEXT NOT NULL, " +
+                    "`balanceCents` INTEGER NOT NULL, " +
+                    "`colorArgb` INTEGER NOT NULL, " +
+                    "`iconKey` TEXT, " +
+                    "`isDefault` INTEGER NOT NULL)");
+
+            // Add accountId column to expenses table
+            database.execSQL("ALTER TABLE `expenses` ADD COLUMN `accountId` INTEGER");
+
+            // Seed default Cash account
+            database.execSQL(
+                    "INSERT INTO `accounts` (`name`, `type`, `balanceCents`, `colorArgb`, `iconKey`, `isDefault`) " +
+                            "VALUES ('Cash', 'CASH', 0, " + Color.parseColor("#4CAF50") + ", 'fa_wallet', 1)");
+
+            // Create financial_goals table
+            database.execSQL("CREATE TABLE IF NOT EXISTS `financial_goals` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT NOT NULL, " +
+                    "`type` TEXT NOT NULL, " +
+                    "`targetAmountCents` INTEGER NOT NULL, " +
+                    "`currentAmountCents` INTEGER NOT NULL, " +
+                    "`startDateEpochDay` INTEGER NOT NULL, " +
+                    "`endDateEpochDay` INTEGER, " +
+                    "`status` TEXT NOT NULL, " +
+                    "`colorArgb` INTEGER NOT NULL, " +
+                    "`iconKey` TEXT, " +
+                    "`linkedCategoryId` INTEGER)");
+        }
+    };
 
     /**
      * Close the database instance.

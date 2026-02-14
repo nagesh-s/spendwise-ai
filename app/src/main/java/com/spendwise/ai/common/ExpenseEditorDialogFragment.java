@@ -92,6 +92,7 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
             if (args.containsKey(ARG_EXPENSE_ID)) {
                 long expenseId = args.getLong(ARG_EXPENSE_ID);
                 viewModel.initForEdit(expenseId);
+                viewModel.loadTagsForExpense(expenseId);
                 binding.textDialogTitle.setText("Edit Expense");
                 binding.btnDelete.setVisibility(View.VISIBLE);
             } else {
@@ -103,12 +104,99 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
         }
 
         setupCategoryDropdown();
+        setupAccountDropdown();
         setupMerchantAutocomplete();
         setupDescriptionSuggestions();
         setupDatePicker();
         setupPresetChips();
+        setupTagChips();
         setupButtons();
         observeViewModel();
+    }
+
+    private void setupAccountDropdown() {
+        final Map<String, Long> accountNameToId = new HashMap<>();
+        viewModel.getAllAccounts().observe(getViewLifecycleOwner(), accounts -> {
+            List<String> names = new ArrayList<>();
+            accountNameToId.clear();
+            if (accounts != null) {
+                for (com.spendwise.ai.data.entity.Account account : accounts) {
+                    String displayName = account.getName() + " (" + account.getTypeDisplayName() + ")";
+                    names.add(displayName);
+                    accountNameToId.put(displayName, account.getId());
+                    // Auto-select default account
+                    if (account.isDefault() && viewModel.getSelectedAccountId().getValue() == null) {
+                        viewModel.setSelectedAccountId(account.getId());
+                        binding.dropdownAccount.setText(displayName, false);
+                    }
+                }
+            }
+            ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
+                    android.R.layout.simple_dropdown_item_1line, names);
+            binding.dropdownAccount.setAdapter(adapter);
+        });
+
+        binding.dropdownAccount.setOnItemClickListener((parent, view2, position, id) -> {
+            String selected = (String) parent.getItemAtPosition(position);
+            Long accountId = accountNameToId.get(selected);
+            if (accountId != null) {
+                viewModel.setSelectedAccountId(accountId);
+            }
+        });
+    }
+
+    private void setupTagChips() {
+        viewModel.getAllTags().observe(getViewLifecycleOwner(), tags -> {
+            binding.chipGroupTags.removeAllViews();
+            if (tags != null) {
+                for (com.spendwise.ai.data.entity.Tag tag : tags) {
+                    com.google.android.material.chip.Chip chip = new com.google.android.material.chip.Chip(
+                            requireContext());
+                    chip.setText(tag.getName());
+                    chip.setCheckable(true);
+                    chip.setChecked(viewModel.getSelectedTagIds().contains(tag.getId()));
+                    chip.setOnCheckedChangeListener((buttonView, isChecked) -> viewModel.toggleTag(tag.getId()));
+                    if (tag.getColorArgb() != 0) {
+                        chip.setChipBackgroundColorResource(android.R.color.transparent);
+                        chip.setChipStrokeWidth(2f);
+                        chip.setChipStrokeColor(android.content.res.ColorStateList.valueOf(tag.getColorArgb()));
+                    }
+                    binding.chipGroupTags.addView(chip);
+                }
+            }
+            // Add "+ New Tag" chip
+            com.google.android.material.chip.Chip addChip = new com.google.android.material.chip.Chip(requireContext());
+            addChip.setText("+ New Tag");
+            addChip.setCheckable(false);
+            addChip.setOnClickListener(v -> showNewTagDialog());
+            binding.chipGroupTags.addView(addChip);
+        });
+    }
+
+    private void showNewTagDialog() {
+        android.app.AlertDialog.Builder builder = new android.app.AlertDialog.Builder(requireContext());
+        builder.setTitle("Create New Tag");
+
+        final android.widget.EditText input = new android.widget.EditText(requireContext());
+        input.setHint("Tag name");
+        input.setPadding(48, 32, 48, 32);
+        builder.setView(input);
+
+        builder.setPositiveButton("Create", (dialog, which) -> {
+            String tagName = input.getText().toString().trim();
+            if (!tagName.isEmpty()) {
+                // Generate a random color from Material palette
+                int[] colors = { 0xFFE91E63, 0xFF9C27B0, 0xFF3F51B5, 0xFF03A9F4,
+                        0xFF009688, 0xFF4CAF50, 0xFFFF9800, 0xFFFF5722 };
+                int color = colors[(int) (Math.random() * colors.length)];
+                com.spendwise.ai.data.entity.Tag newTag = new com.spendwise.ai.data.entity.Tag(tagName, color);
+                com.spendwise.ai.data.repository.TagRepository tagRepo = new com.spendwise.ai.data.repository.TagRepository(
+                        requireActivity().getApplication());
+                tagRepo.insert(newTag);
+            }
+        });
+        builder.setNegativeButton("Cancel", (dialog, which) -> dialog.cancel());
+        builder.show();
     }
 
     private void setupPresetChips() {

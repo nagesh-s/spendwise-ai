@@ -48,4 +48,22 @@
         android:label="Recurring Expenses"
         tools:layout="@layout/fragment_recurring_expenses" />
 
+    <fragment
+        android:id="@+id/navigation_goals"
+        android:name="com.spendwise.ai.goals.GoalsFragment"
+        android:label="Goals"
+        tools:layout="@layout/fragment_goals" />
+
+    <fragment
+        android:id="@+id/navigation_analytics"
+        android:name="com.spendwise.ai.analytics.AnalyticsFragment"
+        android:label="Analytics"
+        tools:layout="@layout/fragment_analytics" />
+
+    <fragment
+        android:id="@+id/navigation_auto_transactions"
+        android:name="com.spendwise.ai.sms.AutoTransactionsFragment"
+        android:label="Auto Transactions"
+        tools:layout="@layout/fragment_auto_transactions" />
+
 </navigation>

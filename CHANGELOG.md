@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.2.0] - 2026-02-14
+### Added - Phase 2 Complete
+- **Tags & Custom Labels** - Flexible expense tagging beyond categories (Tag, ExpenseTag entities, TagDao, ChipGroup UI in expense editor)
+- **Multi-Account Support** - Track spending across Cash, Bank, Credit Card, Wallet accounts (Account entity, dropdown in expense editor, default Cash seed)
+- **Financial Goals Tracking** - Savings goals, spending limits, debt payoff targets with progress bars (FinancialGoal entity, GoalsFragment, add/update dialogs)
+- **Advanced Analytics Dashboard** - Period-selectable analytics with spending trend LineChart, category PieChart, and top-5 breakdown (AnalyticsFragment, week/month/quarter/year)
+- **Auto Transaction Reader (SMS)** - Regex-based Indian bank SMS parser (SBI, HDFC, ICICI, UPI, etc.) with one-tap import as expense
+
+### Technical
+- Database version 4 with explicit Migration(3→4): creates `tags`, `expense_tags`, `accounts`, `financial_goals` tables; adds `accountId` to `expenses`
+- Default Cash account seeded during migration
+- `READ_SMS` permission added to AndroidManifest
+- New packages: `analytics/`, `goals/`, `sms/`
+- Build verified with `./gradlew assembleDebug`
+
+---
+
 ## [1.1.2] - 2026-02-08
 ### Added
 - Quick Tiles usage hint text: tap to add expense, long-press to edit/delete

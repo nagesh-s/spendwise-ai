@@ -8,5 +8,8 @@
 - Additional fragment routes:
   - `navigation_quick_tiles` (from Settings card)
   - `navigation_recurring` (from Settings card)
+  - `navigation_goals` -> `GoalsFragment` (financial goals tracking)
+  - `navigation_analytics` -> `AnalyticsFragment` (spending analytics dashboard)
+  - `navigation_auto_transactions` -> `AutoTransactionsFragment` (SMS transaction reader)
 - Dialog route:
   - `expenseEditorDialogFragment` -> `ExpenseEditorDialogFragment` with args `(expenseId?, dateEpochDay)`
