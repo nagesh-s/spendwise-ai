@@ -4,9 +4,11 @@ import android.Manifest;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.provider.Settings;
 
 import androidx.annotation.NonNull;
 import androidx.core.app.ActivityCompat;
@@ -45,6 +47,16 @@ public class SmsPermissionHelper {
     public static boolean shouldShowRationale(@NonNull Activity activity) {
         return ActivityCompat.shouldShowRequestPermissionRationale(activity,
                 Manifest.permission.READ_SMS);
+    }
+
+    /**
+     * Open app settings screen for manual permission management.
+     */
+    public static void openAppSettings(@NonNull Context context) {
+        Intent intent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+        intent.setData(Uri.fromParts("package", context.getPackageName(), null));
+        intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+        context.startActivity(intent);
     }
 
     /**

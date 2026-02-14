@@ -56,4 +56,35 @@ public class TransactionParserTest {
         assertNull(TransactionParser.parse("Rs 0 debited from A/c XX1234", 1700000000000L));
         assertNull(TransactionParser.parse("Amount debited from A/c XX1234", 1700000000000L));
     }
+
+    @Test
+    public void parse_merchantIsExtractedFromAtPatternWhenUpiMissing() {
+        String body = "INR 899.00 spent on your Card ending 4321 at AMAZON INDIA on 14-02-26.";
+
+        ParsedTransaction parsed = TransactionParser.parse(body, 1700000000000L);
+
+        assertNotNull(parsed);
+        assertEquals(ParsedTransaction.TransactionType.DEBIT, parsed.getType());
+        assertEquals(89900L, parsed.getAmountCents());
+        assertEquals("AMAZON INDIA", parsed.getMerchant());
+        assertEquals("XX4321", parsed.getAccountInfo());
+    }
+
+    @Test
+    public void parse_whenBothCreditAndDebitKeywordsExist_creditTakesPrecedence() {
+        String body = "Rs 500 debited from A/c XX4321 and later credited as cashback.";
+
+        ParsedTransaction parsed = TransactionParser.parse(body, 1700000000000L);
+
+        assertNotNull(parsed);
+        assertEquals(ParsedTransaction.TransactionType.CREDIT, parsed.getType());
+    }
+
+    @Test
+    public void isTransactionSms_rejectsUnknownSenderEvenWithAmountAndKeyword() {
+        String sender = "DM-STORE";
+        String body = "Rs 560 debited from your card for grocery shopping.";
+
+        assertFalse(TransactionParser.isTransactionSms(sender, body));
+    }
 }

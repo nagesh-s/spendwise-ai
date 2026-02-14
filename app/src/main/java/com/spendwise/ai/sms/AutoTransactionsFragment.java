@@ -1,6 +1,7 @@
 package com.spendwise.ai.sms;
 
 import android.content.pm.PackageManager;
+import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -31,10 +32,16 @@ import java.util.List;
  */
 public class AutoTransactionsFragment extends Fragment implements TransactionAdapter.OnImportClickListener {
 
+    private static final String PREF_SMS_PERMISSION = "sms_permission_prefs";
+    private static final String KEY_SMS_PERMISSION_REQUESTED = "sms_permission_requested";
+
     private RecyclerView recyclerView;
     private TextView emptyText;
+    private TextView permissionMessageText;
     private View permissionLayout;
     private MaterialButton scanBtn;
+    private MaterialButton grantPermissionBtn;
+    private MaterialButton openSettingsBtn;
     private TransactionAdapter adapter;
 
     @Nullable
@@ -50,15 +57,21 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
 
         recyclerView = view.findViewById(R.id.recycler_transactions);
         emptyText = view.findViewById(R.id.text_empty);
+        permissionMessageText = view.findViewById(R.id.text_permission_message);
         permissionLayout = view.findViewById(R.id.layout_permission);
         scanBtn = view.findViewById(R.id.btn_scan);
+        grantPermissionBtn = view.findViewById(R.id.btn_grant_permission);
+        openSettingsBtn = view.findViewById(R.id.btn_open_sms_settings);
 
         adapter = new TransactionAdapter(this);
         recyclerView.setAdapter(adapter);
 
         // Permission button
-        view.findViewById(R.id.btn_grant_permission)
-                .setOnClickListener(v -> SmsPermissionHelper.requestSmsPermission(requireActivity()));
+        grantPermissionBtn.setOnClickListener(v -> {
+            markSmsPermissionRequested();
+            SmsPermissionHelper.requestSmsPermission(requireActivity());
+        });
+        openSettingsBtn.setOnClickListener(v -> SmsPermissionHelper.openAppSettings(requireContext()));
 
         // Scan button
         scanBtn.setOnClickListener(v -> scanSms());
@@ -80,6 +93,7 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
             recyclerView.setVisibility(View.GONE);
             emptyText.setVisibility(View.GONE);
             scanBtn.setVisibility(View.GONE);
+            renderPermissionGuidance();
         } else {
             permissionLayout.setVisibility(View.GONE);
             scanBtn.setVisibility(View.VISIBLE);
@@ -91,37 +105,74 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
         }
     }
 
+    private void renderPermissionGuidance() {
+        boolean requestedBefore = hasRequestedSmsPermission();
+        boolean canShowRationale = SmsPermissionHelper.shouldShowRationale(requireActivity());
+
+        openSettingsBtn.setVisibility(View.GONE);
+        grantPermissionBtn.setVisibility(View.VISIBLE);
+
+        if (requestedBefore && !canShowRationale) {
+            permissionMessageText.setText(getString(R.string.sms_permission_settings_required));
+            grantPermissionBtn.setText(getString(R.string.grant_sms_permission_again));
+            openSettingsBtn.setVisibility(View.VISIBLE);
+        } else if (canShowRationale) {
+            permissionMessageText.setText(getString(R.string.sms_permission_rationale));
+            grantPermissionBtn.setText(getString(R.string.grant_sms_permission));
+        } else {
+            permissionMessageText.setText(getString(R.string.sms_permission_initial));
+            grantPermissionBtn.setText(getString(R.string.grant_sms_permission));
+        }
+    }
+
+    private void markSmsPermissionRequested() {
+        requireContext().getSharedPreferences(PREF_SMS_PERMISSION, Context.MODE_PRIVATE)
+                .edit()
+                .putBoolean(KEY_SMS_PERMISSION_REQUESTED, true)
+                .apply();
+    }
+
+    private boolean hasRequestedSmsPermission() {
+        return requireContext().getSharedPreferences(PREF_SMS_PERMISSION, Context.MODE_PRIVATE)
+                .getBoolean(KEY_SMS_PERMISSION_REQUESTED, false);
+    }
+
     private void scanSms() {
         if (!SmsPermissionHelper.hasReadSmsPermission(requireContext())) {
+            markSmsPermissionRequested();
             SmsPermissionHelper.requestSmsPermission(requireActivity());
             return;
         }
 
         scanBtn.setEnabled(false);
-        scanBtn.setText("Scanning...");
+        scanBtn.setText(getString(R.string.sms_scanning));
+        Context appContext = requireContext().getApplicationContext();
 
         // Run on background thread
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            List<ParsedTransaction> transactions = SmsPermissionHelper.readRecentTransactions(requireContext(), 30);
+            List<ParsedTransaction> transactions = SmsPermissionHelper.readRecentTransactions(appContext, 30);
 
             // Filter to debit transactions only (those are expenses)
             transactions.removeIf(t -> t.getType() != ParsedTransaction.TransactionType.DEBIT);
 
+            if (!isAdded()) {
+                return;
+            }
+
             requireActivity().runOnUiThread(() -> {
                 adapter.setTransactions(transactions);
                 scanBtn.setEnabled(true);
-                scanBtn.setText("Scan SMS Inbox");
+                scanBtn.setText(getString(R.string.sms_scan_inbox));
 
                 if (transactions.isEmpty()) {
-                    emptyText.setText(
-                            "No debit transactions found in recent SMS.\nTry checking your SMS inbox manually.");
+                    emptyText.setText(getString(R.string.sms_scan_empty));
                     emptyText.setVisibility(View.VISIBLE);
                     recyclerView.setVisibility(View.GONE);
                 } else {
                     emptyText.setVisibility(View.GONE);
                     recyclerView.setVisibility(View.VISIBLE);
                     Toast.makeText(requireContext(),
-                            "Found " + transactions.size() + " transactions",
+                            getString(R.string.sms_found_transactions, transactions.size()),
                             Toast.LENGTH_SHORT).show();
                 }
             });
@@ -134,27 +185,66 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
         LocalDate date = Instant.ofEpochMilli(transaction.getTimestampMillis())
                 .atZone(ZoneId.systemDefault())
                 .toLocalDate();
+        long dateEpochDay = date.toEpochDay();
+        String description = transaction.getMerchant() != null
+                ? transaction.getMerchant()
+                : getString(R.string.sms_import_description_fallback);
+        long importCategoryId = 1L;
 
         // Create expense with "Uncategorized" (category 1 is usually the first default)
         Expense expense = new Expense(
-                date.toEpochDay(),
+                dateEpochDay,
                 transaction.getAmountCents(),
-                transaction.getMerchant() != null ? transaction.getMerchant() : "SMS Import",
-                1L, // Default category (first category)
+                description,
+                importCategoryId,
                 null // No merchant link
         );
+        Context appContext = requireContext().getApplicationContext();
 
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            AppDatabase db = AppDatabase.getInstance(requireContext().getApplicationContext());
-            db.expenseDao().insert(expense);
+            AppDatabase db = AppDatabase.getInstance(appContext);
+            int duplicateCount = db.expenseDao().countExactMatch(
+                    dateEpochDay,
+                    transaction.getAmountCents(),
+                    importCategoryId,
+                    description);
 
-            requireActivity().runOnUiThread(() -> {
-                transaction.setImported(true);
-                adapter.notifyItemChanged(position);
-                Toast.makeText(requireContext(),
-                        "Imported " + transaction.getFormattedAmount() + " as expense",
-                        Toast.LENGTH_SHORT).show();
-            });
+            if (duplicateCount > 0) {
+                if (!isAdded()) {
+                    return;
+                }
+                requireActivity().runOnUiThread(() -> {
+                    transaction.setImported(true);
+                    adapter.notifyItemChanged(position);
+                    Toast.makeText(requireContext(),
+                            getString(R.string.sms_duplicate_transaction_skipped),
+                            Toast.LENGTH_SHORT).show();
+                });
+                return;
+            }
+
+            try {
+                db.expenseDao().insert(expense);
+
+                if (!isAdded()) {
+                    return;
+                }
+                requireActivity().runOnUiThread(() -> {
+                    transaction.setImported(true);
+                    adapter.notifyItemChanged(position);
+                    Toast.makeText(requireContext(),
+                            getString(R.string.sms_import_success, transaction.getFormattedAmount()),
+                            Toast.LENGTH_SHORT).show();
+                });
+            } catch (Exception ex) {
+                if (!isAdded()) {
+                    return;
+                }
+                requireActivity().runOnUiThread(() -> Toast.makeText(
+                        requireContext(),
+                        getString(R.string.sms_import_failed_retry),
+                        Toast.LENGTH_LONG).show());
+            }
         });
     }
 
@@ -166,9 +256,16 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
                 updateUiState();
                 scanSms();
             } else {
-                Toast.makeText(requireContext(),
-                        "SMS permission is required to detect transactions",
-                        Toast.LENGTH_LONG).show();
+                if (!SmsPermissionHelper.shouldShowRationale(requireActivity()) && hasRequestedSmsPermission()) {
+                    Toast.makeText(requireContext(),
+                            getString(R.string.sms_permission_open_settings_to_enable),
+                            Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(requireContext(),
+                            getString(R.string.sms_permission_required_to_detect),
+                            Toast.LENGTH_LONG).show();
+                }
+                updateUiState();
             }
         }
     }

@@ -9,7 +9,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Auto Transactions"
+        android:text="@string/auto_transactions_title"
         android:textAppearance="?attr/textAppearanceHeadlineSmall"
         android:textColor="?attr/colorPrimary" />
 
@@ -17,7 +17,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="4dp"
-        android:text="Detected from your bank SMS messages"
+        android:text="@string/auto_transactions_subtitle"
         android:textAppearance="?attr/textAppearanceBodySmall"
         android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -31,10 +31,11 @@
         android:visibility="gone">
 
         <TextView
+            android:id="@+id/text_permission_message"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:gravity="center"
-            android:text="SMS permission is needed to\nautomatically detect transactions"
+            android:text="@string/sms_permission_initial"
             android:textAppearance="?attr/textAppearanceBodyLarge"
             android:textColor="?attr/colorOnSurfaceVariant" />
 
@@ -43,7 +44,16 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="Grant SMS Permission" />
+            android:text="@string/grant_sms_permission" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_open_sms_settings"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:text="@string/open_app_settings"
+            android:visibility="gone" />
 
     </LinearLayout>
 
@@ -64,7 +74,7 @@
         android:layout_height="0dp"
         android:layout_weight="1"
         android:gravity="center"
-        android:text="No transactions detected.\nTap scan to check your SMS inbox."
+        android:text="@string/sms_empty_initial"
         android:textAppearance="?attr/textAppearanceBodyLarge"
         android:textColor="?attr/colorOnSurfaceVariant"
         android:visibility="gone" />
@@ -76,7 +86,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="8dp"
-        android:text="Scan SMS Inbox"
+        android:text="@string/sms_scan_inbox"
         app:icon="@android:drawable/ic_menu_search" />
 
 </LinearLayout>

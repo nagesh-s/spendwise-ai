@@ -11,6 +11,7 @@
 | [architecture.md](./architecture.md) | **START HERE** - System overview, file map, data flow | Understanding how everything connects |
 | [troubleshooting.md](./troubleshooting.md) | Issue catalog by symptom | When something breaks |
 | [progress-log.md](./progress-log.md) | Development history, versions | Resume work or understand changes |
+| [release-smoke-checklist.md](./release-smoke-checklist.md) | Release verification checklist | Final QA before tagging/publishing |
 
 ### Module Guides
 
@@ -99,4 +100,4 @@ app/src/main/res/
 ---
 
 ## 📅 Last Updated
-2026-02-14 - v1.2.2 docs refreshed for stabilization + initial automated test baseline
+2026-02-14 - v1.2.2 docs refreshed for CI gate + SMS hardening + expanded automated tests

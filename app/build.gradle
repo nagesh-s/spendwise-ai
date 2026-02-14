@@ -10,8 +10,8 @@ android {
         applicationId "com.spendwise.ai"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 122
+        versionName "1.2.2"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -23,8 +23,8 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility JavaVersion.VERSION_11
+        targetCompatibility JavaVersion.VERSION_11
     }
     buildFeatures {
         viewBinding true
@@ -42,8 +42,10 @@ dependencies {
     implementation 'androidx.lifecycle:lifecycle-viewmodel:2.8.0'
     implementation 'androidx.lifecycle:lifecycle-livedata:2.8.0'
     implementation 'com.github.PhilJay:MPAndroidChart:v3.1.0'
-    // Changed group id to work with JitPack
-    implementation 'com.github.prolificinteractive:material-calendarview:2.0.1'
+    // MaterialCalendarView still pulls legacy support libs; exclude and rely on AndroidX.
+    implementation('com.github.prolificinteractive:material-calendarview:2.0.1') {
+        exclude group: 'com.android.support'
+    }
     implementation 'com.jakewharton.threetenabp:threetenabp:1.4.4'
     implementation 'androidx.work:work-runtime:2.9.0'
     implementation 'androidx.biometric:biometric:1.1.0'

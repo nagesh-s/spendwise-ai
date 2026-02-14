@@ -68,10 +68,11 @@ public class TransactionParser {
         if (sender == null || body == null)
             return false;
 
-        // Check sender looks like a bank shortcode (starts with xx- or has bank name)
+        // Check sender looks like a known bank sender or a DLT-style transactional header.
+        // Generic "XX-anything" senders are not trusted.
         boolean bankSender = sender.length() <= 15 &&
                 (BANK_SENDER_PATTERN.matcher(sender).find() ||
-                        sender.matches("^[A-Za-z]{2}-.*"));
+                        sender.matches("^[A-Za-z]{2}-[A-Za-z0-9]{6}$"));
 
         // Must contain an amount
         boolean hasAmount = AMOUNT_PATTERN.matcher(body).find();

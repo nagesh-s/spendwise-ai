@@ -74,6 +74,21 @@ public interface BudgetDao {
            "ORDER BY c.name ASC")
     LiveData<List<BudgetWithSpend>> getBudgetsWithSpend(String monthKey, long startDay, long endDay);
 
+    @Query("SELECT b.id AS budgetId, " +
+           "b.categoryId AS categoryId, " +
+           "c.name AS categoryName, " +
+           "c.colorArgb AS categoryColorArgb, " +
+           "b.limitCents AS limitCents, " +
+           "IFNULL(SUM(e.amountCents), 0) AS spentCents " +
+           "FROM budgets b " +
+           "JOIN categories c ON b.categoryId = c.id " +
+           "LEFT JOIN expenses e ON e.categoryId = b.categoryId " +
+           "    AND e.dateEpochDay BETWEEN :startDay AND :endDay " +
+           "WHERE b.monthKeyYYYYMM = :monthKey " +
+           "GROUP BY b.id " +
+           "ORDER BY c.name ASC")
+    List<BudgetWithSpend> getBudgetsWithSpendSync(String monthKey, long startDay, long endDay);
+
     /**
      * Copy budgets from one month to another.
      * Useful for carrying forward budget limits to a new month.

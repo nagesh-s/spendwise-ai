@@ -9,18 +9,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.2.2] - 2026-02-14
 ### Added
+- **Android CI Workflow** - New GitHub Actions gate for `assembleDebug`, `testDebugUnitTest`, and `assembleDebugAndroidTest`
 - **SMS Parser Unit Tests** - Coverage for transaction detection and parse extraction in `TransactionParserTest`
 - **DB Migration Instrumentation Test** - Verifies migration `3→4` creates new tables and `expenses.accountId`
 - **Expense Save Flow Instrumentation Test** - Verifies `ExpenseEditorViewModel.saveExpense()` persists expense, merchant, account, and tags
+- **Expense Edit/Delete Instrumentation Coverage** - Regression checks for `initForEdit`, update-save, and delete flow
+- **Category/Budget Integrity Instrumentation Coverage** - Validates default-category delete protection and budget spend mapping by `categoryId`
+- **Release Smoke Checklist** - Added release runbook in `project-knowledge-base/release-smoke-checklist.md`
+
+### Fixed
+- Auto Transaction import now skips duplicates using exact match check (date, amount, category, description)
+- SMS import failure path is retry-safe (item is not marked imported on failure)
+- SMS permission UX now handles rationale and permanently-denied flows with app settings action
+- SMS sender validation no longer treats generic `XX-*` headers as bank transaction senders
+- `assembleDebug` duplicate-class failure resolved by excluding legacy `com.android.support` transitive deps from `material-calendarview`
+- Category-budget instrumentation test stabilized against async default-category seeding
 
 ### Technical
 - Added first test suites under:
   - `app/src/test/java/com/spendwise/ai/sms/`
   - `app/src/androidTest/java/com/spendwise/ai/data/`
   - `app/src/androidTest/java/com/spendwise/ai/common/`
+- Added androidTest package:
+  - `app/src/androidTest/java/com/spendwise/ai/categories/`
+- Added CI file:
+  - `.github/workflows/android-ci.yml`
+- Release metadata prepared:
+  - `versionCode 122`
+  - `versionName 1.2.2`
+- Reduced build/tooling noise by switching to Java 11 compile target and removing deprecated Gradle constraint flags
 - Verification commands:
   - `./gradlew :app:testDebugUnitTest`
+  - `./gradlew :app:assembleDebug`
   - `./gradlew :app:assembleDebugAndroidTest`
+  - `./gradlew :app:connectedDebugAndroidTest`
 
 ---
 
@@ -130,7 +152,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Planned - Phase 3
 - Notification-based transaction parsing (beyond SMS inbox)
-- Automated test coverage for migration, parser, and core expense flows
+- Test coverage expansion for navigation, analytics calculations, and recurring scheduler edge cases
 - Budget anomaly insights and proactive nudges
 
 ---
@@ -215,4 +237,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | 1.1.2 | 2026-02-08 | UX polish + quick-tile action fix + biometric/setup + modal layout fixes |
 | 1.2.0 | 2026-02-14 | Phase 2: tags, accounts, goals, analytics, SMS reader |
 | 1.2.1 | 2026-02-14 | Stabilization: category add flow + settings wiring + changelog cleanup |
-| 1.2.2 | 2026-02-14 | Baseline tests: parser unit + migration + expense save instrumentation |
+| 1.2.2 | 2026-02-14 | CI + regression tests + SMS hardening + release prep |

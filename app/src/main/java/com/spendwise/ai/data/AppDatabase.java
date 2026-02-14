@@ -53,7 +53,7 @@ import java.util.concurrent.Executors;
         ExpenseTag.class,
         Account.class,
         FinancialGoal.class
-}, version = 4, exportSchema = true)
+}, version = 4, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     private static final String DATABASE_NAME = "spendwise_db";

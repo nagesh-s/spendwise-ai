@@ -125,4 +125,15 @@ public interface ExpenseDao {
      */
     @Query("SELECT COUNT(*) FROM expenses")
     int getExpenseCount();
+
+    /**
+     * Check if an expense already exists with the same key fields.
+     * Used to avoid duplicate imports from auto transaction reader.
+     */
+    @Query("SELECT COUNT(*) FROM expenses " +
+           "WHERE dateEpochDay = :dateEpochDay " +
+           "AND amountCents = :amountCents " +
+           "AND categoryId = :categoryId " +
+           "AND IFNULL(description, '') = IFNULL(:description, '')")
+    int countExactMatch(long dateEpochDay, long amountCents, long categoryId, String description);
 }

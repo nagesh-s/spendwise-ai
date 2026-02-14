@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(AndroidJUnit4.class)
@@ -104,6 +105,61 @@ public class ExpenseEditorViewModelSaveTest {
         List<Tag> savedTags = db.tagDao().getTagsForExpenseSync(saved.getId());
         assertEquals(1, savedTags.size());
         assertEquals(tagId, savedTags.get(0).getId());
+    }
+
+    @Test
+    public void editAndDeleteExpense_updatesThenRemovesExistingRow() throws Exception {
+        String suffix = String.valueOf(System.currentTimeMillis());
+        long categoryId = db.categoryDao().insert(
+                new Category("Edit Category " + suffix, Color.parseColor("#8BC34A"), "fa_tag", false));
+        long originalMerchantId = db.merchantDao().insert(new Merchant("Original Merchant " + suffix));
+
+        Expense seed = new Expense(
+                LocalDate.of(2026, 2, 10).toEpochDay(),
+                1000L,
+                "Original description",
+                categoryId,
+                originalMerchantId);
+        long existingId = db.expenseDao().insert(seed);
+
+        final ExpenseEditorViewModel[] holder = new ExpenseEditorViewModel[1];
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(
+                () -> holder[0] = new ExpenseEditorViewModel(application));
+        ExpenseEditorViewModel viewModel = holder[0];
+        assertNotNull(viewModel);
+
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> viewModel.initForEdit(existingId));
+        waitForCondition(() -> viewModel.getEditingExpense().getValue() != null, 5, TimeUnit.SECONDS);
+        waitForCondition(() -> viewModel.getAmountCents().getValue() != null
+                && viewModel.getAmountCents().getValue() == 1000L, 5, TimeUnit.SECONDS);
+        assertEquals(existingId, viewModel.getEditingExpense().getValue().getId());
+        assertEquals(1000L, viewModel.getAmountCents().getValue().longValue());
+
+        String updatedMerchant = "Updated Merchant " + suffix;
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            viewModel.setAmountCents(2500L);
+            viewModel.setDescription("Updated description");
+            viewModel.setSelectedCategoryId(categoryId);
+            viewModel.setMerchantName(updatedMerchant);
+            viewModel.saveExpense();
+        });
+
+        waitForCondition(() -> {
+            Expense updated = db.expenseDao().getById(existingId);
+            return updated != null
+                    && updated.getAmountCents() == 2500L
+                    && "Updated description".equals(updated.getDescription());
+        }, 5, TimeUnit.SECONDS);
+
+        Expense updated = db.expenseDao().getById(existingId);
+        assertNotNull(updated);
+        Merchant updatedMerchantRow = db.merchantDao().findByName(updatedMerchant);
+        assertNotNull(updatedMerchantRow);
+        assertEquals(updatedMerchantRow.getId(), updated.getMerchantId().longValue());
+
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(viewModel::deleteExpense);
+        waitForCondition(() -> db.expenseDao().getById(existingId) == null, 5, TimeUnit.SECONDS);
+        assertNull(db.expenseDao().getById(existingId));
     }
 
     private void waitForCondition(Condition condition, long timeout, TimeUnit unit) throws Exception {
