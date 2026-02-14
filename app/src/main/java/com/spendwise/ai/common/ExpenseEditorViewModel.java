@@ -292,44 +292,51 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
             return;
         }
 
-        // Handle merchant (create if new)
-        Long merchantId = null;
-        if (merchant != null && !merchant.trim().isEmpty()) {
-            merchantId = merchantRepository.insertOrGetId(merchant.trim());
-            if (merchantId == -1) {
-                merchantId = null; // Failed to get/create merchant
+        // Capture tag IDs before moving to background thread
+        final List<Long> tagIds = new ArrayList<>(selectedTagIds);
+        final Long accountIdVal = selectedAccountId.getValue();
+        final Long existingId = expenseId.getValue();
+
+        // Run all DB operations on background thread
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            // Handle merchant (create if new)
+            Long merchantId = null;
+            if (merchant != null && !merchant.trim().isEmpty()) {
+                merchantId = merchantRepository.insertOrGetId(merchant.trim());
+                if (merchantId == -1) {
+                    merchantId = null;
+                }
             }
-        }
 
-        // Create expense
-        Expense expense = new Expense(
-                date.toEpochDay(),
-                amount,
-                desc,
-                categoryId,
-                merchantId);
+            // Create expense
+            Expense expense = new Expense(
+                    date.toEpochDay(),
+                    amount,
+                    desc,
+                    categoryId,
+                    merchantId);
 
-        // Set account if selected
-        Long accountId = selectedAccountId.getValue();
-        if (accountId != null && accountId > 0) {
-            expense.setAccountId(accountId);
-        }
-
-        Long existingId = expenseId.getValue();
-        if (existingId != null && existingId > 0) {
-            expense.setId(existingId);
-            expenseRepository.update(expense);
-            // Update tags
-            tagRepository.setTagsForExpense(existingId, new ArrayList<>(selectedTagIds));
-        } else {
-            long newId = expenseRepository.insertSync(expense);
-            // Save tags for new expense
-            if (!selectedTagIds.isEmpty()) {
-                tagRepository.setTagsForExpense(newId, new ArrayList<>(selectedTagIds));
+            // Set account if selected
+            if (accountIdVal != null && accountIdVal > 0) {
+                expense.setAccountId(accountIdVal);
             }
-        }
 
-        saveComplete.setValue(true);
+            if (existingId != null && existingId > 0) {
+                expense.setId(existingId);
+                expenseRepository.update(expense);
+                // Update tags
+                tagRepository.setTagsForExpense(existingId, new ArrayList<>(tagIds));
+            } else {
+                long newId = expenseRepository.insertSync(expense);
+                // Save tags for new expense
+                if (!tagIds.isEmpty()) {
+                    tagRepository.setTagsForExpense(newId, new ArrayList<>(tagIds));
+                }
+            }
+
+            // Post result back to main thread
+            new android.os.Handler(android.os.Looper.getMainLooper()).post(() -> saveComplete.setValue(true));
+        });
     }
 
     public void resetSaveComplete() {
