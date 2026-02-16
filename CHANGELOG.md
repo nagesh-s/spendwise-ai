@@ -20,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Widget Refresh Flicker** - Replaced full widget update broadcasts with targeted dataset refresh calls to reduce home-screen flicker.
 - **Widget Add Shortcut Flow** - Widget `+` now routes directly to Quick Tile add modal instead of stopping at the tab root.
 - **SMS Sync Window** - Manual and automatic SMS import now share one sync pointer so only new messages since last sync are scanned.
+- **Edit Expense ANR** - Fixed category selection observer loop in expense editor dialog that could cause main-thread churn and input-dispatch ANR while opening/editing expenses.
 
 ### Changed
 - **Speech Intent Tuning** - Added recognition extras for max results, offline preference, and silence windows to improve capture reliability.

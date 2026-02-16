@@ -483,6 +483,16 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
             if (categoryId == null || categoryId <= 0) {
                 return;
             }
+            String targetName = categoryIdToName.get(categoryId);
+            if (targetName == null) {
+                return;
+            }
+            String currentName = binding.dropdownCategory.getText() != null
+                    ? binding.dropdownCategory.getText().toString()
+                    : "";
+            if (targetName.equals(currentName)) {
+                return;
+            }
             pendingCategoryId = categoryId;
             applyPendingCategorySelection();
         });
@@ -517,14 +527,20 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
         if (pendingCategoryId == null) {
             return;
         }
-        String categoryName = categoryIdToName.get(pendingCategoryId);
+        Long categoryId = pendingCategoryId;
+        pendingCategoryId = null;
+
+        String categoryName = categoryIdToName.get(categoryId);
         if (categoryName == null) {
             return;
         }
 
-        binding.dropdownCategory.setText(categoryName, false);
-        viewModel.setSelectedCategoryId(pendingCategoryId);
-        pendingCategoryId = null;
+        String current = binding.dropdownCategory.getText() != null
+                ? binding.dropdownCategory.getText().toString()
+                : "";
+        if (!categoryName.equals(current)) {
+            binding.dropdownCategory.setText(categoryName, false);
+        }
     }
 
     private void applyPendingMerchantSelection() {
