@@ -159,7 +159,7 @@ public class SettingsFragment extends Fragment {
     private void setupBiometricToggle() {
         boolean capability = com.spendwise.ai.security.BiometricHelper.hasBiometricCapability(requireContext());
         binding.cardBiometric.setEnabled(true);
-        binding.switchBiometric.setEnabled(capability);
+        binding.switchBiometric.setEnabled(true);
 
         // Set initial state
         boolean enabled = com.spendwise.ai.security.BiometricHelper.isBiometricEnabled(requireContext());
@@ -168,10 +168,15 @@ public class SettingsFragment extends Fragment {
         if (!capability) {
             binding.switchBiometric.setChecked(false);
             com.spendwise.ai.security.BiometricHelper.setBiometricEnabled(requireContext(), false);
-            binding.cardBiometric.setOnClickListener(v -> Toast.makeText(
+            View.OnClickListener notSupportedClick = v -> Toast.makeText(
                     requireContext(),
                     getString(com.spendwise.ai.R.string.biometric_not_supported),
-                    Toast.LENGTH_LONG).show());
+                    Toast.LENGTH_LONG).show();
+            binding.cardBiometric.setOnClickListener(notSupportedClick);
+            binding.switchBiometric.setOnClickListener(v -> {
+                binding.switchBiometric.setChecked(false);
+                notSupportedClick.onClick(v);
+            });
             return;
         }
 

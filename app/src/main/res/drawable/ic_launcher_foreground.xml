@@ -3,30 +3,19 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    
-    <!-- Background Circle/Shape implied by adaptive icon, this is foreground -->
-    
-    <!-- Wallet Body -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M24,34 C24,28.477 28.477,24 34,24 L74,24 C79.523,24 84,28.477 84,34 L84,74 C84,79.523 79.523,84 74,84 L34,84 C28.477,84 24,79.523 24,74 Z" />
-    
-    <!-- Inner Accent (Blue) -->
+        android:pathData="M22,32 C22,26.477 26.477,22 32,22 L76,22 C81.523,22 86,26.477 86,32 L86,76 C86,81.523 81.523,86 76,86 L32,86 C26.477,86 22,81.523 22,76 Z" />
     <path
-        android:fillColor="#2196F3"
-        android:pathData="M30,40 L78,40 L78,68 L30,68 Z" />
-        
-    <!-- Graph Line (Ascending) -->
+        android:fillColor="#D7F4EF"
+        android:pathData="M32,38 C32,36.895 32.895,36 34,36 L74,36 C75.105,36 76,36.895 76,38 L76,46 C76,47.105 75.105,48 74,48 L34,48 C32.895,48 32,47.105 32,46 Z" />
     <path
-        android:strokeColor="#4CAF50"
-        android:strokeWidth="4"
+        android:strokeColor="#FF6F61"
+        android:strokeWidth="5"
         android:strokeLineCap="round"
         android:strokeLineJoin="round"
-        android:pathData="M34,60 L44,55 L54,62 L74,48" />
-
-    <!-- Coin/Chip -->
+        android:pathData="M66,54 C66,50.686 63.314,48 60,48 L46,48 C42.686,48 40,50.686 40,54 C40,57.314 42.686,60 46,60 L60,60 C63.314,60 66,62.686 66,66 C66,69.314 63.314,72 60,72 L46,72 C42.686,72 40,74.686 40,78" />
     <path
-        android:fillColor="#FFC107"
-        android:pathData="M70,32 C72.209,32 74,33.791 74,36 C74,38.209 72.209,40 70,40 C67.791,40 66,38.209 66,36 C66,33.791 67.791,32 70,32 Z" />
-
+        android:fillColor="#FFB300"
+        android:pathData="M74,66 C78.418,66 82,69.582 82,74 C82,78.418 78.418,82 74,82 C69.582,82 66,78.418 66,74 C66,69.582 69.582,66 74,66 Z" />
 </vector>

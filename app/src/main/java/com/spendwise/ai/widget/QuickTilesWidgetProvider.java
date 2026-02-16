@@ -3,13 +3,24 @@ package com.spendwise.ai.widget;
 import android.app.PendingIntent;
 import android.appwidget.AppWidgetManager;
 import android.appwidget.AppWidgetProvider;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
+import android.widget.Toast;
 import android.widget.RemoteViews;
 
 import com.spendwise.ai.MainActivity;
 import com.spendwise.ai.R;
+import com.spendwise.ai.data.AppDatabase;
+import com.spendwise.ai.data.entity.Expense;
+import com.spendwise.ai.data.entity.QuickTile;
+import com.spendwise.ai.util.DateUtils;
+
+import org.threeten.bp.LocalDate;
 
 /**
  * AppWidgetProvider for the QuickTiles home screen widget.
@@ -47,22 +58,23 @@ public class QuickTilesWidgetProvider extends AppWidgetProvider {
         clickIntent.setAction(ACTION_TILE_CLICKED);
         clickIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId);
         PendingIntent clickPendingIntent = PendingIntent.getBroadcast(
-                context, 0, clickIntent,
+                context, appWidgetId, clickIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_MUTABLE);
         views.setPendingIntentTemplate(R.id.grid_quick_tiles, clickPendingIntent);
 
-        // Set up the add button to open the app
+        // Set up the add button to open tile editor directly
         Intent addIntent = new Intent(context, MainActivity.class);
-        addIntent.putExtra("navigate_to", "quick_tiles_manager");
+        addIntent.putExtra("navigate_to", "quick_tiles_add");
+        addIntent.putExtra("open_quick_tile_editor", true);
         addIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent addPendingIntent = PendingIntent.getActivity(
-                context, 1, addIntent,
+                context, appWidgetId + 10_000, addIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
         views.setOnClickPendingIntent(R.id.btn_add_tile, addPendingIntent);
 
         // Update the widget
         appWidgetManager.updateAppWidget(appWidgetId, views);
-        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetId, R.id.grid_quick_tiles);
+        appWidgetManager.notifyAppWidgetViewDataChanged(new int[] { appWidgetId }, R.id.grid_quick_tiles);
     }
 
     @Override
@@ -72,12 +84,8 @@ public class QuickTilesWidgetProvider extends AppWidgetProvider {
         if (ACTION_TILE_CLICKED.equals(intent.getAction())) {
             long tileId = intent.getLongExtra(EXTRA_TILE_ID, -1);
             if (tileId != -1) {
-                // Open MainActivity with the tile ID to create expense
-                Intent launchIntent = new Intent(context, MainActivity.class);
-                launchIntent.putExtra("action", "create_expense_from_tile");
-                launchIntent.putExtra("tile_id", tileId);
-                launchIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                context.startActivity(launchIntent);
+                BroadcastReceiver.PendingResult pendingResult = goAsync();
+                addExpenseFromWidgetTile(context, tileId, pendingResult);
             }
         }
     }
@@ -102,8 +110,46 @@ public class QuickTilesWidgetProvider extends AppWidgetProvider {
      * Request widget update from anywhere in the app.
      */
     public static void requestUpdate(Context context) {
-        Intent intent = new Intent(context, QuickTilesWidgetProvider.class);
-        intent.setAction(AppWidgetManager.ACTION_APPWIDGET_UPDATE);
-        context.sendBroadcast(intent);
+        AppWidgetManager appWidgetManager = AppWidgetManager.getInstance(context);
+        ComponentName widgetComponent = new ComponentName(context, QuickTilesWidgetProvider.class);
+        int[] appWidgetIds = appWidgetManager.getAppWidgetIds(widgetComponent);
+        if (appWidgetIds == null || appWidgetIds.length == 0) {
+            return;
+        }
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.grid_quick_tiles);
+    }
+
+    private void addExpenseFromWidgetTile(
+            Context context,
+            long tileId,
+            BroadcastReceiver.PendingResult pendingResult) {
+        Context appContext = context.getApplicationContext();
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                AppDatabase db = AppDatabase.getInstance(appContext);
+                QuickTile tile = db.quickTileDao().getById(tileId);
+                if (tile == null) {
+                    return;
+                }
+
+                Expense expense = new Expense(
+                        LocalDate.now().toEpochDay(),
+                        tile.getAmountCents(),
+                        tile.getLabel(),
+                        tile.getCategoryId(),
+                        tile.getMerchantId());
+                db.expenseDao().insert(expense);
+
+                new Handler(Looper.getMainLooper()).post(() -> Toast.makeText(
+                        appContext,
+                        appContext.getString(
+                                R.string.expense_added_from_tile,
+                                tile.getLabel(),
+                                DateUtils.formatAmountCents(tile.getAmountCents())),
+                        Toast.LENGTH_SHORT).show());
+            } finally {
+                pendingResult.finish();
+            }
+        });
     }
 }

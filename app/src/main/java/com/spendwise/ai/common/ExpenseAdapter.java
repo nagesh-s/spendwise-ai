@@ -7,6 +7,7 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
@@ -74,6 +75,14 @@ public class ExpenseAdapter extends ListAdapter<Expense, ExpenseAdapter.ViewHold
 
     public void setOnExpenseClickListener(OnExpenseClickListener listener) {
         this.clickListener = listener;
+    }
+
+    @Nullable
+    public Expense getExpenseAt(int position) {
+        if (position < 0 || position >= getItemCount()) {
+            return null;
+        }
+        return getItem(position);
     }
 
     @NonNull

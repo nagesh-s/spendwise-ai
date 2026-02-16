@@ -17,7 +17,9 @@
         <com.prolificinteractive.materialcalendarview.MaterialCalendarView
             android:id="@+id/calendar_view"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
+            android:layout_height="0dp"
+            android:layout_weight="0.8"
+            android:minHeight="260dp"
             app:mcv_showOtherDates="out_of_range"
             app:mcv_selectionColor="?attr/colorPrimary"
             app:mcv_dateTextAppearance="@style/CalendarDateTextAppearance"
@@ -73,7 +75,7 @@
             android:id="@+id/recycler_expenses"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_weight="1.2"
             android:clipToPadding="false"
             android:paddingBottom="80dp"
             tools:listitem="@layout/item_expense" />
@@ -83,7 +85,7 @@
             android:id="@+id/layout_empty_state"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_weight="1.2"
             android:gravity="center"
             android:orientation="vertical"
             android:visibility="gone">

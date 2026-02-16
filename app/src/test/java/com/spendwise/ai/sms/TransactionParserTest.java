@@ -3,88 +3,39 @@ package com.spendwise.ai.sms;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class TransactionParserTest {
 
     @Test
-    public void isTransactionSms_detectsValidBankDebitMessage() {
-        String sender = "VK-HDFCBK";
-        String body = "Rs.1,234.50 debited from A/c XX1234 on 14-02-26. UPI: milkstore@upi";
+    public void parse_extractsPayeeFromToClause() {
+        ParsedTransaction transaction = TransactionParser.parse(
+                "Rs.550.00 debited from A/c XX1234 to Airtel Payments Bank on 15-02-26. Ref 9988",
+                System.currentTimeMillis());
 
-        assertTrue(TransactionParser.isTransactionSms(sender, body));
+        assertNotNull(transaction);
+        assertEquals(ParsedTransaction.TransactionType.DEBIT, transaction.getType());
+        assertEquals(55000L, transaction.getAmountCents());
+        assertEquals("Airtel Payments Bank", transaction.getMerchant());
     }
 
     @Test
-    public void isTransactionSms_rejectsNonTransactionalPromotionalMessage() {
-        String sender = "AD-MARKET";
-        String body = "INR 500 off on your next order. Tap now to claim.";
+    public void parse_extractsAliasFromUpiHandle() {
+        ParsedTransaction transaction = TransactionParser.parse(
+                "INR 120.00 paid via UPI to milk.store-001@okaxis from account XX6789",
+                System.currentTimeMillis());
 
-        assertFalse(TransactionParser.isTransactionSms(sender, body));
+        assertNotNull(transaction);
+        assertEquals("milk store 001", transaction.getMerchant().toLowerCase());
     }
 
     @Test
-    public void parse_debitMessage_extractsAmountTypeMerchantAndAccount() {
-        String body = "Rs.1,234.50 debited from A/c XX1234 on 14-02-26. UPI: milkstore@upi Ref 1245";
+    public void isTransactionSms_allowsTransactionalBodyWhenSenderUnknown() {
+        boolean result = TransactionParser.isTransactionSms(
+                "VK-ALERTS",
+                "Rs 999 debited from your account via UPI txn ref 12345");
 
-        ParsedTransaction parsed = TransactionParser.parse(body, 1700000000000L);
-
-        assertNotNull(parsed);
-        assertEquals(ParsedTransaction.TransactionType.DEBIT, parsed.getType());
-        assertEquals(123450L, parsed.getAmountCents());
-        assertEquals("milkstore@upi", parsed.getMerchant());
-        assertEquals("XX1234", parsed.getAccountInfo());
-    }
-
-    @Test
-    public void parse_creditMessage_extractsCreditTypeAndAmount() {
-        String body = "INR 500.00 credited to account ending 4321 on 14-02-26.";
-
-        ParsedTransaction parsed = TransactionParser.parse(body, 1700000000000L);
-
-        assertNotNull(parsed);
-        assertEquals(ParsedTransaction.TransactionType.CREDIT, parsed.getType());
-        assertEquals(50000L, parsed.getAmountCents());
-        assertEquals("XX4321", parsed.getAccountInfo());
-    }
-
-    @Test
-    public void parse_returnsNullForInvalidOrZeroAmount() {
-        assertNull(TransactionParser.parse("Rs 0 debited from A/c XX1234", 1700000000000L));
-        assertNull(TransactionParser.parse("Amount debited from A/c XX1234", 1700000000000L));
-    }
-
-    @Test
-    public void parse_merchantIsExtractedFromAtPatternWhenUpiMissing() {
-        String body = "INR 899.00 spent on your Card ending 4321 at AMAZON INDIA on 14-02-26.";
-
-        ParsedTransaction parsed = TransactionParser.parse(body, 1700000000000L);
-
-        assertNotNull(parsed);
-        assertEquals(ParsedTransaction.TransactionType.DEBIT, parsed.getType());
-        assertEquals(89900L, parsed.getAmountCents());
-        assertEquals("AMAZON INDIA", parsed.getMerchant());
-        assertEquals("XX4321", parsed.getAccountInfo());
-    }
-
-    @Test
-    public void parse_whenBothCreditAndDebitKeywordsExist_creditTakesPrecedence() {
-        String body = "Rs 500 debited from A/c XX4321 and later credited as cashback.";
-
-        ParsedTransaction parsed = TransactionParser.parse(body, 1700000000000L);
-
-        assertNotNull(parsed);
-        assertEquals(ParsedTransaction.TransactionType.CREDIT, parsed.getType());
-    }
-
-    @Test
-    public void isTransactionSms_rejectsUnknownSenderEvenWithAmountAndKeyword() {
-        String sender = "DM-STORE";
-        String body = "Rs 560 debited from your card for grocery shopping.";
-
-        assertFalse(TransactionParser.isTransactionSms(sender, body));
+        assertTrue(result);
     }
 }

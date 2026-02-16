@@ -100,4 +100,8 @@ public class CalendarViewModel extends AndroidViewModel {
         LocalDate date = selectedDate.getValue();
         return date != null ? date.toEpochDay() : DateUtils.getTodayEpochDay();
     }
+
+    public void deleteExpenseById(long expenseId) {
+        expenseRepository.deleteById(expenseId);
+    }
 }

@@ -64,7 +64,17 @@
 | Symptom | Check | File |
 |---------|-------|------|
 | Tile tap only opens edit flow | Tile click handler target | `QuickTilesFragment.onTileClick()` |
-| Widget tile tap does nothing | Intent extras/action handling | `MainActivity.handleWidgetIntent()` + `QuickTilesWidgetProvider` |
+| Widget tile tap opens app instead of silent add | Widget provider click path still routes to activity | `QuickTilesWidgetProvider.onReceive()` + `addExpenseFromWidgetTile(...)` |
+| Widget tile tap does nothing | PendingIntent template/fill-in mismatch | `QuickTilesWidgetProvider.updateWidget()` + `QuickTileRemoteViewsFactory.getViewAt()` |
+| Widget list flickers on refresh | Full widget update broadcast used instead of dataset notify | `QuickTilesWidgetProvider.requestUpdate()` |
+
+### SMS Sync/Import Issues
+
+| Symptom | Check | File |
+|---------|-------|------|
+| Manual sync keeps re-reading old messages | last sync timestamp not persisted/shared | `SmsSyncState` + `AutoTransactionsFragment.scanSms()` |
+| Auto import duplicates old scans | worker not using shared sync state | `SmsAutoImportWorker.doWork()` |
+| Manual and auto import disagree on time window | helper method mismatch (`readRecentTransactions` vs `readTransactionsSince`) | `SmsPermissionHelper` callers |
 
 ### Budget Progress Wrong
 
@@ -73,6 +83,23 @@
 | Always 0% | No expenses in category | Add expenses |
 | Wrong percentage | Query issue | `BudgetDao.getBudgetsWithSpend()` |
 | Budget not saving | Dialog callback | `BudgetEditorDialog` |
+
+---
+
+## 🎙️ Voice Input Issues
+
+| Symptom | Cause | Solution |
+|---------|-------|----------|
+| Repeated `"No match"` while speaking | recognizer final callback failed to produce stable text | Ensure `VoiceInputHelper` partial-result fallback is active (`onPartialResults` + `ERROR_NO_MATCH` fallback path) |
+| `Error 13: Unknown error` in logs | language pack unsupported/unavailable for selected recognizer language | Ensure latest `VoiceInputHelper` is deployed (maps language errors), then verify system speech language/download packs and retry |
+| `Error 5` (`Could not start voice capture`) appears intermittently | recognizer service state race/busy callback | Verify one-time client-error retry path in `VoiceInputHelper` and avoid rapid repeated mic taps |
+| Voice opens dialog but amount is empty | transcript had no parseable numeric token | Keep transcript prefilled and manually confirm amount in editor |
+| Wrong category chosen from voice | heuristic keyword collision | Verify available category names and parser keyword rules in `VoiceExpenseParser` |
+| On-device fallback never improves parse | transcript lacks strong amount/category cues | Verify `OnDeviceSemanticExpenseExtractor` confidence thresholds and keyword mappings |
+| `offlineLlm` flavor does not use Gemma path | bundled model asset missing, copy failed, or invalid file | Ensure `app/src/offlineLlm/assets/models/spendwise_gemma3_1b.task` exists and verify app can copy to `files/models/spendwise_gemma3_1b.task` |
+| `offlineLlm` build fails resolving MediaPipe | dependency sync/cache issue | Re-sync Gradle and verify `com.google.mediapipe:tasks-genai` resolves from `google()` |
+| Gemma output ignored | model returned non-JSON or low-confidence fields | Inspect parser logs and JSON format in `MediaPipeGemmaExpenseExtractor.parseResponse(...)` |
+| Busy/microphone errors | recognizer service or permissions unavailable | Re-grant mic permission and retry after service cooldown |
 
 ---
 
@@ -149,4 +176,4 @@ For ANY issue:
 ---
 
 ## 📅 Last Updated
-2026-02-08 - v1.1.2 with biometric, quick-tile, and Material attr compatibility issues
+2026-02-16 - added widget background action + SMS incremental sync troubleshooting notes

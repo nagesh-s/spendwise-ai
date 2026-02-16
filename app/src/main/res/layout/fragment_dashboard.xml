@@ -25,12 +25,12 @@
                 android:layout_height="wrap_content"
                 android:gravity="center_vertical"
                 android:orientation="horizontal"
-                android:paddingVertical="8dp">
+                android:paddingVertical="6dp">
 
                 <ImageButton
                     android:id="@+id/btn_prev_month"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Previous month"
                     android:src="@drawable/ic_chevron_left"
@@ -42,33 +42,32 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:gravity="center"
-                    android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                    android:textAppearance="?attr/textAppearanceTitleLarge"
+                    android:textColor="?attr/colorOnSurface"
+                    android:letterSpacing="0.01"
                     android:textStyle="bold"
                     tools:text="January 2026" />
 
                 <ImageButton
                     android:id="@+id/btn_next_month"
-                    android:layout_width="48dp"
-                    android:layout_height="48dp"
+                    android:layout_width="40dp"
+                    android:layout_height="40dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:contentDescription="Next month"
                     android:src="@drawable/ic_chevron_right"
                     app:tint="?attr/colorOnSurface" />
 
-                <View
-                    android:layout_width="16dp"
-                    android:layout_height="match_parent" />
-
                 <com.google.android.material.imageview.ShapeableImageView
                     android:id="@+id/btn_profile"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="?attr/colorSecondaryContainer"
+                    android:layout_width="42dp"
+                    android:layout_height="42dp"
+                    android:layout_marginStart="8dp"
+                    android:background="?attr/colorTertiaryContainer"
                     android:contentDescription="Profile"
                     android:padding="8dp"
                     app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
-                    app:srcCompat="@drawable/ic_star"
-                    app:tint="?attr/colorOnSecondaryContainer" />
+                    app:srcCompat="@drawable/ic_profile_badge"
+                    app:tint="?attr/colorOnTertiaryContainer" />
 
             </LinearLayout>
 

@@ -23,8 +23,12 @@ public class SpendWiseApplication extends Application {
         // Schedule reminder notifications
         WorkScheduler.scheduleReminderWork(this);
 
+        // Schedule periodic SMS auto-import
+        WorkScheduler.scheduleSmsAutoImportWork(this);
+
         // Run immediately to catch up on any missed work
         WorkScheduler.runRecurringExpenseWorkNow(this);
         WorkScheduler.runReminderWorkNow(this);
+        WorkScheduler.runSmsAutoImportNow(this);
     }
 }

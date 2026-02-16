@@ -18,6 +18,7 @@ import com.google.android.material.button.MaterialButton;
 import com.spendwise.ai.R;
 import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.entity.Expense;
+import com.spendwise.ai.data.entity.Merchant;
 
 import org.threeten.bp.Instant;
 import org.threeten.bp.LocalDate;
@@ -147,10 +148,19 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
         scanBtn.setEnabled(false);
         scanBtn.setText(getString(R.string.sms_scanning));
         Context appContext = requireContext().getApplicationContext();
+        long lastSyncTimestamp = SmsSyncState.getLastSyncTimestamp(appContext);
 
         // Run on background thread
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            List<ParsedTransaction> transactions = SmsPermissionHelper.readRecentTransactions(appContext, 30);
+            List<ParsedTransaction> transactions = SmsPermissionHelper.readTransactionsSince(
+                    appContext,
+                    lastSyncTimestamp,
+                    30);
+            long latestSeenTimestamp = lastSyncTimestamp;
+            for (ParsedTransaction transaction : transactions) {
+                latestSeenTimestamp = Math.max(latestSeenTimestamp, transaction.getTimestampMillis());
+            }
+            SmsSyncState.updateLastSyncTimestamp(appContext, latestSeenTimestamp);
 
             // Filter to debit transactions only (those are expenses)
             transactions.removeIf(t -> t.getType() != ParsedTransaction.TransactionType.DEBIT);
@@ -186,27 +196,44 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
                 .atZone(ZoneId.systemDefault())
                 .toLocalDate();
         long dateEpochDay = date.toEpochDay();
-        String description = transaction.getMerchant() != null
-                ? transaction.getMerchant()
-                : getString(R.string.sms_import_description_fallback);
-        long importCategoryId = 1L;
-
-        // Create expense with "Uncategorized" (category 1 is usually the first default)
-        Expense expense = new Expense(
-                dateEpochDay,
-                transaction.getAmountCents(),
-                description,
-                importCategoryId,
-                null // No merchant link
-        );
         Context appContext = requireContext().getApplicationContext();
 
         AppDatabase.databaseWriteExecutor.execute(() -> {
             AppDatabase db = AppDatabase.getInstance(appContext);
-            int duplicateCount = db.expenseDao().countExactMatch(
+            long importCategoryId = SmsExpenseClassifier.resolveCategoryId(
+                    db.categoryDao().getAllCategoriesSync(),
+                    transaction);
+            String description = SmsExpenseClassifier.resolveDescription(transaction,
+                    getString(R.string.sms_import_description_fallback));
+
+            Long merchantId = null;
+            if (transaction.getMerchant() != null && !transaction.getMerchant().trim().isEmpty()) {
+                Merchant existingMerchant = db.merchantDao().findByName(transaction.getMerchant().trim());
+                if (existingMerchant != null) {
+                    merchantId = existingMerchant.getId();
+                } else {
+                    long insertedMerchantId = db.merchantDao().insertIfNotExists(new Merchant(transaction.getMerchant().trim()));
+                    if (insertedMerchantId > 0) {
+                        merchantId = insertedMerchantId;
+                    } else {
+                        Merchant reloaded = db.merchantDao().findByName(transaction.getMerchant().trim());
+                        if (reloaded != null) {
+                            merchantId = reloaded.getId();
+                        }
+                    }
+                }
+            }
+
+            Expense expense = new Expense(
                     dateEpochDay,
                     transaction.getAmountCents(),
+                    description,
                     importCategoryId,
+                    merchantId);
+
+            int duplicateCount = db.expenseDao().countByDateAmountDescription(
+                    dateEpochDay,
+                    transaction.getAmountCents(),
                     description);
 
             if (duplicateCount > 0) {

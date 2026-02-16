@@ -67,6 +67,17 @@ public class SmsPermissionHelper {
      * @return List of parsed transactions (debit only by default)
      */
     public static List<ParsedTransaction> readRecentTransactions(@NonNull Context context, int dayLimit) {
+        return readTransactionsSince(context, 0L, dayLimit);
+    }
+
+    /**
+     * Read SMS transactions newer than the provided timestamp.
+     *
+     * @param context        Application context
+     * @param sinceTimestamp Only messages newer than this timestamp are considered
+     * @param dayLimit       Fallback lookback window when sync timestamp is empty
+     */
+    public static List<ParsedTransaction> readTransactionsSince(@NonNull Context context, long sinceTimestamp, int dayLimit) {
         List<ParsedTransaction> transactions = new ArrayList<>();
 
         if (!hasReadSmsPermission(context)) {
@@ -74,13 +85,14 @@ public class SmsPermissionHelper {
         }
 
         long cutoffTime = System.currentTimeMillis() - (dayLimit * 24L * 60 * 60 * 1000);
+        long queryStartTime = Math.max(cutoffTime, sinceTimestamp);
 
         ContentResolver contentResolver = context.getContentResolver();
         Uri smsUri = Uri.parse("content://sms/inbox");
 
         String[] projection = { "address", "body", "date" };
         String selection = "date > ?";
-        String[] selectionArgs = { String.valueOf(cutoffTime) };
+        String[] selectionArgs = { String.valueOf(queryStartTime) };
         String sortOrder = "date DESC";
 
         Cursor cursor = null;

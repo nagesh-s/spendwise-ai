@@ -6,6 +6,11 @@
     <string name="title_categories">Categories</string>
     <string name="title_merchants">Merchants</string>
     <string name="title_settings">Settings</string>
+    <string name="nav_home">Home</string>
+    <string name="nav_calendar">Calendar</string>
+    <string name="nav_categories">Budgets</string>
+    <string name="nav_merchants">Shops</string>
+    <string name="nav_settings">Settings</string>
     <string name="today">Today</string>
     <string name="avg_per_day">Avg / Day</string>
     <string name="projected_total">Projected Total</string>

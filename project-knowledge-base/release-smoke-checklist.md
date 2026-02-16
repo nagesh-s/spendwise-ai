@@ -5,6 +5,10 @@ Use this checklist before publishing any build candidate.
 ## Build and test gates
 - [ ] `./gradlew :app:assembleDebug`
 - [ ] `./gradlew :app:testDebugUnitTest`
+- [ ] `./gradlew :app:assembleStandardDebug`
+- [ ] `./gradlew :app:assembleOfflineLlmDebug`
+- [ ] `./gradlew :app:testStandardDebugUnitTest`
+- [ ] `./gradlew :app:testOfflineLlmDebugUnitTest`
 - [ ] `./gradlew :app:assembleDebugAndroidTest`
 - [ ] `./gradlew :app:connectedDebugAndroidTest` (with running emulator/device)
 
@@ -13,6 +17,9 @@ Use this checklist before publishing any build candidate.
 - [ ] Edit existing expense persists updates
 - [ ] Delete expense removes row and UI refreshes
 - [ ] Quick Tile tap creates expense immediately
+- [ ] Home-screen Quick Tile tap adds in background and keeps launcher/home in foreground
+- [ ] Quick Tile widget success toast appears after background add
+- [ ] Widget `+` opens Quick Tile add modal directly
 - [ ] Biometric lock toggle and unlock flow works on supported device
 - [ ] First-run onboarding appears once, then routes to main app
 
@@ -28,6 +35,13 @@ Use this checklist before publishing any build candidate.
 - [ ] Dashboard AI insights section renders with data and hides cleanly when empty
 - [ ] Dashboard prediction section renders month-end/category forecast cards
 - [ ] Voice input flow opens prefilled expense editor from parsed speech
+- [ ] Voice `No match` / timeout still routes partial transcript to editor when available
+- [ ] Voice high-confidence parse auto-saves expense without showing modal
+- [ ] Voice low-confidence parse opens editor with transcript and only trusted field prefill
+- [ ] Voice `ERROR_CLIENT`/`ERROR_NO_MATCH` retry path works without crash
+- [ ] On-device semantic fallback path enriches low-confidence transcripts without network
+- [ ] `offlineLlm` flavor auto-copies bundled model asset into app files (default `files/models/spendwise_gemma3_1b.task`) and enriches low-confidence voice parses
+- [ ] `offlineLlm` flavor gracefully falls back to semantic extraction when local model file is missing
 - [ ] Calendar tab opens without crash and month/date selection works
 - [ ] Profile screen opens from Dashboard and shows level/XP/achievements
 - [ ] XP is awarded only on new expense save (not edit)
@@ -38,6 +52,8 @@ Use this checklist before publishing any build candidate.
 - [ ] SMS denied flow shows rationale
 - [ ] SMS permanently denied flow offers app settings action
 - [ ] Failed SMS import can be retried
+- [ ] Manual SMS sync only reads messages newer than stored last sync timestamp
+- [ ] Background SMS auto-import keeps advancing last sync timestamp and avoids re-import of previously scanned range
 - [ ] Microphone permission denied flow shows user feedback without crash
 
 ## Release metadata

@@ -18,6 +18,7 @@ public class WorkScheduler {
 
         private static final String RECURRING_EXPENSE_WORK = "recurring_expense_work";
         private static final String REMINDER_WORK = "reminder_work";
+        private static final String SMS_AUTO_IMPORT_WORK = "sms_auto_import_work";
 
         /**
          * Schedule the recurring expense worker to run daily.
@@ -65,6 +66,28 @@ public class WorkScheduler {
         }
 
         /**
+         * Schedule auto SMS import worker to run periodically.
+         */
+        public static void scheduleSmsAutoImportWork(Context context) {
+                Constraints constraints = new Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                                .setRequiresBatteryNotLow(false)
+                                .build();
+
+                PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
+                                SmsAutoImportWorker.class,
+                                6, TimeUnit.HOURS)
+                                .setConstraints(constraints)
+                                .setInitialDelay(10, TimeUnit.MINUTES)
+                                .build();
+
+                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                                SMS_AUTO_IMPORT_WORK,
+                                ExistingPeriodicWorkPolicy.KEEP,
+                                workRequest);
+        }
+
+        /**
          * Run the recurring expense worker immediately (one-time).
          */
         public static void runRecurringExpenseWorkNow(Context context) {
@@ -80,6 +103,16 @@ public class WorkScheduler {
         public static void runReminderWorkNow(Context context) {
                 OneTimeWorkRequest oneTimeRequest = new OneTimeWorkRequest.Builder(
                                 ReminderWorker.class)
+                                .build();
+                WorkManager.getInstance(context).enqueue(oneTimeRequest);
+        }
+
+        /**
+         * Run SMS auto import worker immediately (one-time).
+         */
+        public static void runSmsAutoImportNow(Context context) {
+                OneTimeWorkRequest oneTimeRequest = new OneTimeWorkRequest.Builder(
+                                SmsAutoImportWorker.class)
                                 .build();
                 WorkManager.getInstance(context).enqueue(oneTimeRequest);
         }

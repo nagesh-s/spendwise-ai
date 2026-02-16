@@ -6,6 +6,7 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.navigation.NavController;
+import androidx.navigation.NavOptions;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
@@ -22,6 +23,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private NavController navController;
+    private boolean skipNextLockCheck;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,10 +36,9 @@ public class MainActivity extends AppCompatActivity {
                 .findFragmentById(R.id.nav_host_fragment);
         navController = navHostFragment.getNavController();
         BottomNavigationView bottomNavView = binding.bottomNavView;
-        NavigationUI.setupWithNavController(bottomNavView, navController);
+        setupBottomNavigation(bottomNavView);
 
-        // Check if biometric lock is enabled and required
-        checkBiometricLock();
+        consumeSkipLockFlag(getIntent());
 
         // Check for first run
         android.content.SharedPreferences prefs = getSharedPreferences("spendwise_prefs", MODE_PRIVATE);
@@ -51,12 +52,41 @@ public class MainActivity extends AppCompatActivity {
         handleWidgetIntent(getIntent());
     }
 
-    private void checkBiometricLock() {
-        // Skip if returning from successful authentication
-        Intent intent = getIntent();
+    private void setupBottomNavigation(BottomNavigationView bottomNavView) {
+        NavigationUI.setupWithNavController(bottomNavView, navController);
+        bottomNavView.setOnItemSelectedListener(item -> navigateToTopLevel(item.getItemId()));
+    }
+
+    private boolean navigateToTopLevel(int destinationId) {
+        if (navController == null) {
+            return false;
+        }
+        if (navController.popBackStack(destinationId, false)) {
+            return true;
+        }
+        try {
+            NavOptions options = new NavOptions.Builder()
+                    .setLaunchSingleTop(true)
+                    .setRestoreState(false)
+                    .setPopUpTo(navController.getGraph().getStartDestinationId(), false)
+                    .build();
+            navController.navigate(destinationId, null, options);
+            return true;
+        } catch (IllegalArgumentException ignored) {
+            return false;
+        }
+    }
+
+    private void consumeSkipLockFlag(Intent intent) {
         if (intent != null && intent.getBooleanExtra("skip_lock_check", false)) {
-            // Clear the flag so future launches still check
+            skipNextLockCheck = true;
             intent.removeExtra("skip_lock_check");
+        }
+    }
+
+    private void checkBiometricLock() {
+        if (skipNextLockCheck) {
+            skipNextLockCheck = false;
             return;
         }
 
@@ -69,15 +99,27 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    protected void onResume() {
-        super.onResume();
-        // Update last active time when app resumes
-        com.spendwise.ai.security.BiometricHelper.updateLastActiveTime(this);
+    protected void onStart() {
+        super.onStart();
+        if (isFinishing()) {
+            return;
+        }
+        checkBiometricLock();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        if (!isChangingConfigurations()) {
+            com.spendwise.ai.security.BiometricHelper.markAppBackgrounded(this);
+        }
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
+        setIntent(intent);
+        consumeSkipLockFlag(intent);
         handleWidgetIntent(intent);
     }
 
@@ -91,6 +133,8 @@ public class MainActivity extends AppCompatActivity {
             if (tileId != -1) {
                 createExpenseFromTile(tileId);
             }
+        } else if ("quick_tiles_add".equals(intent.getStringExtra("navigate_to"))) {
+            navController.navigate(R.id.navigation_quick_tiles);
         } else if ("quick_tiles_manager".equals(intent.getStringExtra("navigate_to"))) {
             // Navigate to Quick Tiles management screen
             navController.navigate(R.id.navigation_quick_tiles);

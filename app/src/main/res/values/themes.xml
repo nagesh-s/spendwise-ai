@@ -22,6 +22,8 @@
         <item name="colorOutlineVariant">@color/md_theme_outlineVariant</item>
         <!-- Status bar color -->
         <item name="android:statusBarColor">@color/md_theme_surface</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:windowLightNavigationBar">true</item>
     </style>
     
     <!-- Calendar text styles for MaterialCalendarView -->
@@ -33,5 +35,10 @@
     <style name="CalendarWeekTextAppearance" parent="android:TextAppearance">
         <item name="android:textColor">?attr/colorOnSurfaceVariant</item>
         <item name="android:textSize">12sp</item>
+    </style>
+
+    <style name="TextAppearance.SpendWise.BottomNav" parent="@style/TextAppearance.Material3.LabelSmall">
+        <item name="android:textSize">11sp</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
     </style>
 </resources>

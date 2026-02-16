@@ -42,12 +42,22 @@ public class TransactionParser {
 
     // UPI merchant pattern
     private static final Pattern UPI_PATTERN = Pattern.compile(
-            "(?:UPI|VPA)[:\\s]+([\\w.@]+)",
+            "(?:UPI|VPA)[:\\s]+([A-Za-z0-9._-]+@[A-Za-z0-9._-]+)",
+            Pattern.CASE_INSENSITIVE);
+
+    // Generic UPI handle anywhere in body
+    private static final Pattern UPI_HANDLE_PATTERN = Pattern.compile(
+            "([A-Za-z0-9._-]{2,}@[A-Za-z0-9._-]{2,})",
+            Pattern.CASE_INSENSITIVE);
+
+    // Payee after to/towards/beneficiary/payee
+    private static final Pattern PAYEE_PATTERN = Pattern.compile(
+            "(?:to|towards|beneficiary|payee)\\s+([A-Za-z][A-Za-z0-9\\s&'.,-]+?)(?:\\.|\\s+on|\\s+Ref|\\s+Info|\\s+Avl|$)",
             Pattern.CASE_INSENSITIVE);
 
     // Merchant/payee after "at" or "to" or "for"
     private static final Pattern MERCHANT_PATTERN = Pattern.compile(
-            "(?:at|to|for|@)\\s+([A-Za-z][A-Za-z0-9\\s&'.,-]+?)(?:\\.|\\s+on|\\s+Ref|\\s+Info|$)",
+            "(?:at|in|via|from|@)\\s+([A-Za-z][A-Za-z0-9\\s&'.,-]+?)(?:\\.|\\s+on|\\s+Ref|\\s+Info|\\s+Avl|$)",
             Pattern.CASE_INSENSITIVE);
 
     // Known bank sender IDs
@@ -81,7 +91,8 @@ public class TransactionParser {
         boolean hasTransaction = DEBIT_PATTERN.matcher(body).find() ||
                 CREDIT_PATTERN.matcher(body).find();
 
-        return bankSender && hasAmount && hasTransaction;
+        boolean bankBodyKeywords = body.matches("(?is).*(a/?c|account|upi|card|txn|transaction|bank).*");
+        return hasAmount && hasTransaction && (bankSender || bankBodyKeywords);
     }
 
     /**
@@ -137,15 +148,53 @@ public class TransactionParser {
         String merchant = null;
         Matcher upiMatcher = UPI_PATTERN.matcher(body);
         if (upiMatcher.find()) {
-            merchant = upiMatcher.group(1);
+            merchant = normalizeUpiHandle(upiMatcher.group(1));
         } else {
-            Matcher merchantMatcher = MERCHANT_PATTERN.matcher(body);
-            if (merchantMatcher.find()) {
-                merchant = merchantMatcher.group(1).trim();
+            Matcher upiHandleMatcher = UPI_HANDLE_PATTERN.matcher(body);
+            if (upiHandleMatcher.find()) {
+                merchant = normalizeUpiHandle(upiHandleMatcher.group(1));
+            } else {
+                Matcher payeeMatcher = PAYEE_PATTERN.matcher(body);
+                if (payeeMatcher.find()) {
+                    merchant = cleanMerchant(payeeMatcher.group(1));
+                } else {
+                    Matcher merchantMatcher = MERCHANT_PATTERN.matcher(body);
+                    if (merchantMatcher.find()) {
+                        merchant = cleanMerchant(merchantMatcher.group(1));
+                    }
+                }
             }
         }
 
         return new ParsedTransaction(type, amountCents, merchant,
                 accountInfo, body, timestampMillis);
+    }
+
+    private static String normalizeUpiHandle(String handle) {
+        if (handle == null) {
+            return null;
+        }
+        String cleaned = handle.trim().replaceAll("^[^A-Za-z0-9]+|[^A-Za-z0-9@._-]+$", "");
+        if (cleaned.isEmpty()) {
+            return null;
+        }
+        int atIndex = cleaned.indexOf('@');
+        String alias = atIndex > 0 ? cleaned.substring(0, atIndex) : cleaned;
+        String normalizedAlias = alias.replaceAll("[._-]+", " ").trim();
+        if (!normalizedAlias.isEmpty()) {
+            return normalizedAlias;
+        }
+        return cleaned;
+    }
+
+    private static String cleanMerchant(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String cleaned = raw.trim()
+                .replaceAll("^[\\s,.:;\\-]+|[\\s,.:;\\-]+$", "")
+                .replaceAll("(?i)\\b(?:upi|txn|ref|avl|info|account|a/c)\\b.*$", "")
+                .trim();
+        return cleaned.isEmpty() ? null : cleaned;
     }
 }

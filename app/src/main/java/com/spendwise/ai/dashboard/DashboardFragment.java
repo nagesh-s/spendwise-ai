@@ -1,5 +1,6 @@
 package com.spendwise.ai.dashboard;
 
+import android.app.Application;
 import android.graphics.Color;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -26,9 +27,16 @@ import com.github.mikephil.charting.data.PieDataSet;
 import com.github.mikephil.charting.data.PieEntry;
 import com.github.mikephil.charting.formatter.IndexAxisValueFormatter;
 import com.github.mikephil.charting.formatter.PercentFormatter;
+import com.spendwise.ai.data.AppDatabase;
+import com.spendwise.ai.data.entity.Account;
+import com.spendwise.ai.data.entity.Expense;
 import com.spendwise.ai.data.pojo.BudgetWithSpend;
 import com.spendwise.ai.data.pojo.CategoryTotal;
+import com.spendwise.ai.data.repository.AccountRepository;
+import com.spendwise.ai.data.repository.ExpenseRepository;
+import com.spendwise.ai.data.repository.MerchantRepository;
 import com.spendwise.ai.databinding.FragmentDashboardBinding;
+import com.spendwise.ai.gamification.GamificationEngine;
 import com.spendwise.ai.insights.Insight;
 import com.spendwise.ai.insights.InsightsAdapter;
 import com.spendwise.ai.insights.Prediction;
@@ -36,16 +44,24 @@ import com.spendwise.ai.insights.PredictionAdapter;
 import com.spendwise.ai.util.DateUtils;
 
 import org.threeten.bp.LocalDate;
+import org.threeten.bp.LocalTime;
 import org.threeten.bp.YearMonth;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import android.Manifest;
 import android.widget.Toast;
+import android.content.Intent;
+import android.content.ActivityNotFoundException;
+import android.provider.Settings;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import com.spendwise.ai.voice.VoiceExpenseParser;
 import com.spendwise.ai.voice.VoiceInputHelper;
+import com.spendwise.ai.voice.VoiceUnderstandingEngine;
+import com.spendwise.ai.voice.VoiceFallbackExtractorFactory;
 import com.spendwise.ai.common.ExpenseEditorDialogFragment;
 
 /**
@@ -65,7 +81,13 @@ public class DashboardFragment extends Fragment {
 
     private VoiceInputHelper voiceInputHelper;
     private final VoiceExpenseParser voiceParser = new VoiceExpenseParser();
+    private VoiceUnderstandingEngine voiceUnderstandingEngine;
     private List<String> availableCategories = new ArrayList<>();
+    private final Map<String, Long> categoryNameToId = new HashMap<>();
+    private ExpenseRepository expenseRepository;
+    private MerchantRepository merchantRepository;
+    private AccountRepository accountRepository;
+    private GamificationEngine gamificationEngine;
 
     private final ActivityResultLauncher<String> requestPermissionLauncher = registerForActivityResult(
             new ActivityResultContracts.RequestPermission(), isGranted -> {
@@ -91,6 +113,15 @@ public class DashboardFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         viewModel = new ViewModelProvider(this).get(DashboardViewModel.class);
+        Application app = requireActivity().getApplication();
+        expenseRepository = new ExpenseRepository(app);
+        merchantRepository = new MerchantRepository(app);
+        accountRepository = new AccountRepository(app);
+        gamificationEngine = new GamificationEngine(app);
+        voiceUnderstandingEngine = new VoiceUnderstandingEngine(
+                voiceParser,
+                VoiceFallbackExtractorFactory.create(requireContext()),
+                AppDatabase.databaseWriteExecutor);
 
         voiceInputHelper = new VoiceInputHelper(requireContext());
         setupVoiceListener();
@@ -155,7 +186,14 @@ public class DashboardFragment extends Fragment {
 
             @Override
             public void onVoiceError(String error) {
-                Toast.makeText(getContext(), "Voice Error: " + error, Toast.LENGTH_SHORT).show();
+                Toast.makeText(getContext(), error, Toast.LENGTH_SHORT).show();
+                if (isVoiceLanguageSetupError(error)) {
+                    promptVoiceLanguageSetup();
+                    return;
+                }
+                if (isVoiceCaptureMismatchError(error)) {
+                    openVoiceReviewDialog(0, null, null, null);
+                }
             }
         });
     }
@@ -166,26 +204,224 @@ public class DashboardFragment extends Fragment {
     }
 
     private void processVoiceInput(String text) {
-        // Parse the text
-        VoiceExpenseParser.ParsedExpense parsed = voiceParser.parse(text, availableCategories);
-
-        if (parsed.isValid()) {
-            ExpenseEditorDialogFragment.newInstanceForVoice(
-                    DateUtils.getTodayEpochDay(),
-                    parsed.amountCents,
-                    parsed.merchant,
-                    parsed.category,
-                    parsed.description).show(getParentFragmentManager(), "add_voice_expense");
-        } else {
-            Toast.makeText(getContext(), "Could not extract amount. Try saying '500 for Lunch'", Toast.LENGTH_LONG)
+        String spokenText = text == null ? "" : text.trim();
+        if (spokenText.isEmpty()) {
+            Toast.makeText(getContext(), "Couldn't transcribe speech. Please fill details manually.", Toast.LENGTH_SHORT)
                     .show();
-            ExpenseEditorDialogFragment.newInstanceForVoice(
-                    DateUtils.getTodayEpochDay(),
-                    0,
-                    null,
-                    null,
-                    text).show(getParentFragmentManager(), "add_voice_expense");
+            openVoiceReviewDialog(0, null, null, null);
+            return;
         }
+
+        voiceUnderstandingEngine.understandAsync(spokenText, getCategoriesForVoiceInference(), understandingResult -> {
+            if (!isAdded()) {
+                return;
+            }
+            requireActivity().runOnUiThread(() -> handleVoiceUnderstandingResult(spokenText, understandingResult));
+        });
+    }
+
+    private void handleVoiceUnderstandingResult(String spokenText,
+            VoiceUnderstandingEngine.UnderstandingResult understandingResult) {
+        VoiceExpenseParser.ParsedExpense parsed = understandingResult.parsedExpense;
+        Long categoryId = resolveCategoryId(parsed.category);
+
+        if (parsed.isReadyForAutoSave() && categoryId != null) {
+            saveVoiceExpenseDirectly(parsed, categoryId);
+            return;
+        }
+
+        long amountPrefill = parsed.amountCents > 0 ? parsed.amountCents : 0L;
+        String merchantPrefill = parsed.merchant;
+        String categoryPrefill = parsed.category;
+
+        String guidance = buildVoiceReviewMessage(parsed);
+        if (guidance != null) {
+            Toast.makeText(getContext(), guidance, Toast.LENGTH_LONG).show();
+        }
+
+        openVoiceReviewDialog(amountPrefill, merchantPrefill, categoryPrefill, spokenText);
+    }
+
+    private List<String> getCategoriesForVoiceInference() {
+        if (!availableCategories.isEmpty()) {
+            return new ArrayList<>(availableCategories);
+        }
+        List<String> defaults = new ArrayList<>();
+        defaults.add("Food & Dining");
+        defaults.add("Transportation");
+        defaults.add("Bills & Utilities");
+        defaults.add("Shopping");
+        defaults.add("Entertainment");
+        defaults.add("Health & Fitness");
+        defaults.add("Travel");
+        defaults.add("Education");
+        defaults.add("Personal Care");
+        defaults.add("Other");
+        return defaults;
+    }
+
+    private void saveVoiceExpenseDirectly(VoiceExpenseParser.ParsedExpense parsed, long categoryId) {
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            try {
+                Long merchantId = null;
+                if (parsed.merchant != null && !parsed.merchant.trim().isEmpty()) {
+                    merchantId = merchantRepository.insertOrGetId(parsed.merchant.trim());
+                    if (merchantId != null && merchantId <= 0) {
+                        merchantId = null;
+                    }
+                }
+
+                Expense expense = new Expense(
+                        DateUtils.getTodayEpochDay(),
+                        parsed.amountCents,
+                        parsed.description,
+                        categoryId,
+                        merchantId);
+
+                Account defaultAccount = accountRepository.getDefaultAccount();
+                if (defaultAccount != null) {
+                    expense.setAccountId(defaultAccount.getId());
+                }
+
+                expenseRepository.insertSync(expense);
+
+                gamificationEngine.addXp(10);
+                List<Expense> allExpenses = expenseRepository.getAllExpensesSync();
+                boolean earlyBirdEvent = LocalTime.now().getHour() < 8;
+                List<String> unlocked = gamificationEngine.checkAchievements(allExpenses, earlyBirdEvent);
+
+                if (!isAdded()) {
+                    return;
+                }
+                requireActivity().runOnUiThread(() -> {
+                    String message = "Expense added from voice. +10 XP";
+                    if (!unlocked.isEmpty()) {
+                        message += " • " + unlocked.size() + " badge(s) unlocked";
+                    }
+                    Toast.makeText(getContext(), message, Toast.LENGTH_SHORT).show();
+                    viewModel.refreshInsights();
+                });
+            } catch (Exception e) {
+                if (!isAdded()) {
+                    return;
+                }
+                requireActivity().runOnUiThread(() -> {
+                    Toast.makeText(getContext(), "Couldn't auto-save. Please review and save.", Toast.LENGTH_LONG)
+                            .show();
+                    openVoiceReviewDialog(
+                            parsed.amountCents > 0 ? parsed.amountCents : 0L,
+                            parsed.merchant,
+                            parsed.category,
+                            parsed.description);
+                });
+            }
+        });
+    }
+
+    @Nullable
+    private Long resolveCategoryId(@Nullable String categoryName) {
+        if (categoryName == null || categoryName.trim().isEmpty()) {
+            return null;
+        }
+        Long directMatch = categoryNameToId.get(categoryName);
+        if (directMatch != null) {
+            return directMatch;
+        }
+        for (Map.Entry<String, Long> entry : categoryNameToId.entrySet()) {
+            if (entry.getKey().equalsIgnoreCase(categoryName)) {
+                return entry.getValue();
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    private String buildVoiceReviewMessage(VoiceExpenseParser.ParsedExpense parsed) {
+        List<String> missingOrUncertain = new ArrayList<>();
+        if (!parsed.amountSure) {
+            missingOrUncertain.add("amount");
+        }
+        if (!parsed.categorySure) {
+            missingOrUncertain.add("category");
+        }
+        if (parsed.merchant != null && !parsed.merchantSure) {
+            missingOrUncertain.add("merchant");
+        }
+        if (missingOrUncertain.isEmpty()) {
+            return null;
+        }
+        return "Please confirm " + android.text.TextUtils.join(", ", missingOrUncertain) + " before saving.";
+    }
+
+    private boolean isVoiceCaptureMismatchError(String error) {
+        if (error == null) {
+            return false;
+        }
+        return error.startsWith("Couldn't understand")
+                || error.startsWith("No speech detected")
+                || error.startsWith("Could not start voice capture")
+                || error.startsWith("Voice service is busy");
+    }
+
+    private boolean isVoiceLanguageSetupError(@Nullable String error) {
+        if (error == null) {
+            return false;
+        }
+        return error.startsWith("Speech language data is unavailable")
+                || error.startsWith("Selected speech language is not supported");
+    }
+
+    private void promptVoiceLanguageSetup() {
+        if (!isAdded()) {
+            return;
+        }
+        try {
+            new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                    .setTitle("Voice Setup Needed")
+                    .setMessage("Speech language data is missing on this device. Open system voice settings to install language data?")
+                    .setNegativeButton("Not now", null)
+                    .setPositiveButton("Open Settings", (dialog, which) -> openVoiceSettings())
+                    .show();
+        } catch (Exception ignored) {
+            openVoiceSettings();
+        }
+    }
+
+    private void openVoiceSettings() {
+        if (!isAdded()) {
+            return;
+        }
+        Intent[] candidates = new Intent[] {
+                new Intent(Settings.ACTION_VOICE_INPUT_SETTINGS),
+                new Intent(Settings.ACTION_INPUT_METHOD_SETTINGS),
+                new Intent(Settings.ACTION_SETTINGS)
+        };
+        for (Intent intent : candidates) {
+            try {
+                if (intent.resolveActivity(requireContext().getPackageManager()) != null) {
+                    startActivity(intent);
+                    return;
+                }
+            } catch (ActivityNotFoundException ignored) {
+                // Try next candidate.
+            }
+        }
+    }
+
+    private void openVoiceReviewDialog(long amountCents, @Nullable String merchant, @Nullable String category,
+            @Nullable String description) {
+        if (!isAdded()) {
+            return;
+        }
+        if (getParentFragmentManager().findFragmentByTag("add_voice_expense") != null) {
+            return;
+        }
+        ExpenseEditorDialogFragment.newInstanceForVoice(
+                DateUtils.getTodayEpochDay(),
+                amountCents,
+                merchant,
+                category,
+                description).show(getParentFragmentManager(), "add_voice_expense");
     }
 
     private void setupCharts() {
@@ -370,9 +606,11 @@ public class DashboardFragment extends Fragment {
         // Observe categories for voice parser
         viewModel.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
             availableCategories.clear();
+            categoryNameToId.clear();
             if (categories != null) {
                 for (com.spendwise.ai.data.entity.Category cat : categories) {
                     availableCategories.add(cat.getName());
+                    categoryNameToId.put(cat.getName(), cat.getId());
                 }
             }
         });

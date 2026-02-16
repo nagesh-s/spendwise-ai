@@ -2,6 +2,17 @@ plugins {
     id 'com.android.application'
 }
 
+def escapeForBuildConfig = { Object raw ->
+    raw.toString()
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+}
+
+def offlineLlmModelPath = escapeForBuildConfig(project.findProperty("OFFLINE_LLM_MODEL_PATH")
+        ?: "models/spendwise_gemma3_1b.task")
+def offlineLlmModelId = escapeForBuildConfig(project.findProperty("OFFLINE_LLM_MODEL_ID")
+        ?: "gemma-3-1b-it-int4")
+
 android {
     namespace 'com.spendwise.ai'
     compileSdk 34
@@ -22,11 +33,27 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
+    flavorDimensions "llmMode"
+    productFlavors {
+        standard {
+            dimension "llmMode"
+            buildConfigField "boolean", "OFFLINE_LLM_ENABLED", "false"
+            buildConfigField "String", "OFFLINE_LLM_MODEL_PATH", "\"\""
+            buildConfigField "String", "OFFLINE_LLM_MODEL_ID", "\"none\""
+        }
+        offlineLlm {
+            dimension "llmMode"
+            buildConfigField "boolean", "OFFLINE_LLM_ENABLED", "true"
+            buildConfigField "String", "OFFLINE_LLM_MODEL_PATH", "\"${offlineLlmModelPath}\""
+            buildConfigField "String", "OFFLINE_LLM_MODEL_ID", "\"${offlineLlmModelId}\""
+        }
+    }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_11
         targetCompatibility JavaVersion.VERSION_11
     }
     buildFeatures {
+        buildConfig true
         viewBinding true
     }
 }
@@ -49,9 +76,29 @@ dependencies {
     implementation 'com.jakewharton.threetenabp:threetenabp:1.4.4'
     implementation 'androidx.work:work-runtime:2.9.0'
     implementation 'androidx.biometric:biometric:1.1.0'
+    offlineLlmImplementation 'com.google.mediapipe:tasks-genai:0.10.27'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.5.1'
     testImplementation 'org.mockito:mockito-core:5.10.0'
     testImplementation 'org.mockito:mockito-inline:5.2.0'
+}
+
+// Keep legacy command compatibility after introducing product flavors.
+tasks.register("testDebugUnitTest") {
+    group = "verification"
+    description = "Runs unit tests for all debug flavors."
+    dependsOn("testStandardDebugUnitTest", "testOfflineLlmDebugUnitTest")
+}
+
+tasks.register("assembleDebugAndroidTest") {
+    group = "verification"
+    description = "Assembles Android test APKs for all debug flavors."
+    dependsOn("assembleStandardDebugAndroidTest", "assembleOfflineLlmDebugAndroidTest")
+}
+
+tasks.register("connectedDebugAndroidTest") {
+    group = "verification"
+    description = "Runs connected Android tests for all debug flavors."
+    dependsOn("connectedStandardDebugAndroidTest", "connectedOfflineLlmDebugAndroidTest")
 }

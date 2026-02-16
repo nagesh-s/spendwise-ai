@@ -149,4 +149,10 @@ public interface ExpenseDao {
                      "AND categoryId = :categoryId " +
                      "AND IFNULL(description, '') = IFNULL(:description, '')")
        int countExactMatch(long dateEpochDay, long amountCents, long categoryId, String description);
+
+       @Query("SELECT COUNT(*) FROM expenses " +
+                     "WHERE dateEpochDay = :dateEpochDay " +
+                     "AND amountCents = :amountCents " +
+                     "AND IFNULL(description, '') = IFNULL(:description, '')")
+       int countByDateAmountDescription(long dateEpochDay, long amountCents, String description);
 }

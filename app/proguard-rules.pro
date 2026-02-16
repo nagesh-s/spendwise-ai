@@ -35,3 +35,6 @@
 
 # Keep widget provider
 -keep class com.spendwise.ai.widget.** { *; }
+
+# Voice offline LLM extractor (instantiated via reflection)
+-keep class com.spendwise.ai.voice.mediapipe.MediaPipeGemmaExpenseExtractor { *; }

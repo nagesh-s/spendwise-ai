@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [Unreleased]
+### Fixed
+- **Voice Recognition Fallback** - `VoiceInputHelper` now captures partial transcripts and uses them when recognizer returns `ERROR_NO_MATCH` or speech timeout, reducing hard-fail voice sessions.
+- **Voice Error UX** - Replaced raw `"No match"` surfaced errors with actionable user-facing guidance and improved busy/network messaging.
+- **Voice Add Flow Safety** - Dashboard now pre-fills only high-confidence voice fields and defers uncertain fields to user confirmation.
+- **Voice Review Flow** - When voice confidence is low for any parsed field, app opens Add Expense with only trusted prefilled values and asks user to confirm remaining fields.
+- **Voice Error 13 Handling** - Added explicit handling for speech language support/unavailable errors and one-time fallback retry with relaxed language settings.
+- **Voice Error 5/7 Recovery** - Added one-time retry for client/no-match failures using alternate speech model path before showing user fallback.
+- **Voice Language Recovery UX** - Added secondary auto-language retry after language-data failures and in-app prompt to open system voice settings for one-tap remediation.
+- **Quick Tile Widget Action** - Home-screen quick tile taps now insert expenses in background and show success toast without opening the app.
+- **Widget Refresh Flicker** - Replaced full widget update broadcasts with targeted dataset refresh calls to reduce home-screen flicker.
+- **Widget Add Shortcut Flow** - Widget `+` now routes directly to Quick Tile add modal instead of stopping at the tab root.
+- **SMS Sync Window** - Manual and automatic SMS import now share one sync pointer so only new messages since last sync are scanned.
+
+### Changed
+- **Speech Intent Tuning** - Added recognition extras for max results, offline preference, and silence windows to improve capture reliability.
+- **Voice Parsing Accuracy** - `VoiceExpenseParser` now handles currency-prefixed amounts (`₹`, `Rs`, `INR`), comma-separated numbers, richer merchant phrases, and keyword-based category inference.
+- **Voice Fallback Prefill** - When extraction is uncertain, Add Expense still opens with transcript and only confidence-approved fields prefilled.
+- **Voice Confidence Strategy** - Added per-field certainty (`amountSure`, `categorySure`, `merchantSure`) and auto-save eligibility checks.
+- **Hands-Free Voice Add** - If amount + category are confidently parsed, expense is now auto-saved (with XP and badge checks) without requiring modal confirmation.
+- **Offline Voice Architecture** - Removed remote endpoint config and internet permission from voice flow; fallback extraction now runs fully on-device.
+- **Offline LLM Build Variant** - Added `offlineLlm` flavor that keeps processing local and enables on-device Gemma extraction without changing standard release behavior.
+- **Zero-Setup Model Provisioning** - `offlineLlm` now auto-provisions model from bundled app asset into internal storage on first use (no manual user import path required).
+- **SMS Auto-Import Continuity** - `SmsAutoImportWorker` now uses shared sync state with manual scan flow for incremental imports and duplicate read reduction.
+- **Widget Broadcast Reliability** - Quick tile widget inserts now use async broadcast completion (`goAsync`) for safer background execution.
+
+### Added
+- **Unit Test Coverage** - Expanded `VoiceExpenseParserTest` with cases for currency/comma amounts, merchant phrase variants, keyword category inference, and invalid-input behavior.
+- **Hybrid Voice Engine** - Added pluggable `VoiceUnderstandingEngine` with parser-first flow and optional on-device semantic fallback only when parser confidence is low.
+- **On-Device Semantic Extractor** - Added `OnDeviceSemanticExpenseExtractor` for offline fallback extraction (including number-word amounts like “two fifty”).
+- **On-Device LLM Option** - Added MediaPipe-backed `MediaPipeGemmaExpenseExtractor` for `offlineLlm` flavor using Gemma 3 1B int4 task model, with semantic extractor failover.
+- **Voice Extractor Factory** - Added `VoiceFallbackExtractorFactory` to route extractor selection per flavor and gracefully fallback when LLM model file is unavailable.
+- **Unit Test Coverage** - Added `VoiceUnderstandingEngineTest` and `OnDeviceSemanticExpenseExtractorTest` for parser-first merge and offline fallback behavior.
+- **Unit Test Coverage** - Added `VoiceFallbackExtractorFactoryTest` to validate extractor creation and extraction path.
+- **SMS Sync State** - Added `SmsSyncState` shared state utility for unified last-sync timestamp management across SMS flows.
+- **Unit Test Coverage** - Added `SmsExpenseClassifierTest` for SMS-to-category mapping and description fallback behavior.
+
+---
+
 ## [1.6.0] - 2026-02-14
 ### Added - Phase 6 (Release Prep)
 - **Onboarding Flow** - 3-slide introduction (Welcome, Insights, Voice) for first-time users (OnboardingActivity, ViewPager2).
@@ -208,7 +247,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [Roadmap]
 ### Planned - Post v1.6
 - Notification-based transaction parsing (beyond SMS inbox)
 - Expanded test coverage for navigation flows and report export edge cases

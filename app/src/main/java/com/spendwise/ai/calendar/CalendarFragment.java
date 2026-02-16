@@ -4,11 +4,13 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
 import com.prolificinteractive.materialcalendarview.CalendarDay;
@@ -99,11 +101,50 @@ public class CalendarFragment extends Fragment {
         expenseAdapter = new ExpenseAdapter();
         binding.recyclerExpenses.setLayoutManager(new LinearLayoutManager(requireContext()));
         binding.recyclerExpenses.setAdapter(expenseAdapter);
+        attachSwipeToDelete();
 
         // Handle expense click for editing
         expenseAdapter.setOnExpenseClickListener(expense -> {
             openExpenseEditor(expense.getId());
         });
+    }
+
+    private void attachSwipeToDelete() {
+        ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0,
+                ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull androidx.recyclerview.widget.RecyclerView recyclerView,
+                    @NonNull androidx.recyclerview.widget.RecyclerView.ViewHolder viewHolder,
+                    @NonNull androidx.recyclerview.widget.RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull androidx.recyclerview.widget.RecyclerView.ViewHolder viewHolder,
+                    int direction) {
+                int position = viewHolder.getAdapterPosition();
+                Expense expense = expenseAdapter.getExpenseAt(position);
+                if (expense == null) {
+                    expenseAdapter.notifyItemChanged(position);
+                    return;
+                }
+                confirmDeleteExpense(expense, position);
+            }
+        };
+        new ItemTouchHelper(callback).attachToRecyclerView(binding.recyclerExpenses);
+    }
+
+    private void confirmDeleteExpense(@NonNull Expense expense, int adapterPosition) {
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle("Delete Expense")
+                .setMessage("Delete this expense?")
+                .setNegativeButton("Cancel", (dialog, which) -> expenseAdapter.notifyItemChanged(adapterPosition))
+                .setPositiveButton("Delete", (dialog, which) -> {
+                    viewModel.deleteExpenseById(expense.getId());
+                    Toast.makeText(requireContext(), "Expense deleted", Toast.LENGTH_SHORT).show();
+                })
+                .setOnCancelListener(dialog -> expenseAdapter.notifyItemChanged(adapterPosition))
+                .show();
     }
 
     private void setupFab() {

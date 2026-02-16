@@ -2,7 +2,11 @@ Use unit tests for pure business logic (parsers, formatters, helpers) and androi
 
 Current baseline coverage:
 - `app/src/test/java/com/spendwise/ai/sms/TransactionParserTest.java`
+- `app/src/test/java/com/spendwise/ai/sms/SmsExpenseClassifierTest.java`
 - `app/src/test/java/com/spendwise/ai/voice/VoiceExpenseParserTest.java`
+- `app/src/test/java/com/spendwise/ai/voice/VoiceUnderstandingEngineTest.java`
+- `app/src/test/java/com/spendwise/ai/voice/OnDeviceSemanticExpenseExtractorTest.java`
+- `app/src/test/java/com/spendwise/ai/voice/VoiceFallbackExtractorFactoryTest.java`
 - `app/src/test/java/com/spendwise/ai/gamification/GamificationEngineTest.java`
 - `app/src/test/java/com/spendwise/ai/data/export/ReportGeneratorTest.java`
 - `app/src/androidTest/java/com/spendwise/ai/data/AppDatabaseMigrationTest.java`
@@ -12,7 +16,11 @@ Current baseline coverage:
 
 Coverage notes:
 - Parser tests include sender filtering, amount/type extraction, merchant extraction, and invalid sender rejection.
-- Voice parser tests include amount/category/merchant extraction from spoken phrases.
+- SMS classifier tests validate category mapping (bills/transport/fallback) and description fallback behavior.
+- Voice parser tests include currency-token amounts (`Rs`, `INR`, `₹`), comma decimals, merchant phrase variants (`at`, `from`, `paid ... to`), keyword category inference, invalid-input fallbacks, and confidence/auto-save eligibility flags.
+- Voice understanding engine tests validate parser-first behavior, optional on-device fallback merge gating, and low-confidence override protection.
+- On-device semantic extractor tests validate number-word amount extraction, keyword category extraction, and merchant extraction in offline mode.
+- Voice fallback factory tests validate flavor-driven extractor creation and working fallback extraction.
 - Report export tests validate CSV formatting, escaping, and fallback field behavior.
 - Gamification tests cover leveling math, streak calculation, and achievement unlock paths.
 - Expense editor instrumentation covers save, edit, and delete paths with merchant/account/tag persistence checks.
@@ -22,6 +30,10 @@ Coverage notes:
 Verification commands:
 - `./gradlew :app:testDebugUnitTest`
 - `./gradlew :app:assembleDebug`
+- `./gradlew :app:testStandardDebugUnitTest`
+- `./gradlew :app:testOfflineLlmDebugUnitTest`
+- `./gradlew :app:assembleStandardDebug`
+- `./gradlew :app:assembleOfflineLlmDebug`
 - `./gradlew :app:assembleDebugAndroidTest`
 - `./gradlew :app:connectedDebugAndroidTest`
 

@@ -19,7 +19,7 @@ public class BiometricHelper {
     private static final String PREFS_NAME = "security_prefs";
     private static final String KEY_BIOMETRIC_ENABLED = "biometric_enabled";
     private static final String KEY_LAST_UNLOCK_TIME = "last_unlock_time";
-    private static final long LOCK_TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
+    private static final String KEY_LAST_BACKGROUND_TIME = "last_background_time";
     private static final int AUTHENTICATORS =
             BiometricManager.Authenticators.BIOMETRIC_WEAK |
                     BiometricManager.Authenticators.BIOMETRIC_STRONG |
@@ -77,7 +77,8 @@ public class BiometricHelper {
         }
         SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         long lastUnlock = prefs.getLong(KEY_LAST_UNLOCK_TIME, 0);
-        return System.currentTimeMillis() - lastUnlock > LOCK_TIMEOUT_MS;
+        long lastBackground = prefs.getLong(KEY_LAST_BACKGROUND_TIME, 0);
+        return lastUnlock <= 0 || lastBackground > lastUnlock;
     }
 
     /**
@@ -91,9 +92,16 @@ public class BiometricHelper {
      * Update the last active time to delay the lock timeout.
      */
     public static void updateLastActiveTime(Context context) {
-        if (isBiometricEnabled(context)) {
-            recordUnlock(context);
-        }
+        // No-op: avoid refreshing unlock timestamp on every resume.
+        // Lock should be required after app returns from background.
+    }
+
+    /**
+     * Mark when app moves to background.
+     */
+    public static void markAppBackgrounded(Context context) {
+        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        prefs.edit().putLong(KEY_LAST_BACKGROUND_TIME, System.currentTimeMillis()).apply();
     }
 
     /**

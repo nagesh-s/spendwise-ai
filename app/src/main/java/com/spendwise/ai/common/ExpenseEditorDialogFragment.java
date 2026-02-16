@@ -115,11 +115,11 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
                 viewModel.initForEdit(expenseId);
                 viewModel.loadTagsForExpense(expenseId);
                 binding.textDialogTitle.setText("Edit Expense");
-                binding.btnDelete.setVisibility(View.VISIBLE);
+                binding.btnDelete.setVisibility(View.GONE);
             } else {
                 long dateEpochDay = args.getLong(ARG_DATE_EPOCH_DAY, DateUtils.getTodayEpochDay());
 
-                if (args.containsKey(ARG_VOICE_AMOUNT) || args.containsKey(ARG_VOICE_MERCHANT)) {
+                if (hasVoicePrefillArgs(args)) {
                     // Voice init
                     long amount = args.getLong(ARG_VOICE_AMOUNT, 0);
                     String merchant = args.getString(ARG_VOICE_MERCHANT);
@@ -320,6 +320,13 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
         }
     }
 
+    private boolean hasVoicePrefillArgs(Bundle args) {
+        return args.containsKey(ARG_VOICE_AMOUNT)
+                || args.containsKey(ARG_VOICE_MERCHANT)
+                || args.containsKey(ARG_VOICE_CATEGORY)
+                || args.containsKey(ARG_VOICE_DESC);
+    }
+
     private boolean containsAny(String text, String... keywords) {
         for (String keyword : keywords) {
             if (text.contains(keyword))
@@ -433,6 +440,51 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
         // Observe selected date
         viewModel.getSelectedDate().observe(getViewLifecycleOwner(), date -> {
             binding.editDate.setText(date.format(DATE_FORMAT));
+        });
+
+        viewModel.getAmountCents().observe(getViewLifecycleOwner(), cents -> {
+            if (cents == null || cents <= 0) {
+                return;
+            }
+            String current = binding.editAmount.getText() != null ? binding.editAmount.getText().toString().trim() : "";
+            String formatted = cents % 100 == 0
+                    ? String.valueOf(cents / 100)
+                    : String.format(Locale.getDefault(), "%.2f", cents / 100.0);
+            if (!formatted.equals(current)) {
+                binding.editAmount.setText(formatted);
+            }
+        });
+
+        viewModel.getDescription().observe(getViewLifecycleOwner(), desc -> {
+            if (desc == null || desc.trim().isEmpty()) {
+                return;
+            }
+            String current = binding.editDescription.getText() != null
+                    ? binding.editDescription.getText().toString()
+                    : "";
+            if (current.trim().isEmpty()) {
+                binding.editDescription.setText(desc);
+            }
+        });
+
+        viewModel.getMerchantName().observe(getViewLifecycleOwner(), merchantName -> {
+            if (merchantName == null || merchantName.trim().isEmpty()) {
+                return;
+            }
+            String current = binding.editMerchant.getText() != null
+                    ? binding.editMerchant.getText().toString()
+                    : "";
+            if (current.trim().isEmpty()) {
+                binding.editMerchant.setText(merchantName, false);
+            }
+        });
+
+        viewModel.getSelectedCategoryId().observe(getViewLifecycleOwner(), categoryId -> {
+            if (categoryId == null || categoryId <= 0) {
+                return;
+            }
+            pendingCategoryId = categoryId;
+            applyPendingCategorySelection();
         });
 
         // Observe amount error

@@ -5,3 +5,12 @@
 - Data layer: Room entities + DAOs + repositories; LiveData/observers drive reactive screen updates.
 - Background work: WorkManager handles recurring expense generation and reminder notifications.
 - Smart features: local heuristic category suggestions and merchant autocomplete (offline, no network).
+- Voice pipeline: `VoiceInputHelper` captures final and partial transcripts from `SpeechRecognizer` with retry handling; `VoiceUnderstandingEngine` runs parser-first via `VoiceExpenseParser`, then optional fallback extractors only for low-confidence parses.
+- Extractor routing: `VoiceFallbackExtractorFactory` selects extractor per flavor:
+  - `standard`: `OnDeviceSemanticExpenseExtractor` only
+  - `offlineLlm`: MediaPipe Gemma extractor (`MediaPipeGemmaExpenseExtractor`) first, semantic extractor failover
+- LLM model strategy: Gemma 3 1B int4 task bundle is auto-copied from bundled asset path into internal app storage on first use (target default `files/models/spendwise_gemma3_1b.task`), with local path override via `OFFLINE_LLM_MODEL_PATH`.
+- Dashboard auto-saves only high-confidence parses and opens prefilled editor for low-confidence parses.
+- QuickTiles widget behavior: tile tap inserts expense directly in background and shows toast; app launch is not required for one-tap add.
+- Widget refresh strategy: use `notifyAppWidgetViewDataChanged` for grid updates to minimize flicker from full widget redraw.
+- SMS import architecture: manual scan (`AutoTransactionsFragment`) and periodic worker (`SmsAutoImportWorker`) share `SmsSyncState` so scans resume from last imported timestamp instead of re-reading the full lookback window.
