@@ -125,10 +125,6 @@ public class ExpenseAdapter extends ListAdapter<Expense, ExpenseAdapter.ViewHold
         }
 
         void bind(Expense expense) {
-            // Description
-            String desc = expense.getDescription();
-            description.setText(desc != null && !desc.isEmpty() ? desc : "No description");
-
             // Amount
             amount.setText(DateUtils.formatAmountCents(expense.getAmountCents()));
 
@@ -146,12 +142,25 @@ public class ExpenseAdapter extends ListAdapter<Expense, ExpenseAdapter.ViewHold
                 category.setText("Unknown");
             }
 
-            // Merchant
+            // Merchant + description presentation:
+            // Show merchant as primary title when available, and keep description as secondary note.
+            String desc = expense.getDescription() != null ? expense.getDescription().trim() : "";
+            String merchantName = null;
             Long merchantId = expense.getMerchantId();
             if (merchantId != null && merchantMap.containsKey(merchantId)) {
-                merchant.setText("• " + merchantMap.get(merchantId));
-                merchant.setVisibility(View.VISIBLE);
+                merchantName = merchantMap.get(merchantId);
+            }
+
+            if (merchantName != null && !merchantName.trim().isEmpty()) {
+                description.setText(merchantName);
+                if (!desc.isEmpty() && !desc.equalsIgnoreCase(merchantName)) {
+                    merchant.setText("• " + desc);
+                    merchant.setVisibility(View.VISIBLE);
+                } else {
+                    merchant.setVisibility(View.GONE);
+                }
             } else {
+                description.setText(!desc.isEmpty() ? desc : "Expense");
                 merchant.setVisibility(View.GONE);
             }
         }

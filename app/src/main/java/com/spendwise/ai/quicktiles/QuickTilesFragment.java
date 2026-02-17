@@ -31,7 +31,7 @@ import org.threeten.bp.LocalDate;
  */
 public class QuickTilesFragment extends Fragment implements QuickTileAdapter.OnTileClickListener {
 
-    private static final String EXTRA_OPEN_QUICK_TILE_EDITOR = "open_quick_tile_editor";
+    public static final String RESULT_KEY_OPEN_EDITOR = "quick_tile_open_editor";
 
     private QuickTilesViewModel viewModel;
     private QuickTileAdapter adapter;
@@ -48,6 +48,10 @@ public class QuickTilesFragment extends Fragment implements QuickTileAdapter.OnT
         super.onViewCreated(view, savedInstanceState);
 
         viewModel = new ViewModelProvider(this).get(QuickTilesViewModel.class);
+        getParentFragmentManager().setFragmentResultListener(
+                RESULT_KEY_OPEN_EDITOR,
+                getViewLifecycleOwner(),
+                (requestKey, bundle) -> showTileEditor(null));
 
         // Setup RecyclerView
         RecyclerView recyclerView = view.findViewById(R.id.recycler_quick_tiles);
@@ -74,24 +78,6 @@ public class QuickTilesFragment extends Fragment implements QuickTileAdapter.OnT
                 recyclerView.setVisibility(View.VISIBLE);
             }
         });
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-        consumeOpenEditorIntent();
-    }
-
-    private void consumeOpenEditorIntent() {
-        if (!isAdded() || requireActivity().getIntent() == null) {
-            return;
-        }
-        android.content.Intent activityIntent = requireActivity().getIntent();
-        if (!activityIntent.getBooleanExtra(EXTRA_OPEN_QUICK_TILE_EDITOR, false)) {
-            return;
-        }
-        activityIntent.removeExtra(EXTRA_OPEN_QUICK_TILE_EDITOR);
-        showTileEditor(null);
     }
 
     @Override

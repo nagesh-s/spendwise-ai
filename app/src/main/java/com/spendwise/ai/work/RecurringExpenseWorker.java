@@ -105,7 +105,13 @@ public class RecurringExpenseWorker extends Worker {
 
         switch (frequency) {
             case RecurringExpense.FREQUENCY_DAILY:
-                return afterDate.plusDays(1);
+                return calculateNextIntervalDueDate(recurring, afterDate, 1);
+
+            case RecurringExpense.FREQUENCY_EVERY_2_DAYS:
+                return calculateNextIntervalDueDate(recurring, afterDate, 2);
+
+            case RecurringExpense.FREQUENCY_EVERY_3_DAYS:
+                return calculateNextIntervalDueDate(recurring, afterDate, 3);
 
             case RecurringExpense.FREQUENCY_WEEKLY:
                 // Get next occurrence of the specified day of week
@@ -132,5 +138,13 @@ public class RecurringExpenseWorker extends Worker {
                 Log.w(TAG, "Unknown frequency: " + frequency);
                 return null;
         }
+    }
+
+    private LocalDate calculateNextIntervalDueDate(RecurringExpense recurring, LocalDate afterDate, int intervalDays) {
+        LocalDate startDate = LocalDate.ofEpochDay(recurring.getStartDateEpochDay());
+        if (afterDate.isBefore(startDate)) {
+            return startDate;
+        }
+        return afterDate.plusDays(intervalDays);
     }
 }

@@ -46,7 +46,7 @@ public class RecurringExpense {
     private Long merchantId;
 
     /**
-     * Recurrence frequency: DAILY, WEEKLY, MONTHLY, YEARLY
+     * Recurrence frequency: DAILY, EVERY_2_DAYS, EVERY_3_DAYS, WEEKLY, MONTHLY, YEARLY
      */
     private String frequency;
 
@@ -216,6 +216,8 @@ public class RecurringExpense {
     // ==================== Frequency Constants ====================
 
     public static final String FREQUENCY_DAILY = "DAILY";
+    public static final String FREQUENCY_EVERY_2_DAYS = "EVERY_2_DAYS";
+    public static final String FREQUENCY_EVERY_3_DAYS = "EVERY_3_DAYS";
     public static final String FREQUENCY_WEEKLY = "WEEKLY";
     public static final String FREQUENCY_MONTHLY = "MONTHLY";
     public static final String FREQUENCY_YEARLY = "YEARLY";

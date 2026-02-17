@@ -10,9 +10,26 @@
 |---|---|
 | Version | `v1.6.0` |
 | Status | Phase 1-6 features implemented, validated, and documented |
-| Last Updated | 2026-02-16 (widget + SMS incremental sync hardening) |
+| Last Updated | 2026-02-17 (navigation + SMS toggles + recurring interval extension) |
 
 ---
+
+## UX + Navigation + Automation Sweep (2026-02-17)
+
+- Bottom navigation streamlined to high-frequency destinations only:
+  - Removed Categories/Budgets from bottom bar
+  - Added Budgets & Categories entry under Settings
+- Navigation behavior stabilized:
+  - Bottom-tab selection now preserves fragment state/scroll instead of forcing refresh
+  - Reselection on current tab is no-op
+- Auto Transactions UX + control updates:
+  - Added enable/disable switch in Settings and Auto Transactions screen
+  - Added persisted preference (`SmsAutoImportPrefs`) and WorkManager wiring to schedule/cancel periodic SMS import
+  - Auto Transactions screen now reloads recent synced SMS window and marks already-imported rows
+- Recurring expenses updated with shorter intervals:
+  - Added `EVERY_2_DAYS` and `EVERY_3_DAYS` support in editor, list labels, and worker due-date generation
+- Validation executed:
+  - `./gradlew :app:assembleDebug :app:testDebugUnitTest`
 
 ## Latest Validation Sweep (Post-v1.2.2 Audit)
 

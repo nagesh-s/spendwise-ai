@@ -22,6 +22,8 @@ import androidx.lifecycle.ViewModelProvider;
 
 import com.spendwise.ai.data.DataBackupManager;
 import com.spendwise.ai.databinding.FragmentSettingsBinding;
+import com.spendwise.ai.sms.SmsAutoImportPrefs;
+import com.spendwise.ai.work.WorkScheduler;
 
 /**
  * Fragment for app settings including dark mode, import/export.
@@ -31,6 +33,7 @@ public class SettingsFragment extends Fragment {
     private FragmentSettingsBinding binding;
     private SettingsViewModel viewModel;
     private DataBackupManager backupManager;
+    private boolean suppressAutoTransactionToggleCallback;
 
     // SAF launchers for file operations
     private ActivityResultLauncher<Intent> jsonBackupLauncher;
@@ -134,6 +137,12 @@ public class SettingsFragment extends Fragment {
                     .navigate(com.spendwise.ai.R.id.navigation_recurring);
         });
 
+        // Budgets / Categories
+        binding.cardBudgets.setOnClickListener(v -> {
+            androidx.navigation.Navigation.findNavController(v)
+                    .navigate(com.spendwise.ai.R.id.navigation_categories);
+        });
+
         // Financial Goals
         binding.cardGoals.setOnClickListener(v -> {
             androidx.navigation.Navigation.findNavController(v)
@@ -150,6 +159,18 @@ public class SettingsFragment extends Fragment {
         binding.cardAutoTransactions.setOnClickListener(v -> {
             androidx.navigation.Navigation.findNavController(v)
                     .navigate(com.spendwise.ai.R.id.navigation_auto_transactions);
+        });
+        binding.switchAutoTransactions.setChecked(SmsAutoImportPrefs.isEnabled(requireContext()));
+        binding.switchAutoTransactions.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (suppressAutoTransactionToggleCallback) {
+                return;
+            }
+            SmsAutoImportPrefs.setEnabled(requireContext(), isChecked);
+            WorkScheduler.setSmsAutoImportEnabled(requireContext(), isChecked);
+            Toast.makeText(requireContext(),
+                    isChecked ? getString(com.spendwise.ai.R.string.sms_auto_import_enabled)
+                            : getString(com.spendwise.ai.R.string.sms_auto_import_disabled),
+                    Toast.LENGTH_SHORT).show();
         });
 
         // Biometric Lock toggle
@@ -324,6 +345,19 @@ public class SettingsFragment extends Fragment {
                 viewModel.clearStatus();
             }
         });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        if (binding != null) {
+            boolean enabled = SmsAutoImportPrefs.isEnabled(requireContext());
+            if (binding.switchAutoTransactions.isChecked() != enabled) {
+                suppressAutoTransactionToggleCallback = true;
+                binding.switchAutoTransactions.setChecked(enabled);
+                suppressAutoTransactionToggleCallback = false;
+            }
+        }
     }
 
     @Override

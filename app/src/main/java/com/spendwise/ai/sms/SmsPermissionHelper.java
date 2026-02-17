@@ -84,14 +84,16 @@ public class SmsPermissionHelper {
             return transactions;
         }
 
-        long cutoffTime = System.currentTimeMillis() - (dayLimit * 24L * 60 * 60 * 1000);
-        long queryStartTime = Math.max(cutoffTime, sinceTimestamp);
+        long now = System.currentTimeMillis();
+        long cutoffTime = now - (dayLimit * 24L * 60 * 60 * 1000);
+        long safeSinceTimestamp = Math.max(0L, Math.min(sinceTimestamp, now));
+        long queryStartTime = Math.max(cutoffTime, safeSinceTimestamp);
 
         ContentResolver contentResolver = context.getContentResolver();
-        Uri smsUri = Uri.parse("content://sms/inbox");
+        Uri smsUri = Uri.parse("content://sms");
 
         String[] projection = { "address", "body", "date" };
-        String selection = "date > ?";
+        String selection = "date >= ?";
         String[] selectionArgs = { String.valueOf(queryStartTime) };
         String sortOrder = "date DESC";
 

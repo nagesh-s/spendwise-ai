@@ -32,7 +32,10 @@ import com.spendwise.ai.data.entity.FinancialGoal;
 import androidx.room.migration.Migration;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -115,7 +118,7 @@ public abstract class AppDatabase extends RoomDatabase {
         public void onCreate(@NonNull SupportSQLiteDatabase db) {
             super.onCreate(db);
             seedDefaultCategories();
-            seedDefaultAccount();
+            seedDefaultAccounts();
         }
 
         @Override
@@ -123,7 +126,7 @@ public abstract class AppDatabase extends RoomDatabase {
             super.onOpen(db);
             // Also check on open in case migration cleared the data
             seedDefaultCategories();
-            seedDefaultAccount();
+            seedDefaultAccounts();
         }
     };
 
@@ -141,18 +144,40 @@ public abstract class AppDatabase extends RoomDatabase {
     }
 
     /**
-     * Seed a default Cash account if no accounts exist.
+     * Seed default accounts and repair missing types for existing users.
      */
-    private static void seedDefaultAccount() {
+    private static void seedDefaultAccounts() {
         databaseWriteExecutor.execute(() -> {
             if (INSTANCE == null)
                 return;
             AccountDao accountDao = INSTANCE.accountDao();
-            if (accountDao.getAccountCount() == 0) {
-                Account cash = new Account("Cash", "CASH", 0, Color.parseColor("#4CAF50"), "fa_wallet", true);
-                accountDao.insert(cash);
+            List<Account> existingAccounts = accountDao.getAllAccountsSync();
+            Set<String> existingTypes = new HashSet<>();
+            if (existingAccounts != null) {
+                for (Account account : existingAccounts) {
+                    if (account.getType() != null) {
+                        existingTypes.add(account.getType().toUpperCase(Locale.US));
+                    }
+                }
+            }
+
+            for (Account account : getDefaultAccounts()) {
+                if (!existingTypes.contains(account.getType().toUpperCase(Locale.US))) {
+                    accountDao.insert(account);
+                }
             }
         });
+    }
+
+    private static List<Account> getDefaultAccounts() {
+        List<Account> accounts = new ArrayList<>();
+        accounts.add(new Account("Cash", Account.TYPE_CASH, 0, Color.parseColor("#4CAF50"), "fa_wallet", true));
+        accounts.add(new Account("UPI", Account.TYPE_UPI, 0, Color.parseColor("#00897B"), "fa_mobile_alt", false));
+        accounts.add(new Account("Bank", Account.TYPE_BANK, 0, Color.parseColor("#1E88E5"), "fa_university", false));
+        accounts.add(new Account("Debit Card", Account.TYPE_DEBIT_CARD, 0, Color.parseColor("#5E35B1"), "fa_credit_card", false));
+        accounts.add(new Account("Credit Card", Account.TYPE_CREDIT_CARD, 0, Color.parseColor("#E53935"), "fa_credit_card", false));
+        accounts.add(new Account("Wallet", Account.TYPE_WALLET, 0, Color.parseColor("#FB8C00"), "fa_wallet", false));
+        return accounts;
     }
 
     /**

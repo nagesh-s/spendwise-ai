@@ -239,7 +239,8 @@ public class DashboardFragment extends Fragment {
             Toast.makeText(getContext(), guidance, Toast.LENGTH_LONG).show();
         }
 
-        openVoiceReviewDialog(amountPrefill, merchantPrefill, categoryPrefill, spokenText);
+        String descriptionPrefill = parsed.description;
+        openVoiceReviewDialog(amountPrefill, merchantPrefill, categoryPrefill, descriptionPrefill);
     }
 
     private List<String> getCategoriesForVoiceInference() {

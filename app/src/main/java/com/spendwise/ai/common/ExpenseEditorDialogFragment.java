@@ -7,6 +7,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.ArrayAdapter;
 
 import androidx.annotation.NonNull;
@@ -24,6 +25,7 @@ import org.threeten.bp.LocalDate;
 import org.threeten.bp.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -147,25 +149,60 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
     }
 
     private void setupAccountDropdown() {
-        final Map<String, Long> accountNameToId = new HashMap<>();
+        final Map<String, Long> accountNameToId = new LinkedHashMap<>();
         viewModel.getAllAccounts().observe(getViewLifecycleOwner(), accounts -> {
             List<String> names = new ArrayList<>();
             accountNameToId.clear();
+            Long defaultAccountId = null;
             if (accounts != null) {
+                Map<String, String> uniqueLabelByKey = new LinkedHashMap<>();
                 for (com.spendwise.ai.data.entity.Account account : accounts) {
                     String displayName = account.getName() + " (" + account.getTypeDisplayName() + ")";
-                    names.add(displayName);
-                    accountNameToId.put(displayName, account.getId());
-                    // Auto-select default account
-                    if (account.isDefault() && viewModel.getSelectedAccountId().getValue() == null) {
-                        viewModel.setSelectedAccountId(account.getId());
-                        binding.dropdownAccount.setText(displayName, false);
+                    String uniqueKey = (account.getName() + "|" + account.getType()).toLowerCase(Locale.US);
+                    if (!uniqueLabelByKey.containsKey(uniqueKey)) {
+                        uniqueLabelByKey.put(uniqueKey, displayName);
+                        names.add(displayName);
+                        accountNameToId.put(displayName, account.getId());
+                    }
+                    if (defaultAccountId == null && account.isDefault()) {
+                        defaultAccountId = account.getId();
                     }
                 }
             }
             ArrayAdapter<String> adapter = new ArrayAdapter<>(requireContext(),
                     android.R.layout.simple_dropdown_item_1line, names);
             binding.dropdownAccount.setAdapter(adapter);
+
+            // Auto-select a default account exactly once if user has not chosen any account yet.
+            if (viewModel.getSelectedAccountId().getValue() == null) {
+                Long selectedId = defaultAccountId;
+                if (selectedId == null && !accountNameToId.isEmpty()) {
+                    selectedId = accountNameToId.values().iterator().next();
+                }
+                if (selectedId != null) {
+                    viewModel.setSelectedAccountId(selectedId);
+                    String selectedLabel = findDisplayNameByAccountId(accountNameToId, selectedId);
+                    if (selectedLabel != null) {
+                        binding.dropdownAccount.setText(selectedLabel, false);
+                    }
+                }
+            }
+        });
+
+        viewModel.getSelectedAccountId().observe(getViewLifecycleOwner(), selectedAccountId -> {
+            if (selectedAccountId == null || accountNameToId.isEmpty()) {
+                return;
+            }
+            String selectedLabel = findDisplayNameByAccountId(accountNameToId, selectedAccountId);
+            if (selectedLabel == null) {
+                return;
+            }
+            String current = binding.dropdownAccount.getText() != null
+                    ? binding.dropdownAccount.getText().toString()
+                    : "";
+            if (!selectedLabel.equals(current)) {
+                binding.dropdownAccount.setText(selectedLabel, false);
+            }
         });
 
         binding.dropdownAccount.setOnItemClickListener((parent, view2, position, id) -> {
@@ -175,6 +212,16 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
                 viewModel.setSelectedAccountId(accountId);
             }
         });
+    }
+
+    @Nullable
+    private String findDisplayNameByAccountId(@NonNull Map<String, Long> accountNameToId, long accountId) {
+        for (Map.Entry<String, Long> entry : accountNameToId.entrySet()) {
+            if (entry.getValue() != null && entry.getValue() == accountId) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     private void setupTagChips() {
@@ -559,11 +606,14 @@ public class ExpenseEditorDialogFragment extends DialogFragment {
     @Override
     public void onStart() {
         super.onStart();
-        // Make dialog wider
+        // Use most of the screen height so long forms scroll while actions stay pinned.
         Dialog dialog = getDialog();
         if (dialog != null && dialog.getWindow() != null) {
             Window window = dialog.getWindow();
-            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+            int screenHeight = getResources().getDisplayMetrics().heightPixels;
+            int dialogHeight = (int) (screenHeight * 0.92f);
+            window.setLayout(ViewGroup.LayoutParams.MATCH_PARENT, dialogHeight);
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_RESIZE);
         }
     }
 

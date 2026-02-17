@@ -40,6 +40,7 @@ public class VoiceExpenseParserTest {
         assertEquals(50000, result.amountCents);
         assertEquals("Starbucks", result.merchant);
         assertTrue(result.merchantSure);
+        assertTrue(result.description == null || result.description.isEmpty());
     }
 
     @Test
@@ -75,6 +76,7 @@ public class VoiceExpenseParserTest {
         assertEquals(18000, result.amountCents);
         assertEquals("Food & Dining", result.category);
         assertFalse(result.categorySure);
+        assertEquals("lunch", result.description.toLowerCase());
     }
 
     @Test

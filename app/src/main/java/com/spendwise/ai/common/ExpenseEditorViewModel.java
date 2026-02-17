@@ -178,6 +178,7 @@ public class ExpenseEditorViewModel extends AndroidViewModel {
             description.postValue(existingExpense.getDescription() != null ? existingExpense.getDescription() : "");
             selectedCategoryId.postValue(existingExpense.getCategoryId());
             selectedDate.postValue(DateUtils.epochDayToDate(existingExpense.getDateEpochDay()));
+            selectedAccountId.postValue(existingExpense.getAccountId());
         });
     }
 

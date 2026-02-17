@@ -4,7 +4,7 @@
 
 ---
 
-## Status: Implemented + Expanded (v1.6.0)
+## Status: Implemented + Expanded (v1.6.0+)
 
 ## What This Screen Does
 
@@ -13,9 +13,11 @@
 - Feature entry points:
   - Quick Tiles
   - Recurring Expenses
+  - Budgets & Categories
   - Goals
   - Analytics
   - Auto Transactions (SMS)
+  - Auto Transactions background sync toggle
   - Biometric lock toggle/setup
 - Data actions:
   - JSON backup/export
@@ -50,7 +52,8 @@
 | CSV/PDF export fails | invalid SAF URI or stream failure | `SettingsViewModel.exportCsv/exportPdf` |
 | Biometric toggle resets | biometric not enrolled or unsupported | `setupBiometricToggle()` |
 | Feature card not opening | nav ID mismatch | `nav_graph.xml` + card click handlers |
+| SMS auto-import not running | auto-import switch disabled | `SmsAutoImportPrefs` + `WorkScheduler.setSmsAutoImportEnabled()` |
 | Version display incorrect | package info fallback path | `setupAppVersion()` |
 
 ## Last Updated
-2026-02-14
+2026-02-17

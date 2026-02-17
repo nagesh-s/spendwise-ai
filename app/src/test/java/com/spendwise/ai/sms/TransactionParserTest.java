@@ -38,4 +38,13 @@ public class TransactionParserTest {
 
         assertTrue(result);
     }
+
+    @Test
+    public void isTransactionSms_handlesNullSenderWhenBodyIsTransactional() {
+        boolean result = TransactionParser.isTransactionSms(
+                null,
+                "Rs 250 debited from account XX1234 via UPI ref 9988");
+
+        assertTrue(result);
+    }
 }

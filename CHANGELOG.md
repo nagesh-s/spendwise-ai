@@ -21,6 +21,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Widget Add Shortcut Flow** - Widget `+` now routes directly to Quick Tile add modal instead of stopping at the tab root.
 - **SMS Sync Window** - Manual and automatic SMS import now share one sync pointer so only new messages since last sync are scanned.
 - **Edit Expense ANR** - Fixed category selection observer loop in expense editor dialog that could cause main-thread churn and input-dispatch ANR while opening/editing expenses.
+- **Expense Modal Currency UX** - Replaced dollar glyph in amount field icon with rupee icon for consistent INR entry cues.
+- **Account Dropdown Duplication** - Account chooser now de-duplicates duplicate account labels and keeps a single stable default selection.
+- **Voice Description Prefill** - Voice flow now avoids dumping full transcript into description by extracting concise item/note text.
+- **SMS Description Mapping** - SMS import no longer uses merchant name as description; it now assigns transaction-purpose labels (Recharge, Utility Bill, Transport, etc.).
+- **Calendar Usability** - Calendar screen now ships with week/month mode toggle and improved space balance for expense list visibility.
+- **Auto Transactions Empty State** - Auto Transactions now reloads recent synced SMS transactions on open/resume and correctly marks already imported rows.
 
 ### Changed
 - **Speech Intent Tuning** - Added recognition extras for max results, offline preference, and silence windows to improve capture reliability.
@@ -33,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Zero-Setup Model Provisioning** - `offlineLlm` now auto-provisions model from bundled app asset into internal storage on first use (no manual user import path required).
 - **SMS Auto-Import Continuity** - `SmsAutoImportWorker` now uses shared sync state with manual scan flow for incremental imports and duplicate read reduction.
 - **Widget Broadcast Reliability** - Quick tile widget inserts now use async broadcast completion (`goAsync`) for safer background execution.
+- **Bottom Navigation IA** - Removed Categories/Budgets from bottom navigation to keep primary tabs focused on frequent actions; Budgets is now accessed from Settings.
+- **Bottom Navigation State** - Main tab navigation now uses NavigationUI state restore and no-op reselect handling so tab scroll/state persists instead of refreshing.
 
 ### Added
 - **Unit Test Coverage** - Expanded `VoiceExpenseParserTest` with cases for currency/comma amounts, merchant phrase variants, keyword category inference, and invalid-input behavior.
@@ -44,6 +52,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Unit Test Coverage** - Added `VoiceFallbackExtractorFactoryTest` to validate extractor creation and extraction path.
 - **SMS Sync State** - Added `SmsSyncState` shared state utility for unified last-sync timestamp management across SMS flows.
 - **Unit Test Coverage** - Added `SmsExpenseClassifierTest` for SMS-to-category mapping and description fallback behavior.
+- **SMS Auto-Import Preference** - Added `SmsAutoImportPrefs` with in-app toggles on Settings and Auto Transactions screens to enable/disable periodic SMS import.
+- **Recurring Short Intervals** - Added recurring frequencies `EVERY_2_DAYS` and `EVERY_3_DAYS` across editor, adapter, and worker scheduling logic.
 
 ---
 

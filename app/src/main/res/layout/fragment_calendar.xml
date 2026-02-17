@@ -13,17 +13,59 @@
         android:layout_height="match_parent"
         android:orientation="vertical">
 
-        <!-- Calendar View -->
-        <com.prolificinteractive.materialcalendarview.MaterialCalendarView
-            android:id="@+id/calendar_view"
+        <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="0.8"
-            android:minHeight="260dp"
-            app:mcv_showOtherDates="out_of_range"
-            app:mcv_selectionColor="?attr/colorPrimary"
-            app:mcv_dateTextAppearance="@style/CalendarDateTextAppearance"
-            app:mcv_weekDayTextAppearance="@style/CalendarWeekTextAppearance" />
+            android:layout_height="wrap_content"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="8dp"
+            android:layout_marginBottom="6dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="?attr/colorOutlineVariant"
+            app:strokeWidth="1dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="12dp">
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/chip_group_calendar_mode"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    app:singleSelection="true"
+                    app:selectionRequired="true">
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_mode_week"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:checked="true"
+                        android:text="@string/calendar_mode_week" />
+
+                    <com.google.android.material.chip.Chip
+                        android:id="@+id/chip_mode_month"
+                        style="@style/Widget.Material3.Chip.Filter"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="@string/calendar_mode_month" />
+
+                </com.google.android.material.chip.ChipGroup>
+
+                <com.prolificinteractive.materialcalendarview.MaterialCalendarView
+                    android:id="@+id/calendar_view"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:minHeight="170dp"
+                    app:mcv_showOtherDates="all"
+                    app:mcv_selectionColor="?attr/colorPrimary"
+                    app:mcv_dateTextAppearance="@style/CalendarDateTextAppearance"
+                    app:mcv_weekDayTextAppearance="@style/CalendarWeekTextAppearance" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- Divider -->
         <View
@@ -75,7 +117,7 @@
             android:id="@+id/recycler_expenses"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1.2"
+            android:layout_weight="1"
             android:clipToPadding="false"
             android:paddingBottom="80dp"
             tools:listitem="@layout/item_expense" />
@@ -85,7 +127,7 @@
             android:id="@+id/layout_empty_state"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_weight="1.2"
+            android:layout_weight="1"
             android:gravity="center"
             android:orientation="vertical"
             android:visibility="gone">

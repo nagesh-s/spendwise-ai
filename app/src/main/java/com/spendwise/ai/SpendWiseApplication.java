@@ -3,6 +3,7 @@ package com.spendwise.ai;
 import android.app.Application;
 import com.jakewharton.threetenabp.AndroidThreeTen;
 import com.spendwise.ai.notifications.NotificationHelper;
+import com.spendwise.ai.sms.SmsAutoImportPrefs;
 import com.spendwise.ai.work.WorkScheduler;
 
 public class SpendWiseApplication extends Application {
@@ -23,12 +24,18 @@ public class SpendWiseApplication extends Application {
         // Schedule reminder notifications
         WorkScheduler.scheduleReminderWork(this);
 
-        // Schedule periodic SMS auto-import
-        WorkScheduler.scheduleSmsAutoImportWork(this);
+        // Schedule periodic SMS auto-import (user controlled).
+        if (SmsAutoImportPrefs.isEnabled(this)) {
+            WorkScheduler.scheduleSmsAutoImportWork(this);
+        } else {
+            WorkScheduler.cancelSmsAutoImportWork(this);
+        }
 
         // Run immediately to catch up on any missed work
         WorkScheduler.runRecurringExpenseWorkNow(this);
         WorkScheduler.runReminderWorkNow(this);
-        WorkScheduler.runSmsAutoImportNow(this);
+        if (SmsAutoImportPrefs.isEnabled(this)) {
+            WorkScheduler.runSmsAutoImportNow(this);
+        }
     }
 }

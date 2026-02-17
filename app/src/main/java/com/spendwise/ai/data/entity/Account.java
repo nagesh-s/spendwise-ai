@@ -14,6 +14,8 @@ public class Account {
 
     public static final String TYPE_CASH = "CASH";
     public static final String TYPE_BANK = "BANK";
+    public static final String TYPE_UPI = "UPI";
+    public static final String TYPE_DEBIT_CARD = "DEBIT_CARD";
     public static final String TYPE_CREDIT_CARD = "CREDIT_CARD";
     public static final String TYPE_WALLET = "WALLET";
     public static final String TYPE_OTHER = "OTHER";
@@ -115,6 +117,10 @@ public class Account {
                 return "Cash";
             case TYPE_BANK:
                 return "Bank Account";
+            case TYPE_UPI:
+                return "UPI";
+            case TYPE_DEBIT_CARD:
+                return "Debit Card";
             case TYPE_CREDIT_CARD:
                 return "Credit Card";
             case TYPE_WALLET:

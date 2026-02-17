@@ -44,7 +44,14 @@ public class RecurringExpenseEditorDialog extends DialogFragment {
     private String selectedFrequency = RecurringExpense.FREQUENCY_MONTHLY;
     private RecurringExpense existingExpense;
 
-    private static final String[] FREQUENCIES = { "Daily", "Weekly", "Monthly", "Yearly" };
+    private static final String[] FREQUENCIES = {
+            "Daily",
+            "Every 2 days",
+            "Every 3 days",
+            "Weekly",
+            "Monthly",
+            "Yearly"
+    };
 
     public static RecurringExpenseEditorDialog newInstance(long expenseId) {
         RecurringExpenseEditorDialog dialog = new RecurringExpenseEditorDialog();
@@ -79,12 +86,18 @@ public class RecurringExpenseEditorDialog extends DialogFragment {
                     selectedFrequency = RecurringExpense.FREQUENCY_DAILY;
                     break;
                 case 1:
-                    selectedFrequency = RecurringExpense.FREQUENCY_WEEKLY;
+                    selectedFrequency = RecurringExpense.FREQUENCY_EVERY_2_DAYS;
                     break;
                 case 2:
-                    selectedFrequency = RecurringExpense.FREQUENCY_MONTHLY;
+                    selectedFrequency = RecurringExpense.FREQUENCY_EVERY_3_DAYS;
                     break;
                 case 3:
+                    selectedFrequency = RecurringExpense.FREQUENCY_WEEKLY;
+                    break;
+                case 4:
+                    selectedFrequency = RecurringExpense.FREQUENCY_MONTHLY;
+                    break;
+                case 5:
                     selectedFrequency = RecurringExpense.FREQUENCY_YEARLY;
                     break;
             }
@@ -129,6 +142,8 @@ public class RecurringExpenseEditorDialog extends DialogFragment {
     private void updateDayInputHint() {
         switch (selectedFrequency) {
             case RecurringExpense.FREQUENCY_DAILY:
+            case RecurringExpense.FREQUENCY_EVERY_2_DAYS:
+            case RecurringExpense.FREQUENCY_EVERY_3_DAYS:
                 dayInput.setEnabled(false);
                 dayInput.setText("");
                 break;
@@ -164,6 +179,12 @@ public class RecurringExpenseEditorDialog extends DialogFragment {
                     switch (selectedFrequency) {
                         case RecurringExpense.FREQUENCY_DAILY:
                             frequencySpinner.setText("Daily", false);
+                            break;
+                        case RecurringExpense.FREQUENCY_EVERY_2_DAYS:
+                            frequencySpinner.setText("Every 2 days", false);
+                            break;
+                        case RecurringExpense.FREQUENCY_EVERY_3_DAYS:
+                            frequencySpinner.setText("Every 3 days", false);
                             break;
                         case RecurringExpense.FREQUENCY_WEEKLY:
                             frequencySpinner.setText("Weekly", false);
@@ -209,7 +230,31 @@ public class RecurringExpenseEditorDialog extends DialogFragment {
         try {
             double amount = Double.parseDouble(amountStr);
             long amountCents = Math.round(amount * 100);
-            int dayOfPeriod = TextUtils.isEmpty(dayStr) ? 1 : Integer.parseInt(dayStr);
+            int dayOfPeriod;
+            if (RecurringExpense.FREQUENCY_WEEKLY.equals(selectedFrequency)) {
+                if (TextUtils.isEmpty(dayStr)) {
+                    Toast.makeText(requireContext(), "Enter day of week (1-7)", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                dayOfPeriod = Integer.parseInt(dayStr);
+                if (dayOfPeriod < 1 || dayOfPeriod > 7) {
+                    Toast.makeText(requireContext(), "Day of week must be between 1 and 7", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            } else if (RecurringExpense.FREQUENCY_MONTHLY.equals(selectedFrequency)
+                    || RecurringExpense.FREQUENCY_YEARLY.equals(selectedFrequency)) {
+                if (TextUtils.isEmpty(dayStr)) {
+                    Toast.makeText(requireContext(), "Enter day of month (1-31)", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                dayOfPeriod = Integer.parseInt(dayStr);
+                if (dayOfPeriod < 1 || dayOfPeriod > 31) {
+                    Toast.makeText(requireContext(), "Day of month must be between 1 and 31", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+            } else {
+                dayOfPeriod = 1;
+            }
 
             if (existingExpense != null) {
                 existingExpense.setDescription(description);

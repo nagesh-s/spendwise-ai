@@ -1,20 +1,25 @@
 package com.spendwise.ai;
 
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.os.Bundle;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.navigation.NavController;
-import androidx.navigation.NavOptions;
+import androidx.navigation.NavDestination;
 import androidx.navigation.fragment.NavHostFragment;
 import androidx.navigation.ui.NavigationUI;
 
+import com.google.android.material.color.MaterialColors;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.entity.Expense;
 import com.spendwise.ai.data.entity.QuickTile;
 import com.spendwise.ai.databinding.ActivityMainBinding;
+import com.spendwise.ai.quicktiles.QuickTilesFragment;
 import com.spendwise.ai.widget.QuickTilesWidgetProvider;
 
 import org.threeten.bp.LocalDate;
@@ -31,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
 
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        applySystemBarAppearance();
 
         NavHostFragment navHostFragment = (NavHostFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.nav_host_fragment);
@@ -54,26 +60,23 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupBottomNavigation(BottomNavigationView bottomNavView) {
         NavigationUI.setupWithNavController(bottomNavView, navController);
-        bottomNavView.setOnItemSelectedListener(item -> navigateToTopLevel(item.getItemId()));
+        // Keep existing state/scroll when tapping the currently selected tab.
+        bottomNavView.setOnItemReselectedListener(item -> {
+            // no-op
+        });
     }
 
-    private boolean navigateToTopLevel(int destinationId) {
-        if (navController == null) {
-            return false;
-        }
-        if (navController.popBackStack(destinationId, false)) {
-            return true;
-        }
-        try {
-            NavOptions options = new NavOptions.Builder()
-                    .setLaunchSingleTop(true)
-                    .setRestoreState(false)
-                    .setPopUpTo(navController.getGraph().getStartDestinationId(), false)
-                    .build();
-            navController.navigate(destinationId, null, options);
-            return true;
-        } catch (IllegalArgumentException ignored) {
-            return false;
+    private void applySystemBarAppearance() {
+        int surface = MaterialColors.getColor(this, com.google.android.material.R.attr.colorSurface, 0xFFFFFFFF);
+        getWindow().setStatusBarColor(surface);
+        getWindow().setNavigationBarColor(surface);
+
+        int nightModeMask = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        boolean isDarkTheme = nightModeMask == Configuration.UI_MODE_NIGHT_YES;
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (controller != null) {
+            controller.setAppearanceLightStatusBars(!isDarkTheme);
+            controller.setAppearanceLightNavigationBars(!isDarkTheme);
         }
     }
 
@@ -101,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
+        applySystemBarAppearance();
         if (isFinishing()) {
             return;
         }
@@ -133,11 +137,33 @@ public class MainActivity extends AppCompatActivity {
             if (tileId != -1) {
                 createExpenseFromTile(tileId);
             }
+            intent.removeExtra("action");
+            intent.removeExtra("tile_id");
         } else if ("quick_tiles_add".equals(intent.getStringExtra("navigate_to"))) {
-            navController.navigate(R.id.navigation_quick_tiles);
+            getSupportFragmentManager().setFragmentResult(
+                    QuickTilesFragment.RESULT_KEY_OPEN_EDITOR,
+                    Bundle.EMPTY);
+            navigateToDestination(R.id.navigation_quick_tiles);
+            intent.removeExtra("navigate_to");
         } else if ("quick_tiles_manager".equals(intent.getStringExtra("navigate_to"))) {
             // Navigate to Quick Tiles management screen
-            navController.navigate(R.id.navigation_quick_tiles);
+            navigateToDestination(R.id.navigation_quick_tiles);
+            intent.removeExtra("navigate_to");
+        }
+    }
+
+    private void navigateToDestination(int destinationId) {
+        if (navController == null) {
+            return;
+        }
+        NavDestination currentDestination = navController.getCurrentDestination();
+        if (currentDestination != null && currentDestination.getId() == destinationId) {
+            return;
+        }
+        try {
+            navController.navigate(destinationId);
+        } catch (IllegalArgumentException ignored) {
+            // Ignore invalid destination from stale intents.
         }
     }
 

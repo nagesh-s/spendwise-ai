@@ -48,6 +48,10 @@ public class VoiceExpenseParser {
             "(?i)\\b(?:at|from|to|in|via)\\s+([\\p{L}0-9][\\p{L}0-9 '&.\\-]{1,60})");
     private static final Pattern PAID_TO_MERCHANT_PATTERN = Pattern.compile(
             "(?i)\\b(?:paid|pay)\\b(?:\\s+\\d+(?:,\\d{3})*(?:\\.\\d{1,2})?)?\\s+to\\s+([\\p{L}0-9][\\p{L}0-9 '&.\\-]{1,60})");
+    private static final Pattern ITEM_AFTER_FOR_PATTERN = Pattern.compile(
+            "(?i)\\bfor\\s+([\\p{L}0-9][\\p{L}0-9 '&.\\-]{1,80})");
+    private static final Pattern ITEM_AFTER_ON_PATTERN = Pattern.compile(
+            "(?i)\\bon\\s+([\\p{L}0-9][\\p{L}0-9 '&.\\-]{1,80})");
 
     private static final String[] AMOUNT_CONTEXT_HINTS = {
             "spent", "spend", "paid", "pay", "for", "expense", "cost", "amount", "rs", "inr", "rupee"
@@ -55,6 +59,9 @@ public class VoiceExpenseParser {
 
     private static final String[] MERCHANT_STOP_WORDS = {
             "for", "on", "using", "with", "category", "under", "towards", "today", "yesterday", "tomorrow"
+    };
+    private static final String[] DESCRIPTION_STOP_WORDS = {
+            "at", "from", "to", "via", "in", "using", "with", "category", "under", "today", "yesterday", "tomorrow"
     };
 
     private static final int AMOUNT_SURE_THRESHOLD_GENERIC = 4;
@@ -110,7 +117,7 @@ public class VoiceExpenseParser {
         MerchantExtraction merchantExtraction = extractMerchant(spokenText);
         result.merchant = merchantExtraction.merchant;
         result.merchantSure = merchantExtraction.sure;
-        result.description = spokenText;
+        result.description = buildDescription(spokenText, merchantExtraction.merchant);
 
         return result;
     }
@@ -260,6 +267,68 @@ public class VoiceExpenseParser {
             return MerchantExtraction.sure(merchant);
         }
         return MerchantExtraction.empty();
+    }
+
+    private String buildDescription(String text, String merchant) {
+        String fromFor = extractDescriptionByPattern(ITEM_AFTER_FOR_PATTERN, text, merchant);
+        if (fromFor != null) {
+            return fromFor;
+        }
+
+        String fromOn = extractDescriptionByPattern(ITEM_AFTER_ON_PATTERN, text, merchant);
+        if (fromOn != null) {
+            return fromOn;
+        }
+
+        if (!isBlank(merchant)) {
+            return "";
+        }
+        return compactText(text, 72);
+    }
+
+    private String extractDescriptionByPattern(Pattern pattern, String text, String merchant) {
+        Matcher matcher = pattern.matcher(text);
+        if (!matcher.find()) {
+            return null;
+        }
+        String candidate = sanitizeDescriptionCandidate(matcher.group(1));
+        if (isBlank(candidate)) {
+            return null;
+        }
+        if (!isBlank(merchant) && candidate.equalsIgnoreCase(merchant.trim())) {
+            return null;
+        }
+        if (candidate.matches("^\\d+(?:\\.\\d+)?$")) {
+            return null;
+        }
+        return candidate;
+    }
+
+    private String sanitizeDescriptionCandidate(String candidate) {
+        if (candidate == null) {
+            return null;
+        }
+        String cleaned = candidate.trim()
+                .replaceAll("^[\\s,.:;\\-]+|[\\s,.:;\\-]+$", "");
+        for (String stopWord : DESCRIPTION_STOP_WORDS) {
+            cleaned = cleaned.replaceAll("(?i)\\b" + Pattern.quote(stopWord) + "\\b.*$", "").trim();
+        }
+        return compactText(cleaned, 72);
+    }
+
+    private String compactText(String value, int maxLength) {
+        if (value == null) {
+            return "";
+        }
+        String compact = value.trim().replaceAll("\\s+", " ");
+        if (compact.length() <= maxLength) {
+            return compact;
+        }
+        return compact.substring(0, maxLength).trim();
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
     }
 
     private String extractMerchantByPattern(Pattern pattern, String text) {

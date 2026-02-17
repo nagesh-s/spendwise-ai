@@ -15,10 +15,12 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
+import com.google.android.material.materialswitch.MaterialSwitch;
 import com.spendwise.ai.R;
 import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.entity.Expense;
 import com.spendwise.ai.data.entity.Merchant;
+import com.spendwise.ai.work.WorkScheduler;
 
 import org.threeten.bp.Instant;
 import org.threeten.bp.LocalDate;
@@ -35,6 +37,9 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
 
     private static final String PREF_SMS_PERMISSION = "sms_permission_prefs";
     private static final String KEY_SMS_PERMISSION_REQUESTED = "sms_permission_requested";
+    private static final long SMS_RESYNC_GRACE_WINDOW_MILLIS = 24L * 60 * 60 * 1000;
+    private static final long SMS_UI_RESYNC_WINDOW_MILLIS = 14L * 24 * 60 * 60 * 1000;
+    private static final int SMS_FALLBACK_SCAN_DAYS = 120;
 
     private RecyclerView recyclerView;
     private TextView emptyText;
@@ -43,7 +48,10 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
     private MaterialButton scanBtn;
     private MaterialButton grantPermissionBtn;
     private MaterialButton openSettingsBtn;
+    private MaterialSwitch autoImportSwitch;
     private TransactionAdapter adapter;
+    private boolean isLoadingTransactions;
+    private boolean suppressAutoImportToggleCallback;
 
     @Nullable
     @Override
@@ -63,9 +71,22 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
         scanBtn = view.findViewById(R.id.btn_scan);
         grantPermissionBtn = view.findViewById(R.id.btn_grant_permission);
         openSettingsBtn = view.findViewById(R.id.btn_open_sms_settings);
+        autoImportSwitch = view.findViewById(R.id.switch_sms_auto_import);
 
         adapter = new TransactionAdapter(this);
         recyclerView.setAdapter(adapter);
+
+        autoImportSwitch.setChecked(SmsAutoImportPrefs.isEnabled(requireContext()));
+        autoImportSwitch.setOnCheckedChangeListener((buttonView, isChecked) -> {
+            if (suppressAutoImportToggleCallback) {
+                return;
+            }
+            SmsAutoImportPrefs.setEnabled(requireContext(), isChecked);
+            WorkScheduler.setSmsAutoImportEnabled(requireContext(), isChecked);
+            Toast.makeText(requireContext(),
+                    isChecked ? getString(R.string.sms_auto_import_enabled) : getString(R.string.sms_auto_import_disabled),
+                    Toast.LENGTH_SHORT).show();
+        });
 
         // Permission button
         grantPermissionBtn.setOnClickListener(v -> {
@@ -83,6 +104,12 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
     @Override
     public void onResume() {
         super.onResume();
+        boolean enabled = SmsAutoImportPrefs.isEnabled(requireContext());
+        if (autoImportSwitch != null && autoImportSwitch.isChecked() != enabled) {
+            suppressAutoImportToggleCallback = true;
+            autoImportSwitch.setChecked(enabled);
+            suppressAutoImportToggleCallback = false;
+        }
         updateUiState();
     }
 
@@ -98,10 +125,8 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
         } else {
             permissionLayout.setVisibility(View.GONE);
             scanBtn.setVisibility(View.VISIBLE);
-            // Show empty state if no transactions loaded yet
-            if (adapter.getItemCount() == 0) {
-                emptyText.setVisibility(View.VISIBLE);
-                recyclerView.setVisibility(View.GONE);
+            if (adapter.getItemCount() == 0 && !isLoadingTransactions) {
+                loadTransactionsForDisplay(false);
             }
         }
     }
@@ -144,49 +169,121 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
             SmsPermissionHelper.requestSmsPermission(requireActivity());
             return;
         }
+        loadTransactionsForDisplay(true);
+    }
 
-        scanBtn.setEnabled(false);
-        scanBtn.setText(getString(R.string.sms_scanning));
+    private void loadTransactionsForDisplay(boolean userInitiatedScan) {
+        if (!isAdded() || isLoadingTransactions) {
+            return;
+        }
+        isLoadingTransactions = true;
+        if (userInitiatedScan) {
+            scanBtn.setEnabled(false);
+            scanBtn.setText(getString(R.string.sms_scanning));
+        }
+
         Context appContext = requireContext().getApplicationContext();
         long lastSyncTimestamp = SmsSyncState.getLastSyncTimestamp(appContext);
 
-        // Run on background thread
         AppDatabase.databaseWriteExecutor.execute(() -> {
-            List<ParsedTransaction> transactions = SmsPermissionHelper.readTransactionsSince(
-                    appContext,
-                    lastSyncTimestamp,
-                    30);
-            long latestSeenTimestamp = lastSyncTimestamp;
-            for (ParsedTransaction transaction : transactions) {
-                latestSeenTimestamp = Math.max(latestSeenTimestamp, transaction.getTimestampMillis());
+            List<ParsedTransaction> transactions;
+            if (userInitiatedScan) {
+                transactions = readTransactionsForSyncScan(appContext, lastSyncTimestamp);
+            } else {
+                transactions = readTransactionsForDisplay(appContext, lastSyncTimestamp);
             }
-            SmsSyncState.updateLastSyncTimestamp(appContext, latestSeenTimestamp);
-
-            // Filter to debit transactions only (those are expenses)
             transactions.removeIf(t -> t.getType() != ParsedTransaction.TransactionType.DEBIT);
+            markImportedTransactions(appContext, transactions);
+            final List<ParsedTransaction> finalTransactions = transactions;
 
             if (!isAdded()) {
+                isLoadingTransactions = false;
                 return;
             }
-
             requireActivity().runOnUiThread(() -> {
-                adapter.setTransactions(transactions);
-                scanBtn.setEnabled(true);
-                scanBtn.setText(getString(R.string.sms_scan_inbox));
+                isLoadingTransactions = false;
+                if (userInitiatedScan) {
+                    scanBtn.setEnabled(true);
+                    scanBtn.setText(getString(R.string.sms_scan_inbox));
+                }
+                adapter.setTransactions(finalTransactions);
 
-                if (transactions.isEmpty()) {
-                    emptyText.setText(getString(R.string.sms_scan_empty));
+                if (finalTransactions.isEmpty()) {
+                    emptyText.setText(userInitiatedScan
+                            ? getString(R.string.sms_scan_empty)
+                            : getString(R.string.sms_empty_initial));
                     emptyText.setVisibility(View.VISIBLE);
                     recyclerView.setVisibility(View.GONE);
                 } else {
                     emptyText.setVisibility(View.GONE);
                     recyclerView.setVisibility(View.VISIBLE);
-                    Toast.makeText(requireContext(),
-                            getString(R.string.sms_found_transactions, transactions.size()),
-                            Toast.LENGTH_SHORT).show();
+                    if (userInitiatedScan) {
+                        Toast.makeText(requireContext(),
+                                getString(R.string.sms_found_transactions, finalTransactions.size()),
+                                Toast.LENGTH_SHORT).show();
+                    }
                 }
             });
         });
+    }
+
+    @NonNull
+    private List<ParsedTransaction> readTransactionsForSyncScan(@NonNull Context appContext, long lastSyncTimestamp) {
+        List<ParsedTransaction> transactions = SmsPermissionHelper.readTransactionsSince(
+                appContext,
+                lastSyncTimestamp,
+                30);
+        boolean usedFallbackWindow = false;
+        if (transactions.isEmpty() && lastSyncTimestamp > 0L) {
+            long recoveryStart = Math.max(0L, lastSyncTimestamp - SMS_RESYNC_GRACE_WINDOW_MILLIS);
+            transactions = SmsPermissionHelper.readTransactionsSince(appContext, recoveryStart, 30);
+        }
+        if (transactions.isEmpty()) {
+            transactions = SmsPermissionHelper.readRecentTransactions(appContext, SMS_FALLBACK_SCAN_DAYS);
+            usedFallbackWindow = true;
+        }
+
+        long latestSeenTimestamp = lastSyncTimestamp;
+        for (ParsedTransaction transaction : transactions) {
+            latestSeenTimestamp = Math.max(latestSeenTimestamp, transaction.getTimestampMillis());
+        }
+        if (usedFallbackWindow && latestSeenTimestamp == 0L) {
+            SmsSyncState.clear(appContext);
+        }
+        SmsSyncState.updateLastSyncTimestamp(appContext, latestSeenTimestamp);
+        return transactions;
+    }
+
+    @NonNull
+    private List<ParsedTransaction> readTransactionsForDisplay(@NonNull Context appContext, long lastSyncTimestamp) {
+        long displayStart = lastSyncTimestamp > 0L
+                ? Math.max(0L, lastSyncTimestamp - SMS_UI_RESYNC_WINDOW_MILLIS)
+                : 0L;
+        List<ParsedTransaction> transactions = SmsPermissionHelper.readTransactionsSince(
+                appContext,
+                displayStart,
+                SMS_FALLBACK_SCAN_DAYS);
+        if (transactions.isEmpty()) {
+            transactions = SmsPermissionHelper.readRecentTransactions(appContext, SMS_FALLBACK_SCAN_DAYS);
+        }
+        return transactions;
+    }
+
+    private void markImportedTransactions(@NonNull Context appContext, @NonNull List<ParsedTransaction> transactions) {
+        AppDatabase db = AppDatabase.getInstance(appContext);
+        String fallbackDescription = appContext.getString(R.string.sms_import_description_fallback);
+        for (ParsedTransaction transaction : transactions) {
+            LocalDate date = Instant.ofEpochMilli(transaction.getTimestampMillis())
+                    .atZone(ZoneId.systemDefault())
+                    .toLocalDate();
+            long dateEpochDay = date.toEpochDay();
+            String description = SmsExpenseClassifier.resolveDescription(transaction, fallbackDescription);
+            int duplicateCount = db.expenseDao().countByDateAmountDescription(
+                    dateEpochDay,
+                    transaction.getAmountCents(),
+                    description);
+            transaction.setImported(duplicateCount > 0);
+        }
     }
 
     @Override
@@ -224,12 +321,19 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
                 }
             }
 
+            Long accountId = SmsExpenseClassifier.resolveAccountId(
+                    db.accountDao().getAllAccountsSync(),
+                    transaction);
+
             Expense expense = new Expense(
                     dateEpochDay,
                     transaction.getAmountCents(),
                     description,
                     importCategoryId,
                     merchantId);
+            if (accountId != null && accountId > 0) {
+                expense.setAccountId(accountId);
+            }
 
             int duplicateCount = db.expenseDao().countByDateAmountDescription(
                     dateEpochDay,

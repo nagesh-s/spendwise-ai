@@ -38,7 +38,8 @@
     </style>
 
     <style name="TextAppearance.SpendWise.BottomNav" parent="@style/TextAppearance.Material3.LabelSmall">
-        <item name="android:textSize">11sp</item>
-        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textSize">10sp</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:includeFontPadding">false</item>
     </style>
 </resources>

@@ -30,6 +30,7 @@ import org.threeten.bp.LocalDate;
  */
 public class QuickTilesWidgetProvider extends AppWidgetProvider {
 
+    public static final String ACTION_OPEN_QUICK_TILE_EDITOR = "com.spendwise.ai.ACTION_OPEN_QUICK_TILE_EDITOR";
     public static final String ACTION_TILE_CLICKED = "com.spendwise.ai.ACTION_TILE_CLICKED";
     public static final String EXTRA_TILE_ID = "tile_id";
 
@@ -64,9 +65,9 @@ public class QuickTilesWidgetProvider extends AppWidgetProvider {
 
         // Set up the add button to open tile editor directly
         Intent addIntent = new Intent(context, MainActivity.class);
+        addIntent.setAction(ACTION_OPEN_QUICK_TILE_EDITOR);
         addIntent.putExtra("navigate_to", "quick_tiles_add");
-        addIntent.putExtra("open_quick_tile_editor", true);
-        addIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        addIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_SINGLE_TOP | Intent.FLAG_ACTIVITY_CLEAR_TOP);
         PendingIntent addPendingIntent = PendingIntent.getActivity(
                 context, appWidgetId + 10_000, addIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);

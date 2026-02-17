@@ -23,7 +23,7 @@
             android:layout_height="48dp"
             android:contentDescription="Badge Icon"
             app:tint="?attr/colorPrimary"
-            tools:src="@drawable/ic_star" />
+            tools:src="@drawable/ic_trophy" />
 
         <TextView
             android:id="@+id/text_title"

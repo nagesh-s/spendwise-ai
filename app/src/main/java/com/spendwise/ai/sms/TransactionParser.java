@@ -75,14 +75,15 @@ public class TransactionParser {
      * @return true if the message appears to be a transaction SMS
      */
     public static boolean isTransactionSms(String sender, String body) {
-        if (sender == null || body == null)
+        if (body == null)
             return false;
+        String safeSender = sender == null ? "" : sender;
 
         // Check sender looks like a known bank sender or a DLT-style transactional header.
         // Generic "XX-anything" senders are not trusted.
-        boolean bankSender = sender.length() <= 15 &&
-                (BANK_SENDER_PATTERN.matcher(sender).find() ||
-                        sender.matches("^[A-Za-z]{2}-[A-Za-z0-9]{6}$"));
+        boolean bankSender = safeSender.length() <= 15 &&
+                (BANK_SENDER_PATTERN.matcher(safeSender).find() ||
+                        safeSender.matches("^[A-Za-z]{2}-[A-Za-z0-9]{6}$"));
 
         // Must contain an amount
         boolean hasAmount = AMOUNT_PATTERN.matcher(body).find();

@@ -109,7 +109,9 @@ public class VoiceUnderstandingEngine {
     private VoiceExpenseParser.ParsedExpense merge(VoiceExpenseParser.ParsedExpense base, FallbackExtraction fallback,
             List<String> categories, String transcript) {
         VoiceExpenseParser.ParsedExpense merged = copy(base);
-        merged.description = transcript != null ? transcript.trim() : "";
+        merged.description = !isBlank(base.description)
+                ? base.description.trim()
+                : compactDescription(transcript);
 
         if (!merged.amountSure && fallback.amountCents != null && fallback.amountCents > 0
                 && normalizeConfidence(fallback.amountConfidence) >= MIN_AMOUNT_CONFIDENCE) {
@@ -210,5 +212,16 @@ public class VoiceUnderstandingEngine {
 
     private boolean isBlank(String value) {
         return value == null || value.trim().isEmpty();
+    }
+
+    private String compactDescription(String transcript) {
+        if (transcript == null) {
+            return "";
+        }
+        String compact = transcript.trim().replaceAll("\\s+", " ");
+        if (compact.length() <= 72) {
+            return compact;
+        }
+        return compact.substring(0, 72).trim();
     }
 }

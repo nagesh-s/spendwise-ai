@@ -88,6 +88,25 @@ public class WorkScheduler {
         }
 
         /**
+         * Cancel periodic SMS auto-import work.
+         */
+        public static void cancelSmsAutoImportWork(Context context) {
+                WorkManager.getInstance(context).cancelUniqueWork(SMS_AUTO_IMPORT_WORK);
+        }
+
+        /**
+         * Enable/disable SMS auto-import schedule.
+         */
+        public static void setSmsAutoImportEnabled(Context context, boolean enabled) {
+                if (enabled) {
+                        scheduleSmsAutoImportWork(context);
+                        runSmsAutoImportNow(context);
+                } else {
+                        cancelSmsAutoImportWork(context);
+                }
+        }
+
+        /**
          * Run the recurring expense worker immediately (one-time).
          */
         public static void runRecurringExpenseWorkNow(Context context) {

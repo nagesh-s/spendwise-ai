@@ -3,6 +3,7 @@ package com.spendwise.ai.sms;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import com.spendwise.ai.data.entity.Account;
 import com.spendwise.ai.data.entity.Category;
 
 import java.util.List;
@@ -17,9 +18,36 @@ public final class SmsExpenseClassifier {
     }
 
     public static String resolveDescription(@NonNull ParsedTransaction transaction, @NonNull String fallback) {
-        String merchant = transaction.getMerchant();
-        if (merchant != null && !merchant.trim().isEmpty()) {
-            return merchant.trim();
+        String context = normalize(transaction.getOriginalMessage());
+        if (context.isEmpty()) {
+            return fallback;
+        }
+
+        if (containsAny(context, "recharge", "prepaid", "postpaid")) {
+            return "Recharge";
+        }
+        if (containsAny(context, "electricity", "water", "internet", "wifi", "broadband", "gas")) {
+            return "Utility Bill";
+        }
+        if (containsAny(context, "rent")) {
+            return "Rent";
+        }
+        if (containsAny(context, "uber", "ola", "taxi", "cab", "metro", "bus", "train", "fuel", "petrol", "diesel",
+                "toll", "parking")) {
+            return "Transport";
+        }
+        if (containsAny(context, "restaurant", "food", "dining", "swiggy", "zomato", "cafe", "coffee", "grocery",
+                "groceries")) {
+            return "Food";
+        }
+        if (containsAny(context, "amazon", "flipkart", "shopping", "store", "mart", "purchase")) {
+            return "Shopping";
+        }
+        if (containsAny(context, "movie", "netflix", "spotify", "prime", "hotstar", "subscription", "game")) {
+            return "Entertainment";
+        }
+        if (containsAny(context, "pharmacy", "hospital", "doctor", "clinic", "medicine", "health")) {
+            return "Medical";
         }
         return fallback;
     }
@@ -91,6 +119,47 @@ public final class SmsExpenseClassifier {
             return otherId;
         }
         return categories.get(0).getId();
+    }
+
+    @NonNull
+    public static String resolveAccountType(@NonNull ParsedTransaction transaction) {
+        String context = normalize(transaction.getOriginalMessage());
+        if (context.isEmpty()) {
+            return Account.TYPE_CASH;
+        }
+
+        if (containsAny(context, "upi", "vpa", "@ok", "@ybl", "@ibl", "@axl", "@icici", "@paytm")) {
+            return Account.TYPE_UPI;
+        }
+        if (containsAny(context, "credit card", "creditcard", "cc", "card ending")) {
+            return Account.TYPE_CREDIT_CARD;
+        }
+        if (containsAny(context, "debit card", "debitcard", "pos", "atm")) {
+            return Account.TYPE_DEBIT_CARD;
+        }
+        if (containsAny(context, "a c", "acct", "account", "bank")) {
+            return Account.TYPE_BANK;
+        }
+        return Account.TYPE_CASH;
+    }
+
+    @Nullable
+    public static Long resolveAccountId(@NonNull List<Account> accounts, @NonNull ParsedTransaction transaction) {
+        if (accounts.isEmpty()) {
+            return null;
+        }
+        String targetType = resolveAccountType(transaction);
+        for (Account account : accounts) {
+            if (account.getType() != null && account.getType().equalsIgnoreCase(targetType)) {
+                return account.getId();
+            }
+        }
+        for (Account account : accounts) {
+            if (account.isDefault()) {
+                return account.getId();
+            }
+        }
+        return accounts.get(0).getId();
     }
 
     @Nullable

@@ -26,6 +26,7 @@ import java.util.List;
 public class SmsAutoImportWorker extends Worker {
 
     private static final int LOOKBACK_DAYS = 30;
+    private static final int FALLBACK_SCAN_DAYS = 120;
 
     public SmsAutoImportWorker(@NonNull Context context, @NonNull WorkerParameters workerParams) {
         super(context, workerParams);
@@ -47,7 +48,11 @@ public class SmsAutoImportWorker extends Worker {
                 context,
                 lastImportedTimestamp,
                 LOOKBACK_DAYS);
+        if (transactions.isEmpty()) {
+            transactions = SmsPermissionHelper.readRecentTransactions(context, FALLBACK_SCAN_DAYS);
+        }
         List<com.spendwise.ai.data.entity.Category> categories = db.categoryDao().getAllCategoriesSync();
+        List<com.spendwise.ai.data.entity.Account> accounts = db.accountDao().getAllAccountsSync();
 
         for (int i = transactions.size() - 1; i >= 0; i--) {
             ParsedTransaction transaction = transactions.get(i);
@@ -80,12 +85,18 @@ public class SmsAutoImportWorker extends Worker {
             }
 
             Long merchantId = resolveMerchantId(db, transaction.getMerchant());
+            Long accountId = SmsExpenseClassifier.resolveAccountId(
+                    accounts,
+                    transaction);
             Expense expense = new Expense(
                     dateEpochDay,
                     transaction.getAmountCents(),
                     description,
                     categoryId,
                     merchantId);
+            if (accountId != null && accountId > 0) {
+                expense.setAccountId(accountId);
+            }
             db.expenseDao().insert(expense);
         }
 

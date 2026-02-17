@@ -100,6 +100,10 @@ public class RecurringExpenseAdapter extends ListAdapter<RecurringExpense, Recur
             switch (expense.getFrequency()) {
                 case RecurringExpense.FREQUENCY_DAILY:
                     return "Daily";
+                case RecurringExpense.FREQUENCY_EVERY_2_DAYS:
+                    return "Every 2 days";
+                case RecurringExpense.FREQUENCY_EVERY_3_DAYS:
+                    return "Every 3 days";
                 case RecurringExpense.FREQUENCY_WEEKLY:
                     return "Weekly";
                 case RecurringExpense.FREQUENCY_MONTHLY:

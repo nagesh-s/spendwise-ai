@@ -13,6 +13,7 @@ import androidx.lifecycle.ViewModelProvider;
 import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 
+import com.prolificinteractive.materialcalendarview.CalendarMode;
 import com.prolificinteractive.materialcalendarview.CalendarDay;
 import com.prolificinteractive.materialcalendarview.MaterialCalendarView;
 import com.spendwise.ai.common.ExpenseAdapter;
@@ -20,13 +21,16 @@ import com.spendwise.ai.common.ExpenseEditorDialogFragment;
 import com.spendwise.ai.data.entity.Category;
 import com.spendwise.ai.data.entity.Expense;
 import com.spendwise.ai.data.repository.CategoryRepository;
+import com.spendwise.ai.data.repository.MerchantRepository;
 import com.spendwise.ai.databinding.FragmentCalendarBinding;
 import com.spendwise.ai.util.DateUtils;
 
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.YearMonth;
 import org.threeten.bp.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Calendar fragment showing monthly calendar with expense list for selected
@@ -38,6 +42,8 @@ public class CalendarFragment extends Fragment {
     private CalendarViewModel viewModel;
     private ExpenseAdapter expenseAdapter;
     private CategoryRepository categoryRepository;
+    private MerchantRepository merchantRepository;
+    private boolean monthModeEnabled = true;
 
     private static final DateTimeFormatter DATE_DISPLAY_FORMAT = DateTimeFormatter.ofPattern("EEEE, MMMM d");
 
@@ -56,6 +62,7 @@ public class CalendarFragment extends Fragment {
 
         viewModel = new ViewModelProvider(this).get(CalendarViewModel.class);
         categoryRepository = new CategoryRepository(requireActivity().getApplication());
+        merchantRepository = new MerchantRepository(requireActivity().getApplication());
 
         setupCalendar();
         setupRecyclerView();
@@ -68,21 +75,7 @@ public class CalendarFragment extends Fragment {
 
         // Set to current date
         calendarView.setSelectedDate(CalendarDay.today());
-
-        // Style the calendar for dark mode compatibility
-        int textColor = getResources().getColor(
-                com.google.android.material.R.color.m3_ref_palette_dynamic_neutral10,
-                requireContext().getTheme());
-
-        // Check if dark mode is active
-        int nightModeFlags = getResources().getConfiguration().uiMode &
-                android.content.res.Configuration.UI_MODE_NIGHT_MASK;
-        if (nightModeFlags == android.content.res.Configuration.UI_MODE_NIGHT_YES) {
-            // Use light text for dark mode
-            textColor = getResources().getColor(
-                    com.google.android.material.R.color.m3_ref_palette_dynamic_neutral90,
-                    requireContext().getTheme());
-        }
+        calendarView.setDynamicHeightEnabled(true);
 
         // Date selection listener
         calendarView.setOnDateChangedListener((widget, date, selected) -> {
@@ -95,6 +88,33 @@ public class CalendarFragment extends Fragment {
             YearMonth yearMonth = YearMonth.of(date.getYear(), date.getMonth());
             viewModel.setDisplayedMonth(yearMonth);
         });
+
+        binding.chipModeWeek.setOnClickListener(v -> applyCalendarMode(false));
+        binding.chipModeMonth.setOnClickListener(v -> applyCalendarMode(true));
+        applyCalendarMode(false);
+    }
+
+    private void applyCalendarMode(boolean monthMode) {
+        if (monthModeEnabled == monthMode) {
+            return;
+        }
+        monthModeEnabled = monthMode;
+
+        LocalDate selected = viewModel.getSelectedDate().getValue();
+        if (selected == null) {
+            selected = LocalDate.now();
+        }
+
+        binding.calendarView.state().edit()
+                .setCalendarDisplayMode(monthMode ? CalendarMode.MONTHS : CalendarMode.WEEKS)
+                .commit();
+        binding.calendarView.setSelectedDate(CalendarDay.from(
+                selected.getYear(),
+                selected.getMonthValue(),
+                selected.getDayOfMonth()));
+
+        binding.chipModeMonth.setChecked(monthMode);
+        binding.chipModeWeek.setChecked(!monthMode);
     }
 
     private void setupRecyclerView() {
@@ -182,6 +202,17 @@ public class CalendarFragment extends Fragment {
         // Load categories for displaying in list
         categoryRepository.getAllCategories().observe(getViewLifecycleOwner(), categories -> {
             expenseAdapter.setCategories(categories);
+        });
+
+        // Load merchants for merchant-first list rendering.
+        merchantRepository.getAllMerchants().observe(getViewLifecycleOwner(), merchants -> {
+            Map<Long, String> merchantMap = new HashMap<>();
+            if (merchants != null) {
+                for (com.spendwise.ai.data.entity.Merchant merchant : merchants) {
+                    merchantMap.put(merchant.getId(), merchant.getName());
+                }
+            }
+            expenseAdapter.setMerchantMap(merchantMap);
         });
 
         // Observe daily totals for calendar decorators

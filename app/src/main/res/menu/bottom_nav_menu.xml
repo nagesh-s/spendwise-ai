@@ -12,11 +12,6 @@
         android:title="@string/nav_calendar" />
 
     <item
-        android:id="@+id/navigation_categories"
-        android:icon="@drawable/ic_nav_categories"
-        android:title="@string/nav_categories" />
-
-    <item
         android:id="@+id/navigation_merchants"
         android:icon="@drawable/ic_nav_merchants"
         android:title="@string/nav_merchants" />

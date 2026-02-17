@@ -27,7 +27,7 @@
                 android:background="?attr/colorSecondaryContainer"
                 android:padding="16dp"
                 app:shapeAppearanceOverlay="@style/ShapeAppearance.Material3.Corner.Full"
-                app:srcCompat="@drawable/ic_star"
+                app:srcCompat="@drawable/ic_trophy"
                 app:tint="?attr/colorOnSecondaryContainer" />
 
             <TextView

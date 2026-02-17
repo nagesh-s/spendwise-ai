@@ -100,7 +100,7 @@ public class GamificationEngine {
                 unlocked.contains(ID_STREAK_7)));
         list.add(new Achievement(ID_EARLY_BIRD, "Early Bird", "Log an expense before 8 AM", R.drawable.ic_wb_sunny,
                 unlocked.contains(ID_EARLY_BIRD)));
-        list.add(new Achievement(ID_SAVER_LEVEL_5, "Level Up", "Reach Level 5", R.drawable.ic_star,
+        list.add(new Achievement(ID_SAVER_LEVEL_5, "Level Up", "Reach Level 5", R.drawable.ic_trophy,
                 unlocked.contains(ID_SAVER_LEVEL_5)));
 
         return list;

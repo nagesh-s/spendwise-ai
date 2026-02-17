@@ -3,10 +3,10 @@
 - Bottom nav mappings:
   - `navigation_dashboard` -> `DashboardFragment`
   - `navigation_calendar` -> `CalendarFragment`
-  - `navigation_categories` -> `CategoriesFragment`
   - `navigation_merchants` -> `MerchantsFragment`
   - `navigation_settings` -> `SettingsFragment`
 - Additional fragment routes:
+  - `navigation_categories` (from Settings: Budgets & Categories card)
   - `navigation_quick_tiles` (from Settings card)
   - `navigation_recurring` (from Settings card)
   - `navigation_goals` -> `GoalsFragment` (financial goals tracking)
