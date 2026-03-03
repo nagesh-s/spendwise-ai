@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <!-- Bucket/container icon (simplified bucket shape) -->
+    <path
+        android:fillColor="#000000"
+        android:pathData="M4,4h16v2H4V4zM5,8h14l-1,12H6L5,8zM9,11v5h2v-5H9zM13,11v5h2v-5H13z" />
+</vector>

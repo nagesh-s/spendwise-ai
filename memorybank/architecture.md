@@ -14,3 +14,11 @@
 - QuickTiles widget behavior: tile tap inserts expense directly in background and shows toast; app launch is not required for one-tap add.
 - Widget refresh strategy: use `notifyAppWidgetViewDataChanged` for grid updates to minimize flicker from full widget redraw.
 - SMS import architecture: manual scan (`AutoTransactionsFragment`) and periodic worker (`SmsAutoImportWorker`) share `SmsSyncState` so scans resume from last imported timestamp instead of re-reading the full lookback window.
+- Bucket module (in-app): `buckets/` package with 5-bucket reverse budgeting system.
+  - Engine pipeline: SMS credit → `SalaryDetector` (keyword + amount + NEFT signal scoring) → `CashflowGuardrail` (emergency threshold, bills buffer, overspend checks) → `BucketAllocationEngine` (priority-ordered allocation with guilt-free remainder).
+  - UI: `BucketsFragment` (3rd bottom nav tab) with allocation bar, per-bucket cards, anti-Upstox net-worth-hidden UX; `BucketDetailFragment` for investments per bucket.
+  - `AllocationSuggestionDialog` shows the reverse budgeting split with guardrail warnings and guilt-free highlight.
+  - `BucketSalaryPrefs` stores expected salary, payday, manual toggle, and show-net-worth preference.
+  - Smart fallback: if no salary SMS is detected by payday, the app prompts manual "I Got Paid" flow with saved expected salary (confirm/edit).
+  - `InsightsEngine` extended with `BUCKET_HEALTH` (emergency deficit) and `GUILT_FREE` (spending signal) insight types.
+  - `DataBackupManager` v2 exports buckets and investments alongside existing entities.

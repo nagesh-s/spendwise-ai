@@ -4,8 +4,11 @@ import android.content.Context;
 
 import com.spendwise.ai.R;
 import com.spendwise.ai.data.AppDatabase;
+import com.spendwise.ai.data.dao.BucketDao;
 import com.spendwise.ai.data.dao.BudgetDao;
 import com.spendwise.ai.data.dao.ExpenseDao;
+import com.spendwise.ai.data.entity.Bucket;
+import com.spendwise.ai.data.pojo.BucketWithTotal;
 import com.spendwise.ai.data.pojo.BudgetWithSpend;
 import com.spendwise.ai.data.pojo.CategoryTotal;
 import com.spendwise.ai.util.DateUtils;
@@ -26,11 +29,13 @@ public class InsightsEngine {
 
     private final ExpenseDao expenseDao;
     private final BudgetDao budgetDao;
+    private final BucketDao bucketDao;
 
     public InsightsEngine(Context context) {
         AppDatabase db = AppDatabase.getInstance(context);
         this.expenseDao = db.expenseDao();
         this.budgetDao = db.budgetDao();
+        this.bucketDao = db.bucketDao();
     }
 
     /**
@@ -46,6 +51,8 @@ public class InsightsEngine {
             generateBudgetAlerts(insights);
             generateSpendingSpikeInsights(insights);
             generateStreakInsight(insights);
+            generateBucketHealthInsight(insights);
+            generateGuiltFreeInsight(insights);
         } catch (Exception e) {
             // Safety — never crash the Dashboard for an insight failure
         }
@@ -267,6 +274,74 @@ public class InsightsEngine {
                     Insight.Severity.POSITIVE,
                     R.drawable.ic_goals,
                     null));
+        }
+    }
+
+    /**
+     * BUCKET_HEALTH: "Emergency fund is below 3-month safety net"
+     */
+    private void generateBucketHealthInsight(List<Insight> insights) {
+        List<Bucket> buckets = bucketDao.getAllBucketsSync();
+        if (buckets == null || buckets.isEmpty())
+            return;
+
+        // Check emergency bucket health
+        for (Bucket bucket : buckets) {
+            if (Bucket.TYPE_EMERGENCY.equals(bucket.getType())) {
+                long balance = bucket.getCurrentBalanceCents();
+
+                // Get average monthly spend
+                LocalDate today = LocalDate.now();
+                YearMonth lastMonth = YearMonth.now().minusMonths(1);
+                long lastMonthStart = DateUtils.getMonthStartEpochDay(lastMonth);
+                long lastMonthEnd = DateUtils.getMonthEndEpochDay(lastMonth);
+                long monthlySpend = expenseDao.getTotalForRange(lastMonthStart, lastMonthEnd);
+
+                if (monthlySpend <= 0)
+                    return;
+
+                long targetBalance = monthlySpend * 3;
+                if (balance < targetBalance) {
+                    long deficit = targetBalance - balance;
+                    insights.add(new Insight(
+                            InsightType.BUCKET_HEALTH,
+                            "Emergency Fund Below Target",
+                            String.format(Locale.getDefault(),
+                                    "Your Emergency Fund needs ₹%,.0f more to reach the 3-month safety net.",
+                                    deficit / 100.0),
+                            balance < monthlySpend ? Insight.Severity.WARNING : Insight.Severity.INFO,
+                            R.drawable.ic_goals,
+                            "View Buckets"));
+                }
+                break;
+            }
+        }
+    }
+
+    /**
+     * GUILT_FREE: "₹18,000 available for guilt-free spending this month"
+     */
+    private void generateGuiltFreeInsight(List<Insight> insights) {
+        List<Bucket> buckets = bucketDao.getAllBucketsSync();
+        if (buckets == null || buckets.isEmpty())
+            return;
+
+        for (Bucket bucket : buckets) {
+            if (Bucket.TYPE_SHORT_TERM.equals(bucket.getType())) {
+                long balance = bucket.getCurrentBalanceCents();
+                if (balance > 0) {
+                    insights.add(new Insight(
+                            InsightType.GUILT_FREE,
+                            "Guilt-Free Budget ✓",
+                            String.format(Locale.getDefault(),
+                                    "₹%,.0f is available for guilt-free spending — your future buckets are funded.",
+                                    balance / 100.0),
+                            Insight.Severity.POSITIVE,
+                            R.drawable.ic_currency,
+                            "View Buckets"));
+                }
+                break;
+            }
         }
     }
 }

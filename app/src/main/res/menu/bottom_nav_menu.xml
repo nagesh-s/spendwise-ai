@@ -12,6 +12,11 @@
         android:title="@string/nav_calendar" />
 
     <item
+        android:id="@+id/navigation_buckets"
+        android:icon="@drawable/ic_nav_buckets"
+        android:title="@string/nav_buckets" />
+
+    <item
         android:id="@+id/navigation_merchants"
         android:icon="@drawable/ic_nav_merchants"
         android:title="@string/nav_merchants" />

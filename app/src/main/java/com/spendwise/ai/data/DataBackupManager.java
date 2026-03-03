@@ -3,9 +3,11 @@ package com.spendwise.ai.data;
 import android.content.Context;
 import android.net.Uri;
 
+import com.spendwise.ai.data.entity.Bucket;
 import com.spendwise.ai.data.entity.Budget;
 import com.spendwise.ai.data.entity.Category;
 import com.spendwise.ai.data.entity.Expense;
+import com.spendwise.ai.data.entity.Investment;
 import com.spendwise.ai.data.entity.Merchant;
 
 import org.json.JSONArray;
@@ -40,11 +42,14 @@ public class DataBackupManager {
     private static final String KEY_CATEGORIES = "categories";
     private static final String KEY_MERCHANTS = "merchants";
     private static final String KEY_BUDGETS = "budgets";
+    private static final String KEY_BUCKETS = "buckets";
+    private static final String KEY_INVESTMENTS = "investments";
 
-    private static final int BACKUP_VERSION = 1;
+    private static final int BACKUP_VERSION = 2;
 
     public interface BackupCallback {
         void onSuccess(String message);
+
         void onError(String error);
     }
 
@@ -119,14 +124,56 @@ public class DataBackupManager {
                 }
                 backup.put(KEY_BUDGETS, budgetsArray);
 
+                // Export buckets
+                List<Bucket> bucketsList = database.bucketDao().getAllBucketsSync();
+                JSONArray bucketsArray = new JSONArray();
+                for (Bucket bucket : bucketsList) {
+                    JSONObject obj = new JSONObject();
+                    obj.put("id", bucket.getId());
+                    obj.put("name", bucket.getName());
+                    obj.put("type", bucket.getType());
+                    obj.put("targetPercent", bucket.getTargetPercent());
+                    obj.put("currentBalanceCents", bucket.getCurrentBalanceCents());
+                    obj.put("colorArgb", bucket.getColorArgb());
+                    obj.put("iconKey", bucket.getIconKey());
+                    obj.put("sortOrder", bucket.getSortOrder());
+                    obj.put("isDefault", bucket.isDefault());
+                    obj.put("description", bucket.getDescription());
+                    obj.put("timelineLabel", bucket.getTimelineLabel());
+                    obj.put("investmentAdvice", bucket.getInvestmentAdvice());
+                    bucketsArray.put(obj);
+                }
+                backup.put(KEY_BUCKETS, bucketsArray);
+
+                // Export investments
+                List<Investment> investmentsList = database.investmentDao().getAllInvestmentsSync();
+                JSONArray investmentsArray = new JSONArray();
+                for (Investment inv : investmentsList) {
+                    JSONObject obj = new JSONObject();
+                    obj.put("id", inv.getId());
+                    obj.put("bucketId", inv.getBucketId());
+                    obj.put("name", inv.getName());
+                    obj.put("jobTitle", inv.getJobTitle());
+                    obj.put("platform", inv.getPlatform());
+                    obj.put("assetType", inv.getAssetType());
+                    obj.put("investedAmountCents", inv.getInvestedAmountCents());
+                    obj.put("currentValueCents", inv.getCurrentValueCents());
+                    obj.put("lastUpdatedEpochDay", inv.getLastUpdatedEpochDay());
+                    obj.put("notes", inv.getNotes());
+                    obj.put("isSip", inv.isSip());
+                    investmentsArray.put(obj);
+                }
+                backup.put(KEY_INVESTMENTS, investmentsArray);
+
                 // Write to file
                 try (OutputStream outputStream = context.getContentResolver().openOutputStream(destinationUri)) {
                     if (outputStream != null) {
                         String jsonString = backup.toString(2);
                         outputStream.write(jsonString.getBytes(StandardCharsets.UTF_8));
                         outputStream.flush();
-                        
-                        int totalItems = categories.size() + merchants.size() + expenses.size() + budgets.size();
+
+                        int totalItems = categories.size() + merchants.size() + expenses.size()
+                                + budgets.size() + bucketsList.size() + investmentsList.size();
                         callback.onSuccess("Exported " + totalItems + " items successfully!");
                     } else {
                         callback.onError("Could not open file for writing");
@@ -149,7 +196,8 @@ public class DataBackupManager {
                 // Read JSON from file
                 StringBuilder stringBuilder = new StringBuilder();
                 try (InputStream inputStream = context.getContentResolver().openInputStream(sourceUri);
-                     BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+                        BufferedReader reader = new BufferedReader(
+                                new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                     String line;
                     while ((line = reader.readLine()) != null) {
                         stringBuilder.append(line);
@@ -157,7 +205,7 @@ public class DataBackupManager {
                 }
 
                 JSONObject backup = new JSONObject(stringBuilder.toString());
-                
+
                 int version = backup.optInt(KEY_VERSION, 1);
                 if (version > BACKUP_VERSION) {
                     callback.onError("Backup file is from a newer version of the app");
@@ -173,7 +221,7 @@ public class DataBackupManager {
                         JSONObject obj = categoriesArray.getJSONObject(i);
                         String name = obj.getString("name");
                         boolean isDefault = obj.optBoolean("isDefault", false);
-                        
+
                         // Check if category already exists
                         Category existing = database.categoryDao().findByName(name);
                         if (existing == null) {
@@ -181,8 +229,7 @@ public class DataBackupManager {
                                     name,
                                     obj.getInt("colorArgb"),
                                     obj.optString("iconKey", null),
-                                    isDefault
-                            );
+                                    isDefault);
                             database.categoryDao().insert(category);
                             importedCount++;
                         }
@@ -195,7 +242,7 @@ public class DataBackupManager {
                     for (int i = 0; i < merchantsArray.length(); i++) {
                         JSONObject obj = merchantsArray.getJSONObject(i);
                         String name = obj.getString("name");
-                        
+
                         Merchant existing = database.merchantDao().findByName(name);
                         if (existing == null) {
                             Merchant merchant = new Merchant(name);
@@ -210,15 +257,14 @@ public class DataBackupManager {
                     JSONArray expensesArray = backup.getJSONArray(KEY_EXPENSES);
                     for (int i = 0; i < expensesArray.length(); i++) {
                         JSONObject obj = expensesArray.getJSONObject(i);
-                        
+
                         // Create expense with new IDs (categories/merchants may have different IDs)
                         Expense expense = new Expense(
                                 obj.getLong("dateEpochDay"),
                                 obj.getLong("amountCents"),
                                 obj.optString("description", null),
                                 obj.getLong("categoryId"),
-                                obj.has("merchantId") ? obj.getLong("merchantId") : null
-                        );
+                                obj.has("merchantId") ? obj.getLong("merchantId") : null);
                         database.expenseDao().insert(expense);
                         importedCount++;
                     }
@@ -229,18 +275,17 @@ public class DataBackupManager {
                     JSONArray budgetsArray = backup.getJSONArray(KEY_BUDGETS);
                     for (int i = 0; i < budgetsArray.length(); i++) {
                         JSONObject obj = budgetsArray.getJSONObject(i);
-                        
+
                         String monthKey = obj.getString("monthKeyYYYYMM");
                         long categoryId = obj.getLong("categoryId");
-                        
+
                         // Check if budget already exists for this month/category
                         Budget existing = database.budgetDao().getBudgetForCategoryAndMonth(categoryId, monthKey);
                         if (existing == null) {
                             Budget budget = new Budget(
                                     monthKey,
                                     categoryId,
-                                    obj.getLong("limitCents")
-                            );
+                                    obj.getLong("limitCents"));
                             database.budgetDao().insert(budget);
                             importedCount++;
                         }

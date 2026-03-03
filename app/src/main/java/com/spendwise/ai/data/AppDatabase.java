@@ -10,18 +10,23 @@ import androidx.room.RoomDatabase;
 import androidx.sqlite.db.SupportSQLiteDatabase;
 
 import com.spendwise.ai.data.dao.AccountDao;
+import com.spendwise.ai.data.dao.BucketDao;
 import com.spendwise.ai.data.dao.BudgetDao;
 import com.spendwise.ai.data.dao.CategoryDao;
 import com.spendwise.ai.data.dao.ExpenseDao;
 import com.spendwise.ai.data.dao.FinancialGoalDao;
+import com.spendwise.ai.data.dao.InvestmentDao;
 import com.spendwise.ai.data.dao.MerchantDao;
 import com.spendwise.ai.data.dao.QuickTileDao;
 import com.spendwise.ai.data.dao.RecurringExpenseDao;
 import com.spendwise.ai.data.dao.TagDao;
 import com.spendwise.ai.data.entity.Account;
+import com.spendwise.ai.data.entity.Bucket;
+import com.spendwise.ai.data.entity.BucketCategory;
 import com.spendwise.ai.data.entity.Budget;
 import com.spendwise.ai.data.entity.Category;
 import com.spendwise.ai.data.entity.Expense;
+import com.spendwise.ai.data.entity.Investment;
 import com.spendwise.ai.data.entity.Merchant;
 import com.spendwise.ai.data.entity.QuickTile;
 import com.spendwise.ai.data.entity.RecurringExpense;
@@ -55,8 +60,11 @@ import java.util.concurrent.Executors;
         Tag.class,
         ExpenseTag.class,
         Account.class,
-        FinancialGoal.class
-}, version = 4, exportSchema = false)
+        FinancialGoal.class,
+        Bucket.class,
+        BucketCategory.class,
+        Investment.class
+}, version = 5, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     private static final String DATABASE_NAME = "spendwise_db";
@@ -87,6 +95,10 @@ public abstract class AppDatabase extends RoomDatabase {
 
     public abstract FinancialGoalDao financialGoalDao();
 
+    public abstract BucketDao bucketDao();
+
+    public abstract InvestmentDao investmentDao();
+
     /**
      * Get the singleton database instance.
      * Creates the database on first call, with default categories prepopulated.
@@ -99,7 +111,7 @@ public abstract class AppDatabase extends RoomDatabase {
                             context.getApplicationContext(),
                             AppDatabase.class,
                             DATABASE_NAME)
-                            .addMigrations(MIGRATION_3_4)
+                            .addMigrations(MIGRATION_3_4, MIGRATION_4_5)
                             .addCallback(prepopulateCallback)
                             .fallbackToDestructiveMigration() // For development only
                             .build();
@@ -119,6 +131,7 @@ public abstract class AppDatabase extends RoomDatabase {
             super.onCreate(db);
             seedDefaultCategories();
             seedDefaultAccounts();
+            seedDefaultBuckets();
         }
 
         @Override
@@ -127,6 +140,7 @@ public abstract class AppDatabase extends RoomDatabase {
             // Also check on open in case migration cleared the data
             seedDefaultCategories();
             seedDefaultAccounts();
+            seedDefaultBuckets();
         }
     };
 
@@ -174,8 +188,10 @@ public abstract class AppDatabase extends RoomDatabase {
         accounts.add(new Account("Cash", Account.TYPE_CASH, 0, Color.parseColor("#4CAF50"), "fa_wallet", true));
         accounts.add(new Account("UPI", Account.TYPE_UPI, 0, Color.parseColor("#00897B"), "fa_mobile_alt", false));
         accounts.add(new Account("Bank", Account.TYPE_BANK, 0, Color.parseColor("#1E88E5"), "fa_university", false));
-        accounts.add(new Account("Debit Card", Account.TYPE_DEBIT_CARD, 0, Color.parseColor("#5E35B1"), "fa_credit_card", false));
-        accounts.add(new Account("Credit Card", Account.TYPE_CREDIT_CARD, 0, Color.parseColor("#E53935"), "fa_credit_card", false));
+        accounts.add(new Account("Debit Card", Account.TYPE_DEBIT_CARD, 0, Color.parseColor("#5E35B1"),
+                "fa_credit_card", false));
+        accounts.add(new Account("Credit Card", Account.TYPE_CREDIT_CARD, 0, Color.parseColor("#E53935"),
+                "fa_credit_card", false));
         accounts.add(new Account("Wallet", Account.TYPE_WALLET, 0, Color.parseColor("#FB8C00"), "fa_wallet", false));
         return accounts;
     }
@@ -281,6 +297,180 @@ public abstract class AppDatabase extends RoomDatabase {
                     "`linkedCategoryId` INTEGER)");
         }
     };
+
+    /**
+     * Migration from version 4 to 5:
+     * - Creates 'buckets' table
+     * - Creates 'bucket_categories' join table
+     * - Creates 'investments' table
+     * - Seeds 5 default buckets (Emergency, Short-term, Medium-term, Long-term,
+     * Retirement)
+     * All existing data is preserved.
+     */
+    static final Migration MIGRATION_4_5 = new Migration(4, 5) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            // Create buckets table
+            database.execSQL("CREATE TABLE IF NOT EXISTS `buckets` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT NOT NULL, " +
+                    "`type` TEXT NOT NULL, " +
+                    "`targetPercent` INTEGER NOT NULL DEFAULT 0, " +
+                    "`currentBalanceCents` INTEGER NOT NULL DEFAULT 0, " +
+                    "`colorArgb` INTEGER NOT NULL, " +
+                    "`iconKey` TEXT, " +
+                    "`sortOrder` INTEGER NOT NULL DEFAULT 0, " +
+                    "`isDefault` INTEGER NOT NULL DEFAULT 0, " +
+                    "`description` TEXT, " +
+                    "`timelineLabel` TEXT, " +
+                    "`investmentAdvice` TEXT)");
+
+            // Create bucket_categories join table
+            database.execSQL("CREATE TABLE IF NOT EXISTS `bucket_categories` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`bucketId` INTEGER NOT NULL, " +
+                    "`categoryId` INTEGER NOT NULL, " +
+                    "FOREIGN KEY(`bucketId`) REFERENCES `buckets`(`id`) ON DELETE CASCADE, " +
+                    "FOREIGN KEY(`categoryId`) REFERENCES `categories`(`id`) ON DELETE CASCADE)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_bucket_categories_bucketId` ON `bucket_categories` (`bucketId`)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_bucket_categories_categoryId` ON `bucket_categories` (`categoryId`)");
+
+            // Create investments table
+            database.execSQL("CREATE TABLE IF NOT EXISTS `investments` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`bucketId` INTEGER NOT NULL, " +
+                    "`name` TEXT NOT NULL, " +
+                    "`jobTitle` TEXT, " +
+                    "`platform` TEXT, " +
+                    "`assetType` TEXT NOT NULL, " +
+                    "`investedAmountCents` INTEGER NOT NULL DEFAULT 0, " +
+                    "`currentValueCents` INTEGER NOT NULL DEFAULT 0, " +
+                    "`returnPercent` REAL, " +
+                    "`maturityDateEpochDay` INTEGER, " +
+                    "`interestRate` REAL, " +
+                    "`lastUpdatedEpochDay` INTEGER NOT NULL, " +
+                    "`notes` TEXT, " +
+                    "`isAutoFetched` INTEGER NOT NULL DEFAULT 0, " +
+                    "`isSip` INTEGER NOT NULL DEFAULT 0, " +
+                    "`sipAmountCents` INTEGER, " +
+                    "FOREIGN KEY(`bucketId`) REFERENCES `buckets`(`id`) ON DELETE CASCADE)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_investments_bucketId` ON `investments` (`bucketId`)");
+
+            // Seed 5 default buckets
+            seedDefaultBucketsInMigration(database);
+        }
+    };
+
+    /**
+     * Seeds the 5 default buckets during migration v4→v5.
+     * Uses direct SQL since the DAO is not available during migration.
+     */
+    private static void seedDefaultBucketsInMigration(SupportSQLiteDatabase database) {
+        String insertSql = "INSERT INTO `buckets` (`name`, `type`, `targetPercent`, " +
+                "`currentBalanceCents`, `colorArgb`, `iconKey`, `sortOrder`, `isDefault`, " +
+                "`description`, `timelineLabel`, `investmentAdvice`) VALUES (?, ?, ?, 0, ?, ?, ?, 1, ?, ?, ?)";
+
+        // Bucket 0 — Emergency Fund
+        database.execSQL(insertSql, new Object[] {
+                "Emergency Fund", Bucket.TYPE_EMERGENCY, 10,
+                Color.parseColor("#E53935"), "fa_shield", 0,
+                "Protected baseline for unexpected events",
+                "Protected",
+                "High liquidity only. Savings account or liquid mutual funds."
+        });
+
+        // Bucket 1 — Enjoy the Present
+        database.execSQL(insertSql, new Object[] {
+                "Enjoy the Present", Bucket.TYPE_SHORT_TERM, 20,
+                Color.parseColor("#1E88E5"), "fa_shopping_cart", 1,
+                "Guilt-free spending for immediate desires",
+                "Now \u2013 2 Years",
+                "No stocks. Use FDs, Liquid Funds, or savings account."
+        });
+
+        // Bucket 2 — Build the Next
+        database.execSQL(insertSql, new Object[] {
+                "Build the Next", Bucket.TYPE_MEDIUM_TERM, 20,
+                Color.parseColor("#FB8C00"), "fa_car", 2,
+                "Upgrading your lifestyle \u2014 car, education, wedding",
+                "2 \u2013 5 Years",
+                "Moderate risk. Arbitrage, Hybrid Funds, Gold."
+        });
+
+        // Bucket 3 — Secure the Future
+        database.execSQL(insertSql, new Object[] {
+                "Secure the Future", Bucket.TYPE_LONG_TERM, 30,
+                Color.parseColor("#43A047"), "fa_home", 3,
+                "Major life anchors \u2014 house, business, family",
+                "5 \u2013 15 Years",
+                "Growth priority. Flexi-Cap, Mid-Cap, strong stocks."
+        });
+
+        // Bucket 4 — Freedom Fund
+        database.execSQL(insertSql, new Object[] {
+                "Freedom Fund", Bucket.TYPE_RETIREMENT, 20,
+                Color.parseColor("#7E57C2"), "fa_chart_line", 4,
+                "Financial independence \u2014 working becomes optional",
+                "15+ Years",
+                "Aggressive compounding. Index, Small-Cap, PPF/NPS."
+        });
+    }
+
+    /**
+     * Seed default buckets via DAO (used in Callback, not in migration).
+     */
+    private static void seedDefaultBuckets() {
+        databaseWriteExecutor.execute(() -> {
+            if (INSTANCE == null)
+                return;
+            BucketDao bucketDao = INSTANCE.bucketDao();
+            int count = bucketDao.getBucketCount();
+            if (count == 0) {
+                Bucket emergency = new Bucket("Emergency Fund", Bucket.TYPE_EMERGENCY, 10,
+                        Color.parseColor("#E53935"), 0, true);
+                emergency.setIconKey("fa_shield");
+                emergency.setDescription("Protected baseline for unexpected events");
+                emergency.setTimelineLabel("Protected");
+                emergency.setInvestmentAdvice("High liquidity only. Savings account or liquid mutual funds.");
+                bucketDao.insert(emergency);
+
+                Bucket shortTerm = new Bucket("Enjoy the Present", Bucket.TYPE_SHORT_TERM, 20,
+                        Color.parseColor("#1E88E5"), 1, true);
+                shortTerm.setIconKey("fa_shopping_cart");
+                shortTerm.setDescription("Guilt-free spending for immediate desires");
+                shortTerm.setTimelineLabel("Now \u2013 2 Years");
+                shortTerm.setInvestmentAdvice("No stocks. Use FDs, Liquid Funds, or savings account.");
+                bucketDao.insert(shortTerm);
+
+                Bucket mediumTerm = new Bucket("Build the Next", Bucket.TYPE_MEDIUM_TERM, 20,
+                        Color.parseColor("#FB8C00"), 2, true);
+                mediumTerm.setIconKey("fa_car");
+                mediumTerm.setDescription("Upgrading your lifestyle \u2014 car, education, wedding");
+                mediumTerm.setTimelineLabel("2 \u2013 5 Years");
+                mediumTerm.setInvestmentAdvice("Moderate risk. Arbitrage, Hybrid Funds, Gold.");
+                bucketDao.insert(mediumTerm);
+
+                Bucket longTerm = new Bucket("Secure the Future", Bucket.TYPE_LONG_TERM, 30,
+                        Color.parseColor("#43A047"), 3, true);
+                longTerm.setIconKey("fa_home");
+                longTerm.setDescription("Major life anchors \u2014 house, business, family");
+                longTerm.setTimelineLabel("5 \u2013 15 Years");
+                longTerm.setInvestmentAdvice("Growth priority. Flexi-Cap, Mid-Cap, strong stocks.");
+                bucketDao.insert(longTerm);
+
+                Bucket retirement = new Bucket("Freedom Fund", Bucket.TYPE_RETIREMENT, 20,
+                        Color.parseColor("#7E57C2"), 4, true);
+                retirement.setIconKey("fa_chart_line");
+                retirement.setDescription("Financial independence \u2014 working becomes optional");
+                retirement.setTimelineLabel("15+ Years");
+                retirement.setInvestmentAdvice("Aggressive compounding. Index, Small-Cap, PPF/NPS.");
+                bucketDao.insert(retirement);
+            }
+        });
+    }
 
     /**
      * Close the database instance.

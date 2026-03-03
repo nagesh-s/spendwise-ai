@@ -72,4 +72,25 @@
         android:label="Profile"
         tools:layout="@layout/fragment_profile" />
 
+    <fragment
+        android:id="@+id/navigation_buckets"
+        android:name="com.spendwise.ai.buckets.BucketsFragment"
+        android:label="Buckets"
+        tools:layout="@layout/fragment_buckets" />
+
+    <fragment
+        android:id="@+id/navigation_bucket_detail"
+        android:name="com.spendwise.ai.buckets.BucketDetailFragment"
+        android:label="Bucket Detail"
+        tools:layout="@layout/fragment_bucket_detail">
+        <argument
+            android:name="bucketId"
+            app:argType="long"
+            android:defaultValue="-1L" />
+        <argument
+            android:name="bucketName"
+            app:argType="string"
+            android:defaultValue="Bucket" />
+    </fragment>
+
 </navigation>

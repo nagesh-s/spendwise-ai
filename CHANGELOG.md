@@ -8,6 +8,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ---
 
 ## [Unreleased]
+
+---
+
+## [1.7.0] - 2026-03-04
+### Added - Bucket Feature (Reverse Budgeting)
+- **5-Bucket Investment System** - Time-horizon-based salary allocation: Emergency Fund (10%), Enjoy the Present (30%), Build the Next (20%), Secure the Future (20%), Freedom Fund (20%).
+- **Reverse Budgeting Engine** - `BucketAllocationEngine` allocates salary in priority order (Emergency → Retirement → Long-term → Medium-term → Short-term), with remainder designated as guilt-free spending.
+- **Salary Detection** - `SalaryDetector` identifies salary credits from SMS using keyword matching, amount thresholds (≥₹10k), NEFT/IMPS/RTGS transfer type, and round-number heuristics with multi-signal confidence scoring.
+- **Cashflow Guardrails** - `CashflowGuardrail` safety checks: emergency fund < 3× monthly spend, upcoming bills > allocation, overspend pattern detection.
+- **Buckets Tab** - New 3rd bottom navigation tab with allocation bar, per-bucket cards, anti-Upstox UX (no combined net worth by default).
+- **Bucket Detail Screen** - Per-bucket investment list, P&L tracking, asset type labels.
+- **Allocation Suggestion Dialog** - Shows reverse budgeting split with guardrail warnings and guilt-free highlight on salary detection.
+- **Manual "I Got Paid" Flow** - Static expected salary saved once, confirm/edit on payday. Only prompted when auto salary detection fails.
+- **Salary Settings** - `BucketSalaryPrefs` for expected salary, payday, manual toggle, net worth visibility.
+- **Bucket Insights** - Two new insight types: `BUCKET_HEALTH` (emergency fund deficit warning) and `GUILT_FREE` (available guilt-free spending signal).
+- **Backup v2** - `DataBackupManager` updated to export/import buckets and investments alongside existing entities.
+- **Unit Tests** - 37 new tests: `BucketAllocationEngineTest` (11), `SalaryDetectorTest` (15), `CashflowGuardrailTest` (11).
+
+### Technical
+- Database version 5 with `MIGRATION_4_5`: creates `buckets`, `bucket_categories`, `investments` tables; seeds 5 default buckets.
+- New packages: `buckets/`, `engine/`
+- New entities: `Bucket`, `BucketCategory`, `Investment`
+- New DAOs: `BucketDao`, `InvestmentDao`
+- New repositories: `BucketRepository`, `InvestmentRepository`
+- `InsightType` extended with `BUCKET_HEALTH`, `GUILT_FREE`
+- Backup format version bumped to 2
+
+### Fixed
+- **Nav Graph Crash** - Fixed `XmlPullParserException: Type is long but found integer` by adding `L` suffix to `bucketId` default value in `nav_graph.xml`.
+
 ### Fixed
 - **Voice Recognition Fallback** - `VoiceInputHelper` now captures partial transcripts and uses them when recognizer returns `ERROR_NO_MATCH` or speech timeout, reducing hard-fail voice sessions.
 - **Voice Error UX** - Replaced raw `"No match"` surfaced errors with actionable user-facing guidance and improved busy/network messaging.
@@ -351,3 +381,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 | 1.4.0 | 2026-02-14 | Voice input for expenses |
 | 1.5.0 | 2026-02-14 | Export reports + gamification profile |
 | 1.6.0 | 2026-02-14 | Release prep: onboarding + icon/splash + release hardening |
+| 1.7.0 | 2026-03-04 | Bucket feature: reverse budgeting, salary detection, guardrails |

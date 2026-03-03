@@ -3,6 +3,7 @@
 - Bottom nav mappings:
   - `navigation_dashboard` -> `DashboardFragment`
   - `navigation_calendar` -> `CalendarFragment`
+  - `navigation_buckets` -> `BucketsFragment` (3rd tab — bucket reverse budgeting dashboard)
   - `navigation_merchants` -> `MerchantsFragment`
   - `navigation_settings` -> `SettingsFragment`
 - Additional fragment routes:
@@ -13,5 +14,6 @@
   - `navigation_analytics` -> `AnalyticsFragment` (spending analytics dashboard)
   - `navigation_auto_transactions` -> `AutoTransactionsFragment` (SMS transaction reader)
   - `navigation_profile` -> `ProfileFragment` (gamification progress + badges)
+  - `navigation_bucket_detail` -> `BucketDetailFragment` with args `(bucketId: long, bucketName: string)`
 - Dialog route:
   - `expenseEditorDialogFragment` -> `ExpenseEditorDialogFragment` with args `(expenseId?, dateEpochDay)`

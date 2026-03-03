@@ -9,5 +9,7 @@ public enum InsightType {
     STREAK,
     TOP_CATEGORY,
     MONTH_COMPARISON,
-    UNUSUAL_EXPENSE
+    UNUSUAL_EXPENSE,
+    BUCKET_HEALTH,
+    GUILT_FREE
 }
