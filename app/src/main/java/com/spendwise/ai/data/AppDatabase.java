@@ -15,7 +15,11 @@ import com.spendwise.ai.data.dao.BudgetDao;
 import com.spendwise.ai.data.dao.CategoryDao;
 import com.spendwise.ai.data.dao.ExpenseDao;
 import com.spendwise.ai.data.dao.FinancialGoalDao;
+import com.spendwise.ai.data.dao.IngestionEventDao;
 import com.spendwise.ai.data.dao.InvestmentDao;
+import com.spendwise.ai.data.dao.InvestmentOccurrenceDao;
+import com.spendwise.ai.data.dao.InvestmentScheduleDao;
+import com.spendwise.ai.data.dao.InstrumentBucketMappingDao;
 import com.spendwise.ai.data.dao.MerchantDao;
 import com.spendwise.ai.data.dao.QuickTileDao;
 import com.spendwise.ai.data.dao.RecurringExpenseDao;
@@ -26,13 +30,17 @@ import com.spendwise.ai.data.entity.BucketCategory;
 import com.spendwise.ai.data.entity.Budget;
 import com.spendwise.ai.data.entity.Category;
 import com.spendwise.ai.data.entity.Expense;
+import com.spendwise.ai.data.entity.FinancialGoal;
+import com.spendwise.ai.data.entity.IngestionEvent;
+import com.spendwise.ai.data.entity.InstrumentBucketMapping;
 import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.InvestmentOccurrence;
+import com.spendwise.ai.data.entity.InvestmentSchedule;
 import com.spendwise.ai.data.entity.Merchant;
 import com.spendwise.ai.data.entity.QuickTile;
 import com.spendwise.ai.data.entity.RecurringExpense;
-import com.spendwise.ai.data.entity.Tag;
 import com.spendwise.ai.data.entity.ExpenseTag;
-import com.spendwise.ai.data.entity.FinancialGoal;
+import com.spendwise.ai.data.entity.Tag;
 
 import androidx.room.migration.Migration;
 
@@ -63,8 +71,12 @@ import java.util.concurrent.Executors;
         FinancialGoal.class,
         Bucket.class,
         BucketCategory.class,
-        Investment.class
-}, version = 5, exportSchema = false)
+        Investment.class,
+        InvestmentSchedule.class,
+        InvestmentOccurrence.class,
+        IngestionEvent.class,
+        InstrumentBucketMapping.class
+}, version = 6, exportSchema = false)
 public abstract class AppDatabase extends RoomDatabase {
 
     private static final String DATABASE_NAME = "spendwise_db";
@@ -99,6 +111,14 @@ public abstract class AppDatabase extends RoomDatabase {
 
     public abstract InvestmentDao investmentDao();
 
+    public abstract InvestmentScheduleDao investmentScheduleDao();
+
+    public abstract InvestmentOccurrenceDao investmentOccurrenceDao();
+
+    public abstract IngestionEventDao ingestionEventDao();
+
+    public abstract InstrumentBucketMappingDao instrumentBucketMappingDao();
+
     /**
      * Get the singleton database instance.
      * Creates the database on first call, with default categories prepopulated.
@@ -111,7 +131,7 @@ public abstract class AppDatabase extends RoomDatabase {
                             context.getApplicationContext(),
                             AppDatabase.class,
                             DATABASE_NAME)
-                            .addMigrations(MIGRATION_3_4, MIGRATION_4_5)
+                            .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                             .addCallback(prepopulateCallback)
                             .fallbackToDestructiveMigration() // For development only
                             .build();
@@ -361,6 +381,98 @@ public abstract class AppDatabase extends RoomDatabase {
 
             // Seed 5 default buckets
             seedDefaultBucketsInMigration(database);
+        }
+    };
+
+    /**
+     * Migration from version 5 to 6:
+     * - Adds dual-ledger + automation data tables
+     * - Adds reconciliation linkage columns to investments
+     */
+    static final Migration MIGRATION_5_6 = new Migration(5, 6) {
+        @Override
+        public void migrate(@NonNull SupportSQLiteDatabase database) {
+            database.execSQL("ALTER TABLE `investments` ADD COLUMN `primaryCorrelationKey` TEXT");
+            database.execSQL("ALTER TABLE `investments` ADD COLUMN `lastSourceType` TEXT");
+            database.execSQL("ALTER TABLE `investments` ADD COLUMN `lastSourceKey` TEXT");
+
+            database.execSQL("CREATE TABLE IF NOT EXISTS `investment_schedules` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT NOT NULL, " +
+                    "`bucketId` INTEGER NOT NULL, " +
+                    "`assetType` TEXT NOT NULL, " +
+                    "`platform` TEXT, " +
+                    "`amountCents` INTEGER NOT NULL, " +
+                    "`frequency` TEXT NOT NULL, " +
+                    "`dayOfPeriod` INTEGER NOT NULL, " +
+                    "`startEpochDay` INTEGER NOT NULL, " +
+                    "`endEpochDay` INTEGER, " +
+                    "`isActive` INTEGER NOT NULL, " +
+                    "`source` TEXT, " +
+                    "`notes` TEXT, " +
+                    "FOREIGN KEY(`bucketId`) REFERENCES `buckets`(`id`) ON DELETE CASCADE)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_investment_schedules_bucketId` ON `investment_schedules` (`bucketId`)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_investment_schedules_isActive` ON `investment_schedules` (`isActive`)");
+
+            database.execSQL("CREATE TABLE IF NOT EXISTS `investment_occurrences` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`scheduleId` INTEGER NOT NULL, " +
+                    "`dueEpochDay` INTEGER NOT NULL, " +
+                    "`expectedAmountCents` INTEGER NOT NULL, " +
+                    "`status` TEXT NOT NULL, " +
+                    "`confirmedAmountCents` INTEGER, " +
+                    "`confirmedAtMillis` INTEGER, " +
+                    "`linkedInvestmentId` INTEGER, " +
+                    "`correlationKey` TEXT, " +
+                    "`sourceType` TEXT, " +
+                    "FOREIGN KEY(`scheduleId`) REFERENCES `investment_schedules`(`id`) ON DELETE CASCADE, " +
+                    "FOREIGN KEY(`linkedInvestmentId`) REFERENCES `investments`(`id`) ON DELETE SET NULL)");
+            database.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_investment_occurrences_scheduleId_dueEpochDay` ON `investment_occurrences` (`scheduleId`, `dueEpochDay`)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_investment_occurrences_status` ON `investment_occurrences` (`status`)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_investment_occurrences_correlationKey` ON `investment_occurrences` (`correlationKey`)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_investment_occurrences_linkedInvestmentId` ON `investment_occurrences` (`linkedInvestmentId`)");
+
+            database.execSQL("CREATE TABLE IF NOT EXISTS `ingestion_events` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`domain` TEXT NOT NULL, " +
+                    "`sourceType` TEXT NOT NULL, " +
+                    "`sourceKey` TEXT NOT NULL, " +
+                    "`correlationKey` TEXT, " +
+                    "`eventType` TEXT NOT NULL, " +
+                    "`amountCents` INTEGER NOT NULL, " +
+                    "`eventTimestampMillis` INTEGER NOT NULL, " +
+                    "`payloadHash` TEXT, " +
+                    "`processedAtMillis` INTEGER, " +
+                    "`status` TEXT NOT NULL)");
+            database.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_ingestion_events_sourceKey` ON `ingestion_events` (`sourceKey`)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_ingestion_events_correlationKey` ON `ingestion_events` (`correlationKey`)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_ingestion_events_eventTimestampMillis` ON `ingestion_events` (`eventTimestampMillis`)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_ingestion_events_status` ON `ingestion_events` (`status`)");
+
+            database.execSQL("CREATE TABLE IF NOT EXISTS `instrument_bucket_mappings` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`instrumentPattern` TEXT NOT NULL, " +
+                    "`platformPattern` TEXT, " +
+                    "`assetType` TEXT NOT NULL, " +
+                    "`bucketId` INTEGER NOT NULL, " +
+                    "`confidenceBoost` REAL NOT NULL, " +
+                    "`updatedAtMillis` INTEGER NOT NULL, " +
+                    "`source` TEXT NOT NULL, " +
+                    "FOREIGN KEY(`bucketId`) REFERENCES `buckets`(`id`) ON DELETE CASCADE)");
+            database.execSQL(
+                    "CREATE INDEX IF NOT EXISTS `index_instrument_bucket_mappings_bucketId` ON `instrument_bucket_mappings` (`bucketId`)");
+            database.execSQL(
+                    "CREATE UNIQUE INDEX IF NOT EXISTS `index_instrument_bucket_mappings_instrumentPattern_platformPattern_assetType` ON `instrument_bucket_mappings` (`instrumentPattern`, `platformPattern`, `assetType`)");
         }
     };
 

@@ -8,9 +8,16 @@ import androidx.work.WorkerParameters;
 
 import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.entity.Expense;
+import com.spendwise.ai.data.entity.IngestionEvent;
 import com.spendwise.ai.data.entity.Merchant;
+import com.spendwise.ai.engine.EventIngestionPipeline;
 import com.spendwise.ai.engine.InvestmentAutoIngestionEngine;
+import com.spendwise.ai.engine.InvestmentGamificationEngine;
+import com.spendwise.ai.engine.OccurrenceReconciliationEngine;
+import com.spendwise.ai.engine.SalaryAllocationOrchestrator;
+import com.spendwise.ai.engine.SalaryDetector;
 import com.spendwise.ai.sms.InvestmentSmsParser;
+import com.spendwise.ai.sms.InvestmentSignalKeyFactory;
 import com.spendwise.ai.sms.ParsedTransaction;
 import com.spendwise.ai.sms.ParsedInvestmentSignal;
 import com.spendwise.ai.sms.RawSmsMessage;
@@ -24,6 +31,7 @@ import org.threeten.bp.ZoneId;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Periodic background worker that scans SMS and auto-imports debit transactions.
@@ -66,12 +74,11 @@ public class SmsAutoImportWorker extends Worker {
 
         List<com.spendwise.ai.data.entity.Category> categories = db.categoryDao().getAllCategoriesSync();
         List<com.spendwise.ai.data.entity.Account> accounts = db.accountDao().getAllAccountsSync();
+        SalaryDetector salaryDetector = new SalaryDetector();
+        SalaryAllocationOrchestrator salaryOrchestrator = new SalaryAllocationOrchestrator(context);
 
         for (int i = transactions.size() - 1; i >= 0; i--) {
             ParsedTransaction transaction = transactions.get(i);
-            if (transaction.getType() != ParsedTransaction.TransactionType.DEBIT) {
-                continue;
-            }
 
             long timestamp = transaction.getTimestampMillis();
             if (timestamp <= lastImportedTimestamp) {
@@ -79,6 +86,23 @@ public class SmsAutoImportWorker extends Worker {
             }
             if (timestamp > latestSeenTimestamp) {
                 latestSeenTimestamp = timestamp;
+            }
+
+            if (transaction.getType() == ParsedTransaction.TransactionType.CREDIT) {
+                SalaryDetector.SalaryDetectionResult salary = salaryDetector.detect(transaction);
+                if (salary != null) {
+                    salaryOrchestrator.onSalaryDetected(
+                            salary.getAmountCents(),
+                            salary.getTimestampMillis(),
+                            IngestionEvent.SOURCE_SMS,
+                            buildSalarySourceKey(transaction),
+                            transaction.getOriginalMessage());
+                }
+                continue;
+            }
+
+            if (transaction.getType() != ParsedTransaction.TransactionType.DEBIT) {
+                continue;
             }
 
             LocalDate date = Instant.ofEpochMilli(timestamp)
@@ -134,12 +158,68 @@ public class SmsAutoImportWorker extends Worker {
         }
 
         if (!investmentSignals.isEmpty()) {
-            InvestmentAutoIngestionEngine engine = new InvestmentAutoIngestionEngine();
-            engine.ingest(db, investmentSignals);
+            EventIngestionPipeline pipeline = new EventIngestionPipeline();
+            List<ParsedInvestmentSignal> acceptedSignals = new ArrayList<>();
+            List<Long> acceptedEventIds = new ArrayList<>();
+            for (ParsedInvestmentSignal signal : investmentSignals) {
+                String sourceKey = InvestmentSignalKeyFactory.buildIngestionSourceKey(signal);
+                EventIngestionPipeline.IngestResult event = pipeline.ingest(
+                        db,
+                        IngestionEvent.DOMAIN_INVESTMENT,
+                        IngestionEvent.SOURCE_SMS,
+                        sourceKey,
+                        signal.getCorrelationKey(),
+                        signal.getSignalType().name(),
+                        signal.getAmountCents(),
+                        signal.getTimestampMillis(),
+                        signal.getRawMessage());
+                if (event.duplicate) {
+                    continue;
+                }
+                acceptedSignals.add(signal);
+                acceptedEventIds.add(event.eventId);
+            }
+
+            if (!acceptedSignals.isEmpty()) {
+                InvestmentAutoIngestionEngine engine = new InvestmentAutoIngestionEngine();
+                InvestmentAutoIngestionEngine.IngestResult ingestionResult = engine.ingest(db, acceptedSignals);
+                OccurrenceReconciliationEngine reconcileEngine = new OccurrenceReconciliationEngine();
+                OccurrenceReconciliationEngine.ReconcileResult reconcileResult = reconcileEngine.reconcileSignals(
+                        db,
+                        acceptedSignals,
+                        ingestionResult.investmentIdBySourceKey,
+                        IngestionEvent.SOURCE_SMS);
+                if (reconcileResult.confirmed + reconcileResult.adjusted > 0) {
+                    new InvestmentGamificationEngine(context).awardSipReconcileXp();
+                }
+                for (Long eventId : acceptedEventIds) {
+                    pipeline.markProcessed(db, eventId, IngestionEvent.STATUS_PROCESSED);
+                }
+            }
         }
 
         SmsSyncState.updateLastSyncTimestamp(context, latestSeenTimestamp);
         return Result.success();
+    }
+
+    @NonNull
+    private String buildSalarySourceKey(@NonNull ParsedTransaction transaction) {
+        long day = transaction.getTimestampMillis() / (24L * 60L * 60L * 1000L);
+        String account = transaction.getAccountInfo() == null ? "na" : transaction.getAccountInfo();
+        return String.format(
+                Locale.US,
+                "salary_sms_%s_%d_%d",
+                sanitize(account),
+                transaction.getAmountCents(),
+                day);
+    }
+
+    @NonNull
+    private String sanitize(@NonNull String value) {
+        String cleaned = value.toLowerCase(Locale.US)
+                .replaceAll("[^a-z0-9]+", "_")
+                .replaceAll("^_+|_+$", "");
+        return cleaned.isEmpty() ? "na" : cleaned;
     }
 
     private Long resolveMerchantId(AppDatabase db, String merchantName) {

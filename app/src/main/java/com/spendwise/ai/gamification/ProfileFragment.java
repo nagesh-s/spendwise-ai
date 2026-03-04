@@ -16,10 +16,12 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.spendwise.ai.R;
 import com.spendwise.ai.data.repository.ExpenseRepository;
+import com.spendwise.ai.engine.InvestmentGamificationEngine;
 
 public class ProfileFragment extends Fragment {
 
     private GamificationEngine gamificationEngine;
+    private InvestmentGamificationEngine investmentGamificationEngine;
     private ExpenseRepository expenseRepository;
 
     private TextView textLevelTitle;
@@ -28,6 +30,7 @@ public class ProfileFragment extends Fragment {
     private TextView textXp;
     private TextView textStreak;
     private TextView textTotalXp;
+    private TextView textInvestmentXp;
     private RecyclerView recyclerAchievements;
 
     @Nullable
@@ -42,6 +45,7 @@ public class ProfileFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         gamificationEngine = new GamificationEngine(requireContext());
+        investmentGamificationEngine = new InvestmentGamificationEngine(requireContext());
         expenseRepository = new ExpenseRepository(requireActivity().getApplication());
 
         textLevelTitle = view.findViewById(R.id.text_level_title);
@@ -50,6 +54,7 @@ public class ProfileFragment extends Fragment {
         textXp = view.findViewById(R.id.text_xp);
         textStreak = view.findViewById(R.id.text_streak);
         textTotalXp = view.findViewById(R.id.text_total_xp);
+        textInvestmentXp = view.findViewById(R.id.text_investment_xp);
         recyclerAchievements = view.findViewById(R.id.recycler_achievements);
 
         setupAchievements();
@@ -72,6 +77,7 @@ public class ProfileFragment extends Fragment {
         textLevelTitle.setText(gamificationEngine.getLevelTitle());
         textLevelNumber.setText("Level " + level);
         textTotalXp.setText(String.valueOf(currentXp));
+        textInvestmentXp.setText(investmentGamificationEngine.getInvestmentXp() + " XP");
 
         progressXp.setMax((int) xpToNext);
         progressXp.setProgress((int) xpProgress);

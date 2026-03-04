@@ -1,29 +1,52 @@
 - Single Activity: `MainActivity` hosts `NavHostFragment`; `BottomNavigationView` wired to `NavController`.
-- Primary tabs: `DashboardFragment`, `CalendarFragment`, `CategoriesFragment`, `MerchantsFragment`, `SettingsFragment`.
-- Secondary flows: `QuickTilesFragment` and `RecurringExpensesFragment` are routed from Settings.
-- Dialog flows: `ExpenseEditorDialogFragment` supports create/edit with date + id arguments; budget editor dialog is launched from categories list.
-- Data layer: Room entities + DAOs + repositories; LiveData/observers drive reactive screen updates.
-- Background work: WorkManager handles recurring expense generation and reminder notifications.
-- Smart features: local heuristic category suggestions and merchant autocomplete (offline, no network).
-- Voice pipeline: `VoiceInputHelper` captures final and partial transcripts from `SpeechRecognizer` with retry handling; `VoiceUnderstandingEngine` runs parser-first via `VoiceExpenseParser`, then optional fallback extractors only for low-confidence parses.
-- Extractor routing: `VoiceFallbackExtractorFactory` selects extractor per flavor:
-  - `standard`: `OnDeviceSemanticExpenseExtractor` only
-  - `offlineLlm`: MediaPipe Gemma extractor (`MediaPipeGemmaExpenseExtractor`) first, semantic extractor failover
-- LLM model strategy: Gemma 3 1B int4 task bundle is auto-copied from bundled asset path into internal app storage on first use (target default `files/models/spendwise_gemma3_1b.task`), with local path override via `OFFLINE_LLM_MODEL_PATH`.
-- Dashboard auto-saves only high-confidence parses and opens prefilled editor for low-confidence parses.
-- QuickTiles widget behavior: tile tap inserts expense directly in background and shows toast; app launch is not required for one-tap add.
-- Widget refresh strategy: use `notifyAppWidgetViewDataChanged` for grid updates to minimize flicker from full widget redraw.
-- SMS import architecture: manual scan (`AutoTransactionsFragment`) and periodic worker (`SmsAutoImportWorker`) share `SmsSyncState` so scans resume from last imported timestamp instead of re-reading the full lookback window.
-- Investment ingestion architecture:
-  - SMS path: `InvestmentSmsParser` parses raw SMS messages; `InvestmentAutoIngestionEngine` deduplicates and merges debit + allotment/correction phases by source/correlation keys.
-  - Notification path: `InvestmentNotificationListenerService` reads posted notifications (broker + email apps), extracts text payload, reuses `InvestmentSmsParser`, and ingests via the same engine.
-  - Access flow: `InvestmentNotificationSyncHelper` checks listener access and opens `Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS` when disabled.
-- Bucket module (in-app): `buckets/` package with 5-bucket reverse budgeting system.
-  - Engine pipeline: SMS credit → `SalaryDetector` (keyword + amount + NEFT signal scoring) → `CashflowGuardrail` (emergency threshold, bills buffer, overspend checks) → `BucketAllocationEngine` (priority-ordered allocation with guilt-free remainder).
-  - UI: `BucketsFragment` (3rd bottom nav tab) with allocation bar, compact grid cards (2 columns on phone, 3 on larger screens), eye-icon net worth toggle, and tab-reselect pop-to-root behavior; `BucketDetailFragment` for investments per bucket.
-  - Import UI: bucket detail now exposes only active routes (`Auto-import from SMS now`, `Sync from notifications`); non-functional direct AA/Broker/Email options removed.
-  - `AllocationSuggestionDialog` shows the reverse budgeting split with guardrail warnings and guilt-free highlight.
-  - `BucketSalaryPrefs` stores expected salary, payday, manual toggle, and show-net-worth preference.
-  - Smart fallback: if no salary SMS is detected by payday, the app prompts manual "I Got Paid" flow with saved expected salary (confirm/edit).
-  - `InsightsEngine` extended with `BUCKET_HEALTH` (emergency deficit) and `GUILT_FREE` (spending signal) insight types.
-  - `DataBackupManager` v2 exports buckets and investments alongside existing entities.
+- Primary tabs: `DashboardFragment`, `CalendarFragment`, `BucketsFragment`, `MerchantsFragment`, `SettingsFragment`.
+- Secondary flows: `RecurringExpensesFragment`, `QuickTilesFragment`, `GoalsFragment`, `AnalyticsFragment`, `AutoTransactionsFragment`, `ProfileFragment`.
+- Dialog flows: `ExpenseEditorDialogFragment`, `RecurringExpenseEditorDialog`, `InvestmentScheduleEditorDialog`, bucket/investment editor dialogs.
+- Data layer: Room entities + DAOs + repositories; LiveData observers drive reactive UI.
+
+Background automation (WorkManager)
+- `RecurringExpenseWorker`: materializes recurring expenses.
+- `ReminderWorker`: reminders and due signals.
+- `SmsAutoImportWorker`: incremental SMS import (expenses + salary/investment signals).
+- `SalaryAutomationWorker`: expected-payday fallback salary allocation.
+- `InvestmentScheduleWorker`: expected SIP occurrence generation + catch-up.
+- `InvestmentDigestWorker`: action-based daily automation digest.
+
+Salary-to-Buckets automation architecture
+- Salary source detection:
+  - SMS credits via `TransactionParser` + `SalaryDetector`
+  - notification text via `InvestmentNotificationListenerService` + `TransactionParser` + `SalaryDetector`
+- Canonical salary handling:
+  - `SalaryAllocationOrchestrator` enforces month-level idempotency and allocation status.
+  - `BucketSalaryPrefs` stores expected salary/payday, monthly allocation status/source/time, and detection state.
+- Planned vs Actual ledger:
+  - Planned ledger uses `Bucket.currentBalanceCents` (allocation plan).
+  - Actual ledger uses confirmed holdings (`investments`) and drives net worth.
+
+Investment ingestion and reconciliation pipeline
+- Source parsers:
+  - `InvestmentSmsParser` for SMS and notification text.
+- Unified event registry:
+  - `EventIngestionPipeline` writes `ingestion_events` with unique `sourceKey`.
+  - Duplicate delivery from retries/restarts is ignored deterministically.
+- Holding updates:
+  - `InvestmentAutoIngestionEngine` inserts/updates confirmed holdings.
+  - Supports debit/allotment/correction flows and keeps audit metadata on `Investment`.
+- Expected SIP lifecycle:
+  - `InvestmentScheduleEngine` generates `investment_occurrences` (24-month detailed cap + opening aggregate for older history).
+  - `OccurrenceReconciliationEngine` links confirmed events to expected occurrences and marks `CONFIRMED` or `ADJUSTED`.
+
+Bucket assignment strategy
+- `BucketAssignmentEngine` order:
+  1) learned mapping (`instrument_bucket_mappings`)
+  2) on-device inference heuristics
+  3) rules fallback
+- Low-confidence paths mark map-pending and trigger one-time user prompt in bucket detail; chosen mapping is saved for reuse.
+
+Gamification and digest
+- `InvestmentGamificationEngine` is reward-only (no deductions), tracks investment XP, and also increments global profile XP.
+- `InvestmentDigestWorker` sends one compact daily summary: salary allocation status, reconciled/pending SIPs, weighted progress, execution score.
+
+Notification routing
+- `NotificationHelper.showInvestmentDigestNotification` deep links with action `view_buckets`.
+- `MainActivity` handles `view_buckets` and `view_recurring` intent actions for direct navigation.

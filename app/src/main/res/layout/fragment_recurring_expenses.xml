@@ -11,6 +11,7 @@
         android:padding="16dp">
 
         <TextView
+            android:id="@+id/text_recurring_title"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="@string/recurring_expenses"
@@ -18,12 +19,38 @@
             android:textStyle="bold" />
 
         <TextView
+            android:id="@+id/text_recurring_subtitle"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="@string/recurring_expenses_subtitle"
             android:textAppearance="?attr/textAppearanceBodyMedium"
             android:textColor="?attr/colorOnSurfaceVariant" />
+
+        <com.google.android.material.button.MaterialButtonToggleGroup
+            android:id="@+id/toggle_recurring_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            app:selectionRequired="true"
+            app:singleSelection="true">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_mode_expenses"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/recurring_mode_expenses" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_mode_investments"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/recurring_mode_investments" />
+        </com.google.android.material.button.MaterialButtonToggleGroup>
 
         <FrameLayout
             android:layout_width="match_parent"

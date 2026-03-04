@@ -7,8 +7,11 @@ import androidx.lifecycle.AndroidViewModel;
 import androidx.lifecycle.LiveData;
 
 import com.spendwise.ai.data.entity.BucketCategory;
+import com.spendwise.ai.data.entity.InvestmentOccurrence;
 import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.pojo.InvestmentOccurrenceWithSchedule;
 import com.spendwise.ai.data.repository.BucketRepository;
+import com.spendwise.ai.data.repository.InvestmentOccurrenceRepository;
 import com.spendwise.ai.data.repository.InvestmentRepository;
 
 import java.util.List;
@@ -20,11 +23,13 @@ public class BucketDetailViewModel extends AndroidViewModel {
 
     private final BucketRepository bucketRepository;
     private final InvestmentRepository investmentRepository;
+    private final InvestmentOccurrenceRepository investmentOccurrenceRepository;
 
     public BucketDetailViewModel(@NonNull Application application) {
         super(application);
         bucketRepository = new BucketRepository(application);
         investmentRepository = new InvestmentRepository(application);
+        investmentOccurrenceRepository = new InvestmentOccurrenceRepository(application);
     }
 
     public LiveData<List<Investment>> getInvestmentsForBucket(long bucketId) {
@@ -33,6 +38,10 @@ public class BucketDetailViewModel extends AndroidViewModel {
 
     public LiveData<List<BucketCategory>> getCategoriesForBucket(long bucketId) {
         return bucketRepository.getCategoriesForBucket(bucketId);
+    }
+
+    public LiveData<List<InvestmentOccurrenceWithSchedule>> getExpectedOccurrencesForBucket(long bucketId) {
+        return investmentOccurrenceRepository.getOccurrencesForBucket(bucketId);
     }
 
     public void addInvestment(Investment investment) {
@@ -53,5 +62,23 @@ public class BucketDetailViewModel extends AndroidViewModel {
 
     public void removeCategoryFromBucket(long bucketId, long categoryId) {
         bucketRepository.removeCategoryFromBucket(bucketId, categoryId);
+    }
+
+    public void resolveOccurrence(
+            long occurrenceId,
+            String status,
+            long amountCents,
+            long confirmedAtMillis,
+            Long linkedInvestmentId,
+            String correlationKey,
+            String sourceType) {
+        investmentOccurrenceRepository.resolveOccurrence(
+                occurrenceId,
+                status,
+                amountCents,
+                confirmedAtMillis,
+                linkedInvestmentId,
+                correlationKey,
+                sourceType);
     }
 }

@@ -21,9 +21,15 @@ import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.spendwise.ai.R;
+import com.spendwise.ai.engine.SalaryAllocationOrchestrator;
+import com.spendwise.ai.util.DateUtils;
+
+import org.threeten.bp.YearMonth;
+
 import com.spendwise.ai.data.entity.Bucket;
 import com.spendwise.ai.data.pojo.BucketWithTotal;
 
@@ -51,8 +57,10 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
     private View emptyStateView;
     private LinearLayout allocationBarContainer;
     private TextView textBucketsOverview;
+    private TextView textMonthStatus;
     private TextView textNetWorth;
     private ImageButton buttonToggleNetWorth;
+    private MaterialButtonToggleGroup ledgerToggle;
     private boolean showNetWorth;
     private long latestNetWorthCents;
     private List<BucketWithTotal> latestBuckets = new ArrayList<>();
@@ -74,8 +82,10 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
         emptyStateView = view.findViewById(R.id.layout_empty_buckets);
         allocationBarContainer = view.findViewById(R.id.layout_allocation_bar);
         textBucketsOverview = view.findViewById(R.id.text_buckets_overview);
+        textMonthStatus = view.findViewById(R.id.text_month_status);
         textNetWorth = view.findViewById(R.id.text_net_worth);
         buttonToggleNetWorth = view.findViewById(R.id.btn_toggle_net_worth);
+        ledgerToggle = view.findViewById(R.id.toggle_ledger_mode);
 
         adapter = new BucketsAdapter(this);
         int spanCount = getResources().getConfiguration().screenWidthDp >= 600 ? 3 : 2;
@@ -83,8 +93,22 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
         recyclerView.setAdapter(adapter);
         recyclerView.setHasFixedSize(true);
 
+        ledgerToggle.check(R.id.btn_ledger_actual);
+        adapter.setLedgerMode(BucketsAdapter.LedgerMode.ACTUAL);
+        ledgerToggle.addOnButtonCheckedListener((group, checkedId, isChecked) -> {
+            if (!isChecked) {
+                return;
+            }
+            if (checkedId == R.id.btn_ledger_planned) {
+                adapter.setLedgerMode(BucketsAdapter.LedgerMode.PLANNED);
+            } else {
+                adapter.setLedgerMode(BucketsAdapter.LedgerMode.ACTUAL);
+            }
+        });
+
         showNetWorth = BucketSalaryPrefs.isShowNetWorth(requireContext());
         updateNetWorthText();
+        updateMonthStatusBanner();
 
         buttonToggleNetWorth.setOnClickListener(v -> {
             showNetWorth = !showNetWorth;
@@ -92,19 +116,7 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
             updateNetWorthText();
         });
 
-        view.findViewById(R.id.btn_allocate_salary).setOnClickListener(v -> {
-            long expectedSalary = BucketSalaryPrefs.getExpectedSalaryCents(requireContext());
-            if (expectedSalary > 0) {
-                AllocationSuggestionDialog.show(requireContext(), expectedSalary, plan -> {
-                    for (com.spendwise.ai.engine.BucketAllocationEngine.AllocationResult alloc : plan
-                            .getAllocations()) {
-                        viewModel.updateBalance(alloc.getBucketId(), alloc.getAllocatedAmountCents());
-                    }
-                });
-            } else {
-                showManualSalaryDialog();
-            }
-        });
+        view.findViewById(R.id.btn_allocate_salary).setOnClickListener(v -> showRunAllocationDialog());
 
         View.OnClickListener addBucketListener = v -> showAddBucketDialog();
         view.findViewById(R.id.fab_add_bucket).setOnClickListener(addBucketListener);
@@ -115,6 +127,7 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
             adapter.submitList(latestBuckets);
             updateBucketOverview(latestBuckets);
             updateAllocationBar(latestBuckets);
+            updateMonthStatusBanner();
 
             if (latestBuckets.isEmpty()) {
                 emptyStateView.setVisibility(View.VISIBLE);
@@ -129,6 +142,12 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
             latestNetWorthCents = total == null ? 0L : total;
             updateNetWorthText();
         });
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateMonthStatusBanner();
     }
 
     @Override
@@ -164,17 +183,21 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
         }
     }
 
-    private void showManualSalaryDialog() {
+    private void showRunAllocationDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
-        builder.setTitle(R.string.buckets_salary_dialog_title);
+        builder.setTitle(R.string.buckets_run_allocation_title);
 
         View dialogView = LayoutInflater.from(requireContext())
                 .inflate(R.layout.dialog_salary_input, null, false);
         TextInputLayout salaryInputLayout = dialogView.findViewById(R.id.input_salary_layout);
         TextInputEditText salaryInput = dialogView.findViewById(R.id.input_salary);
+        long existingExpected = BucketSalaryPrefs.getExpectedSalaryCents(requireContext());
+        if (existingExpected > 0) {
+            salaryInput.setText(String.format(Locale.getDefault(), "%.2f", existingExpected / 100.0));
+        }
         builder.setView(dialogView);
         builder.setNegativeButton(R.string.cancel, null);
-        builder.setPositiveButton(R.string.buckets_salary_save_allocate, null);
+        builder.setPositiveButton(R.string.buckets_run_allocation_cta, null);
         AlertDialog dialog = builder.create();
         dialog.setOnShowListener(di -> dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
             Long amountCents = parseAmountToCents(salaryInput.getText().toString().trim());
@@ -186,11 +209,28 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
 
             BucketSalaryPrefs.setExpectedSalaryCents(requireContext(), amountCents);
             dialog.dismiss();
-            AllocationSuggestionDialog.show(requireContext(), amountCents, plan -> {
-                for (com.spendwise.ai.engine.BucketAllocationEngine.AllocationResult alloc : plan
-                        .getAllocations()) {
-                    viewModel.updateBalance(alloc.getBucketId(), alloc.getAllocatedAmountCents());
+            final android.content.Context appContext = requireContext().getApplicationContext();
+            com.spendwise.ai.data.AppDatabase.databaseWriteExecutor.execute(() -> {
+                SalaryAllocationOrchestrator.AllocationResult result = new SalaryAllocationOrchestrator(appContext)
+                        .runManualAllocation(amountCents, false);
+                androidx.fragment.app.FragmentActivity activity = getActivity();
+                if (activity == null) {
+                    return;
                 }
+                activity.runOnUiThread(() -> {
+                    if (!isAdded()) {
+                        return;
+                    }
+                    if (result.skipped) {
+                        Toast.makeText(requireContext(), R.string.buckets_allocation_already_run, Toast.LENGTH_SHORT)
+                                .show();
+                    } else if (result.allocated) {
+                        Toast.makeText(requireContext(), R.string.buckets_allocation_ran, Toast.LENGTH_SHORT).show();
+                    } else {
+                        Toast.makeText(requireContext(), R.string.buckets_allocation_failed, Toast.LENGTH_SHORT).show();
+                    }
+                    updateMonthStatusBanner();
+                });
             });
         }));
         dialog.show();
@@ -272,6 +312,38 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
                 buckets.size(),
                 totalPercent,
                 formatTargetMixHealth(totalPercent)));
+    }
+
+    private void updateMonthStatusBanner() {
+        String monthKey = DateUtils.getMonthKey(YearMonth.now());
+        String status = BucketSalaryPrefs.getMonthStatus(requireContext(), monthKey);
+        int bgColor;
+        int textColor;
+        int messageId;
+        if (BucketSalaryPrefs.STATUS_AUTO_ALLOCATED.equals(status)) {
+            bgColor = R.color.md_theme_secondaryContainer;
+            textColor = R.color.md_theme_onSecondaryContainer;
+            messageId = R.string.buckets_month_status_auto;
+        } else if (BucketSalaryPrefs.STATUS_FALLBACK_ALLOCATED.equals(status)) {
+            bgColor = R.color.md_theme_tertiaryContainer;
+            textColor = R.color.md_theme_onTertiaryContainer;
+            messageId = R.string.buckets_month_status_fallback;
+        } else if (BucketSalaryPrefs.STATUS_MANUAL_ALLOCATED.equals(status)) {
+            bgColor = R.color.md_theme_primaryContainer;
+            textColor = R.color.md_theme_onPrimaryContainer;
+            messageId = R.string.buckets_month_status_manual;
+        } else if (BucketSalaryPrefs.STATUS_SALARY_DETECTED.equals(status)) {
+            bgColor = R.color.md_theme_secondaryContainer;
+            textColor = R.color.md_theme_onSecondaryContainer;
+            messageId = R.string.buckets_month_status_detected;
+        } else {
+            bgColor = R.color.md_theme_surfaceContainerHigh;
+            textColor = R.color.md_theme_onSurfaceVariant;
+            messageId = R.string.buckets_month_status_pending;
+        }
+        textMonthStatus.setText(getString(messageId));
+        textMonthStatus.setBackgroundColor(ContextCompat.getColor(requireContext(), bgColor));
+        textMonthStatus.setTextColor(ContextCompat.getColor(requireContext(), textColor));
     }
 
     private void updateNetWorthText() {

@@ -23,6 +23,16 @@ public final class BucketSalaryPrefs {
     private static final String KEY_LAST_ALLOCATED_MONTH = "last_allocated_month"; // YYYYMM
     private static final String KEY_MANUAL_SALARY_ENABLED = "manual_salary_enabled";
     private static final String KEY_SHOW_NET_WORTH = "show_net_worth";
+    private static final String KEY_LAST_ALLOCATION_STATUS = "last_allocation_status";
+    private static final String KEY_LAST_ALLOCATION_SOURCE = "last_allocation_source";
+    private static final String KEY_LAST_ALLOCATION_TIMESTAMP = "last_allocation_timestamp";
+    private static final String KEY_LAST_DETECTED_SALARY_MONTH = "last_detected_salary_month";
+
+    public static final String STATUS_PENDING = "PENDING";
+    public static final String STATUS_SALARY_DETECTED = "SALARY_DETECTED";
+    public static final String STATUS_AUTO_ALLOCATED = "AUTO_ALLOCATED";
+    public static final String STATUS_FALLBACK_ALLOCATED = "FALLBACK_ALLOCATED";
+    public static final String STATUS_MANUAL_ALLOCATED = "MANUAL_ALLOCATED";
 
     private BucketSalaryPrefs() {
     }
@@ -63,6 +73,52 @@ public final class BucketSalaryPrefs {
 
     public static boolean hasAllocatedThisMonth(@NonNull Context context, String currentYyyymm) {
         return currentYyyymm.equals(getLastAllocatedMonth(context));
+    }
+
+    public static void setAllocationStatus(
+            @NonNull Context context,
+            @NonNull String status,
+            @NonNull String source,
+            long timestampMillis) {
+        prefs(context).edit()
+                .putString(KEY_LAST_ALLOCATION_STATUS, status)
+                .putString(KEY_LAST_ALLOCATION_SOURCE, source)
+                .putLong(KEY_LAST_ALLOCATION_TIMESTAMP, timestampMillis)
+                .apply();
+    }
+
+    @NonNull
+    public static String getAllocationStatus(@NonNull Context context) {
+        return prefs(context).getString(KEY_LAST_ALLOCATION_STATUS, STATUS_PENDING);
+    }
+
+    @NonNull
+    public static String getAllocationSource(@NonNull Context context) {
+        return prefs(context).getString(KEY_LAST_ALLOCATION_SOURCE, "");
+    }
+
+    public static long getAllocationTimestamp(@NonNull Context context) {
+        return prefs(context).getLong(KEY_LAST_ALLOCATION_TIMESTAMP, 0L);
+    }
+
+    public static void setLastDetectedSalaryMonth(@NonNull Context context, @NonNull String yyyyMm) {
+        prefs(context).edit().putString(KEY_LAST_DETECTED_SALARY_MONTH, yyyyMm).apply();
+    }
+
+    @NonNull
+    public static String getLastDetectedSalaryMonth(@NonNull Context context) {
+        return prefs(context).getString(KEY_LAST_DETECTED_SALARY_MONTH, "");
+    }
+
+    @NonNull
+    public static String getMonthStatus(@NonNull Context context, @NonNull String currentYyyymm) {
+        if (hasAllocatedThisMonth(context, currentYyyymm)) {
+            return getAllocationStatus(context);
+        }
+        if (currentYyyymm.equals(getLastDetectedSalaryMonth(context))) {
+            return STATUS_SALARY_DETECTED;
+        }
+        return STATUS_PENDING;
     }
 
     // --- Manual Salary Toggle ---

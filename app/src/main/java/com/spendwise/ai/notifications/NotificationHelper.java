@@ -22,6 +22,7 @@ public class NotificationHelper {
     public static final String CHANNEL_GENERAL = "general";
 
     private static final int NOTIFICATION_ID_REMINDER_BASE = 1000;
+    private static final int NOTIFICATION_ID_INVESTMENT_DIGEST = 2200;
 
     /**
      * Create notification channels. Should be called on app startup.
@@ -102,5 +103,36 @@ public class NotificationHelper {
     public static void cancelReminderNotification(Context context, long expenseId) {
         NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
         notificationManager.cancel(NOTIFICATION_ID_REMINDER_BASE + (int) expenseId);
+    }
+
+    /**
+     * Show one compact investment automation digest notification.
+     */
+    public static void showInvestmentDigestNotification(Context context, String title, String body) {
+        Intent intent = new Intent(context, MainActivity.class);
+        intent.putExtra("action", "view_buckets");
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                NOTIFICATION_ID_INVESTMENT_DIGEST,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_GENERAL)
+                .setSmallIcon(R.drawable.ic_notification)
+                .setContentTitle(title)
+                .setContentText(body)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(body))
+                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+
+        NotificationManagerCompat notificationManager = NotificationManagerCompat.from(context);
+        try {
+            notificationManager.notify(NOTIFICATION_ID_INVESTMENT_DIGEST, builder.build());
+        } catch (SecurityException ignore) {
+            // Notification permission not granted.
+        }
     }
 }

@@ -113,6 +113,25 @@ public class Investment {
     @Nullable
     private Long sipAmountCents;
 
+    /**
+     * Primary reconciliation key linking this holding to ingestion events and
+     * expected SIP occurrences.
+     */
+    @Nullable
+    private String primaryCorrelationKey;
+
+    /**
+     * Last source type that updated this holding (SMS/NOTIFICATION/MANUAL/SCHEDULE).
+     */
+    @Nullable
+    private String lastSourceType;
+
+    /**
+     * Last source event key used for idempotent updates.
+     */
+    @Nullable
+    private String lastSourceKey;
+
     public Investment(long bucketId, @NonNull String name, @NonNull String assetType,
             long investedAmountCents, long currentValueCents, long lastUpdatedEpochDay) {
         this.bucketId = bucketId;
@@ -262,6 +281,33 @@ public class Investment {
 
     public void setSipAmountCents(@Nullable Long sipAmountCents) {
         this.sipAmountCents = sipAmountCents;
+    }
+
+    @Nullable
+    public String getPrimaryCorrelationKey() {
+        return primaryCorrelationKey;
+    }
+
+    public void setPrimaryCorrelationKey(@Nullable String primaryCorrelationKey) {
+        this.primaryCorrelationKey = primaryCorrelationKey;
+    }
+
+    @Nullable
+    public String getLastSourceType() {
+        return lastSourceType;
+    }
+
+    public void setLastSourceType(@Nullable String lastSourceType) {
+        this.lastSourceType = lastSourceType;
+    }
+
+    @Nullable
+    public String getLastSourceKey() {
+        return lastSourceKey;
+    }
+
+    public void setLastSourceKey(@Nullable String lastSourceKey) {
+        this.lastSourceKey = lastSourceKey;
     }
 
     /**

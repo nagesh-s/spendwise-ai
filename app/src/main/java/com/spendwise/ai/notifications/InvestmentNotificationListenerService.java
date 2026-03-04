@@ -13,13 +13,23 @@ import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
 import com.spendwise.ai.data.AppDatabase;
+import com.spendwise.ai.data.entity.IngestionEvent;
+import com.spendwise.ai.engine.EventIngestionPipeline;
 import com.spendwise.ai.engine.InvestmentAutoIngestionEngine;
+import com.spendwise.ai.engine.InvestmentGamificationEngine;
+import com.spendwise.ai.engine.OccurrenceReconciliationEngine;
+import com.spendwise.ai.engine.SalaryAllocationOrchestrator;
+import com.spendwise.ai.engine.SalaryDetector;
 import com.spendwise.ai.sms.InvestmentSmsParser;
+import com.spendwise.ai.sms.InvestmentSignalKeyFactory;
 import com.spendwise.ai.sms.ParsedInvestmentSignal;
+import com.spendwise.ai.sms.ParsedTransaction;
+import com.spendwise.ai.sms.TransactionParser;
 
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Notification listener for parsing investment signals from broker app and email
@@ -62,13 +72,7 @@ public class InvestmentNotificationListenerService extends NotificationListenerS
 
     @Override
     public void onNotificationPosted(@NonNull StatusBarNotification sbn) {
-        ParsedInvestmentSignal signal = parseNotificationSignal(sbn);
-        if (signal == null) {
-            return;
-        }
-        List<ParsedInvestmentSignal> singleSignal = new ArrayList<>();
-        singleSignal.add(signal);
-        ingestSignals(singleSignal);
+        processNotification(sbn);
     }
 
     private void ingestActiveNotifications() {
@@ -82,29 +86,63 @@ public class InvestmentNotificationListenerService extends NotificationListenerS
             return;
         }
 
-        List<ParsedInvestmentSignal> parsedSignals = new ArrayList<>();
         for (StatusBarNotification notification : notifications) {
-            ParsedInvestmentSignal signal = parseNotificationSignal(notification);
-            if (signal != null) {
-                parsedSignals.add(signal);
-            }
+            processNotification(notification);
         }
-        ingestSignals(parsedSignals);
     }
 
-    private void ingestSignals(@NonNull List<ParsedInvestmentSignal> signals) {
-        if (signals.isEmpty()) {
+    private void processNotification(@Nullable StatusBarNotification sbn) {
+        NotificationPayload payload = parseNotificationPayload(sbn);
+        if (payload == null) {
             return;
         }
+
         Context appContext = getApplicationContext();
         AppDatabase.databaseWriteExecutor.execute(() -> {
             AppDatabase db = AppDatabase.getInstance(appContext);
-            new InvestmentAutoIngestionEngine().ingest(db, signals);
+            if (payload.salaryDetection != null) {
+                new SalaryAllocationOrchestrator(appContext).onSalaryDetected(
+                        payload.salaryDetection.getAmountCents(),
+                        payload.salaryDetection.getTimestampMillis(),
+                        IngestionEvent.SOURCE_NOTIFICATION,
+                        buildSalarySourceKey(payload.transaction, payload),
+                        payload.message);
+            }
+
+            if (payload.investmentSignal != null) {
+                EventIngestionPipeline pipeline = new EventIngestionPipeline();
+                EventIngestionPipeline.IngestResult event = pipeline.ingest(
+                        db,
+                        IngestionEvent.DOMAIN_INVESTMENT,
+                        IngestionEvent.SOURCE_NOTIFICATION,
+                        InvestmentSignalKeyFactory.buildIngestionSourceKey(payload.investmentSignal),
+                        payload.investmentSignal.getCorrelationKey(),
+                        payload.investmentSignal.getSignalType().name(),
+                        payload.investmentSignal.getAmountCents(),
+                        payload.investmentSignal.getTimestampMillis(),
+                        payload.investmentSignal.getRawMessage());
+                if (!event.duplicate) {
+                    List<ParsedInvestmentSignal> oneSignal = new ArrayList<>();
+                    oneSignal.add(payload.investmentSignal);
+                    InvestmentAutoIngestionEngine.IngestResult ingestResult = new InvestmentAutoIngestionEngine()
+                            .ingest(db, oneSignal);
+                    OccurrenceReconciliationEngine.ReconcileResult reconcileResult = new OccurrenceReconciliationEngine()
+                            .reconcileSignals(
+                                    db,
+                                    oneSignal,
+                                    ingestResult.investmentIdBySourceKey,
+                                    IngestionEvent.SOURCE_NOTIFICATION);
+                    if (reconcileResult.confirmed + reconcileResult.adjusted > 0) {
+                        new InvestmentGamificationEngine(appContext).awardSipReconcileXp();
+                    }
+                    pipeline.markProcessed(db, event.eventId, IngestionEvent.STATUS_PROCESSED);
+                }
+            }
         });
     }
 
     @Nullable
-    private ParsedInvestmentSignal parseNotificationSignal(@Nullable StatusBarNotification sbn) {
+    private NotificationPayload parseNotificationPayload(@Nullable StatusBarNotification sbn) {
         if (sbn == null || sbn.getNotification() == null) {
             return null;
         }
@@ -120,7 +158,29 @@ public class InvestmentNotificationListenerService extends NotificationListenerS
 
         String sender = resolveSenderLabel(sourcePackage);
         long timestamp = sbn.getPostTime() > 0L ? sbn.getPostTime() : System.currentTimeMillis();
-        return InvestmentSmsParser.parse(sender, message, timestamp);
+        ParsedInvestmentSignal investmentSignal = InvestmentSmsParser.parse(sender, message, timestamp);
+
+        ParsedTransaction parsedTransaction = null;
+        SalaryDetector.SalaryDetectionResult salaryDetection = null;
+        if (TransactionParser.isTransactionSms(sender, message)) {
+            parsedTransaction = TransactionParser.parse(message, timestamp);
+            if (parsedTransaction != null) {
+                salaryDetection = new SalaryDetector().detect(parsedTransaction);
+            }
+        }
+
+        if (investmentSignal == null && salaryDetection == null) {
+            return null;
+        }
+        NotificationPayload payload = new NotificationPayload();
+        payload.packageName = sourcePackage;
+        payload.sender = sender;
+        payload.timestampMillis = timestamp;
+        payload.message = message;
+        payload.investmentSignal = investmentSignal;
+        payload.salaryDetection = salaryDetection;
+        payload.transaction = parsedTransaction;
+        return payload;
     }
 
     @NonNull
@@ -183,5 +243,44 @@ public class InvestmentNotificationListenerService extends NotificationListenerS
         if (!value.isEmpty()) {
             parts.add(value);
         }
+    }
+
+    @NonNull
+    private String buildSalarySourceKey(
+            @Nullable ParsedTransaction transaction,
+            @NonNull NotificationPayload payload) {
+        long day = payload.timestampMillis / (24L * 60L * 60L * 1000L);
+        long amount = payload.salaryDetection == null ? 0L : payload.salaryDetection.getAmountCents();
+        String account = transaction == null || transaction.getAccountInfo() == null
+                ? "na"
+                : transaction.getAccountInfo();
+        return String.format(
+                Locale.US,
+                "salary_notif_%s_%s_%d_%d",
+                sanitize(payload.packageName),
+                sanitize(account),
+                amount,
+                day);
+    }
+
+    @NonNull
+    private String sanitize(@Nullable String value) {
+        if (value == null) {
+            return "na";
+        }
+        String cleaned = value.toLowerCase(Locale.US)
+                .replaceAll("[^a-z0-9]+", "_")
+                .replaceAll("^_+|_+$", "");
+        return cleaned.isEmpty() ? "na" : cleaned;
+    }
+
+    private static class NotificationPayload {
+        String packageName;
+        String sender;
+        long timestampMillis;
+        String message;
+        ParsedInvestmentSignal investmentSignal;
+        SalaryDetector.SalaryDetectionResult salaryDetection;
+        ParsedTransaction transaction;
     }
 }

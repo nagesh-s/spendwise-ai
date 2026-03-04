@@ -138,6 +138,12 @@ public class MainActivity extends AppCompatActivity {
             }
             intent.removeExtra("action");
             intent.removeExtra("tile_id");
+        } else if ("view_buckets".equals(action)) {
+            navigateToDestination(R.id.navigation_buckets);
+            intent.removeExtra("action");
+        } else if ("view_recurring".equals(action)) {
+            navigateToDestination(R.id.navigation_recurring);
+            intent.removeExtra("action");
         } else if ("quick_tiles_add".equals(intent.getStringExtra("navigate_to"))) {
             getSupportFragmentManager().setFragmentResult(
                     QuickTilesFragment.RESULT_KEY_OPEN_EDITOR,

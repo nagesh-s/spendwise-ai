@@ -29,11 +29,18 @@ import java.util.Locale;
  */
 public class BucketsAdapter extends ListAdapter<BucketWithTotal, BucketsAdapter.BucketViewHolder> {
 
+    public enum LedgerMode {
+        PLANNED,
+        ACTUAL
+    }
+
     public interface OnBucketClickListener {
         void onBucketClick(BucketWithTotal bucketWithTotal);
     }
 
     private final OnBucketClickListener listener;
+    @NonNull
+    private LedgerMode ledgerMode = LedgerMode.ACTUAL;
 
     public BucketsAdapter(OnBucketClickListener listener) {
         super(DIFF_CALLBACK);
@@ -51,6 +58,7 @@ public class BucketsAdapter extends ListAdapter<BucketWithTotal, BucketsAdapter.
             return o.bucket.getName().equals(n.bucket.getName())
                     && o.totalValueCents == n.totalValueCents
                     && o.totalInvestedCents == n.totalInvestedCents
+                    && o.bucket.getCurrentBalanceCents() == n.bucket.getCurrentBalanceCents()
                     && o.bucket.getTargetPercent() == n.bucket.getTargetPercent();
         }
     };
@@ -66,7 +74,15 @@ public class BucketsAdapter extends ListAdapter<BucketWithTotal, BucketsAdapter.
     @Override
     public void onBindViewHolder(@NonNull BucketViewHolder holder, int position) {
         BucketWithTotal item = getItem(position);
-        holder.bind(item, listener);
+        holder.bind(item, listener, ledgerMode);
+    }
+
+    public void setLedgerMode(@NonNull LedgerMode mode) {
+        if (ledgerMode == mode) {
+            return;
+        }
+        ledgerMode = mode;
+        notifyDataSetChanged();
     }
 
     static class BucketViewHolder extends RecyclerView.ViewHolder {
@@ -74,7 +90,8 @@ public class BucketsAdapter extends ListAdapter<BucketWithTotal, BucketsAdapter.
         private final TextView textName;
         private final TextView textTargetPercent;
         private final TextView textTimeline;
-        private final TextView textValue;
+        private final TextView textPlannedValue;
+        private final TextView textActualValue;
         private final TextView textInvested;
         private final TextView textPnl;
         private final TextView textTargetHint;
@@ -89,7 +106,8 @@ public class BucketsAdapter extends ListAdapter<BucketWithTotal, BucketsAdapter.
             textName = itemView.findViewById(R.id.text_bucket_name);
             textTargetPercent = itemView.findViewById(R.id.text_bucket_target_percent);
             textTimeline = itemView.findViewById(R.id.text_bucket_timeline);
-            textValue = itemView.findViewById(R.id.text_bucket_value);
+            textPlannedValue = itemView.findViewById(R.id.text_bucket_planned_value);
+            textActualValue = itemView.findViewById(R.id.text_bucket_actual_value);
             textInvested = itemView.findViewById(R.id.text_bucket_invested);
             textPnl = itemView.findViewById(R.id.text_bucket_pnl);
             textTargetHint = itemView.findViewById(R.id.text_bucket_target_hint);
@@ -99,7 +117,7 @@ public class BucketsAdapter extends ListAdapter<BucketWithTotal, BucketsAdapter.
             guiltFreeCard = itemView.findViewById(R.id.card_guilt_free);
         }
 
-        void bind(BucketWithTotal item, OnBucketClickListener listener) {
+        void bind(BucketWithTotal item, OnBucketClickListener listener, LedgerMode mode) {
             Context context = itemView.getContext();
             Bucket bucket = item.bucket;
             textName.setText(bucket.getName());
@@ -109,7 +127,9 @@ public class BucketsAdapter extends ListAdapter<BucketWithTotal, BucketsAdapter.
             textTimeline.setText(timeline != null ? timeline : "");
             textTimeline.setVisibility(timeline != null ? View.VISIBLE : View.GONE);
 
-            textValue.setText(formatCurrency(item.totalValueCents));
+            textPlannedValue.setText(formatCurrency(bucket.getCurrentBalanceCents()));
+            textActualValue.setText(formatCurrency(item.totalValueCents));
+            applyLedgerEmphasis(context, mode);
             textInvested.setText(context.getString(
                     R.string.label_invested_format,
                     formatCurrency(item.totalInvestedCents)));
@@ -146,7 +166,7 @@ public class BucketsAdapter extends ListAdapter<BucketWithTotal, BucketsAdapter.
                 textGuiltFree.setVisibility(View.VISIBLE);
                 textGuiltFree.setText(context.getString(
                         R.string.bucket_guilt_free_banner_format,
-                        formatCurrency(item.totalValueCents)));
+                        formatCurrency(bucket.getCurrentBalanceCents())));
             } else {
                 guiltFreeCard.setVisibility(View.GONE);
             }
@@ -155,6 +175,22 @@ public class BucketsAdapter extends ListAdapter<BucketWithTotal, BucketsAdapter.
                 if (listener != null)
                     listener.onBucketClick(item);
             });
+        }
+
+        private void applyLedgerEmphasis(@NonNull Context context, @NonNull LedgerMode mode) {
+            int strongColor = ContextCompat.getColor(context, R.color.md_theme_onSurface);
+            int softColor = ContextCompat.getColor(context, R.color.md_theme_onSurfaceVariant);
+            if (mode == LedgerMode.PLANNED) {
+                textPlannedValue.setTextColor(strongColor);
+                textPlannedValue.setAlpha(1f);
+                textActualValue.setTextColor(softColor);
+                textActualValue.setAlpha(0.75f);
+            } else {
+                textActualValue.setTextColor(strongColor);
+                textActualValue.setAlpha(1f);
+                textPlannedValue.setTextColor(softColor);
+                textPlannedValue.setAlpha(0.75f);
+            }
         }
 
         private String formatCurrency(long amountCents) {

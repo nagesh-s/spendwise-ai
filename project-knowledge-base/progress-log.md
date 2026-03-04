@@ -4,13 +4,50 @@
 
 ---
 
-## Current State: v1.7.0 (Buckets + Investment Sync Expansion)
+## Current State: Unreleased (Salary-to-Buckets Automation 2.0)
 
 | Metric | Value |
 |---|---|
-| Version | `v1.7.0` |
-| Status | Buckets UX refactor + holdings ingestion (SMS + notification listener) implemented and validated |
-| Last Updated | 2026-03-04 (bucket grid UX + notification sync + import route cleanup) |
+| Version | `Unreleased` |
+| Status | Automation 2.0 implemented: dual ledger, SIP schedules, idempotent event pipeline, reconciliation, reward-only investment XP, digest notifications |
+| Last Updated | 2026-03-04 (salary orchestration + recurring investments mode + expected SIP lifecycle + no-dupe pipeline wiring) |
+
+---
+
+## Salary-to-Buckets Automation 2.0 Sweep (2026-03-04)
+
+- Salary automation:
+  - salary detection wired from SMS credits and notification text
+  - monthly idempotent allocation orchestration with auto/fallback/manual status tracking
+  - `Run Allocation Now` action implemented with month guardrails
+- Dual ledger UX:
+  - bucket cards now show both planned and actual values
+  - `Planned | Actual` chips drive emphasis without losing context
+  - month-status banner added (pending/detected/auto/fallback/manual)
+- Recurring investments:
+  - recurring screen now supports mode switch `Expenses | Investments`
+  - SIP schedule editor + list added under investment mode
+  - schedule backfill integrated with 24-month detail cap and older rollup behavior
+- Unified no-dupe ingestion + reconciliation:
+  - added `IngestionEvent` registry and pipeline (`sourceKey` unique idempotency)
+  - SMS and notification investment ingestion now pass through event pipeline
+  - expected occurrence reconciliation supports confirmed/adjusted paths
+- Bucket detail expected SIP workflow:
+  - expected occurrence section with status chips
+  - manual resolve/edit/skip actions for unresolved entries
+- Mapping intelligence:
+  - low-confidence auto-assign path now prompts user once and learns mapping
+  - learned mapping reused for future similar instruments
+- Worker scheduling:
+  - added and scheduled salary fallback, SIP materialization, and daily digest workers
+- Gamification and profile:
+  - reward-only investment XP engine implemented
+  - profile now surfaces dedicated investment XP stat
+- Validation executed:
+  - `./gradlew :app:compileStandardDebugJavaWithJavac`
+  - `./gradlew :app:compileOfflineLlmDebugJavaWithJavac`
+  - `./gradlew :app:testStandardDebugUnitTest`
+  - `./gradlew :app:assembleStandardDebug`
 
 ---
 

@@ -19,6 +19,9 @@ public class WorkScheduler {
         private static final String RECURRING_EXPENSE_WORK = "recurring_expense_work";
         private static final String REMINDER_WORK = "reminder_work";
         private static final String SMS_AUTO_IMPORT_WORK = "sms_auto_import_work";
+        private static final String SALARY_AUTOMATION_WORK = "salary_automation_work";
+        private static final String INVESTMENT_SCHEDULE_WORK = "investment_schedule_work";
+        private static final String INVESTMENT_DIGEST_WORK = "investment_digest_work";
 
         /**
          * Schedule the recurring expense worker to run daily.
@@ -88,6 +91,72 @@ public class WorkScheduler {
         }
 
         /**
+         * Schedule salary fallback automation (daily).
+         */
+        public static void scheduleSalaryAutomationWork(Context context) {
+                Constraints constraints = new Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                                .setRequiresBatteryNotLow(false)
+                                .build();
+
+                PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
+                                SalaryAutomationWorker.class,
+                                24, TimeUnit.HOURS)
+                                .setConstraints(constraints)
+                                .setInitialDelay(12, TimeUnit.MINUTES)
+                                .build();
+
+                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                                SALARY_AUTOMATION_WORK,
+                                ExistingPeriodicWorkPolicy.KEEP,
+                                workRequest);
+        }
+
+        /**
+         * Schedule expected SIP materialization + reconciliation checks (daily).
+         */
+        public static void scheduleInvestmentScheduleWork(Context context) {
+                Constraints constraints = new Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                                .setRequiresBatteryNotLow(false)
+                                .build();
+
+                PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
+                                InvestmentScheduleWorker.class,
+                                24, TimeUnit.HOURS)
+                                .setConstraints(constraints)
+                                .setInitialDelay(14, TimeUnit.MINUTES)
+                                .build();
+
+                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                                INVESTMENT_SCHEDULE_WORK,
+                                ExistingPeriodicWorkPolicy.KEEP,
+                                workRequest);
+        }
+
+        /**
+         * Schedule one compact daily investment digest notification.
+         */
+        public static void scheduleInvestmentDigestWork(Context context) {
+                Constraints constraints = new Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                                .setRequiresBatteryNotLow(false)
+                                .build();
+
+                PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
+                                InvestmentDigestWorker.class,
+                                24, TimeUnit.HOURS)
+                                .setConstraints(constraints)
+                                .setInitialDelay(20, TimeUnit.MINUTES)
+                                .build();
+
+                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                                INVESTMENT_DIGEST_WORK,
+                                ExistingPeriodicWorkPolicy.KEEP,
+                                workRequest);
+        }
+
+        /**
          * Cancel periodic SMS auto-import work.
          */
         public static void cancelSmsAutoImportWork(Context context) {
@@ -132,6 +201,36 @@ public class WorkScheduler {
         public static void runSmsAutoImportNow(Context context) {
                 OneTimeWorkRequest oneTimeRequest = new OneTimeWorkRequest.Builder(
                                 SmsAutoImportWorker.class)
+                                .build();
+                WorkManager.getInstance(context).enqueue(oneTimeRequest);
+        }
+
+        /**
+         * Run salary automation worker immediately (one-time).
+         */
+        public static void runSalaryAutomationNow(Context context) {
+                OneTimeWorkRequest oneTimeRequest = new OneTimeWorkRequest.Builder(
+                                SalaryAutomationWorker.class)
+                                .build();
+                WorkManager.getInstance(context).enqueue(oneTimeRequest);
+        }
+
+        /**
+         * Run investment schedule materialization immediately (one-time).
+         */
+        public static void runInvestmentScheduleNow(Context context) {
+                OneTimeWorkRequest oneTimeRequest = new OneTimeWorkRequest.Builder(
+                                InvestmentScheduleWorker.class)
+                                .build();
+                WorkManager.getInstance(context).enqueue(oneTimeRequest);
+        }
+
+        /**
+         * Run investment digest immediately (one-time).
+         */
+        public static void runInvestmentDigestNow(Context context) {
+                OneTimeWorkRequest oneTimeRequest = new OneTimeWorkRequest.Builder(
+                                InvestmentDigestWorker.class)
                                 .build();
                 WorkManager.getInstance(context).enqueue(oneTimeRequest);
         }

@@ -35,6 +35,7 @@ public class InvestmentAutoIngestionEngine {
         public int inserted;
         public int updated;
         public int skipped;
+        public final Map<String, Long> investmentIdBySourceKey = new HashMap<>();
     }
 
     @NonNull
@@ -60,6 +61,7 @@ public class InvestmentAutoIngestionEngine {
         for (Bucket bucket : buckets) {
             bucketIdByType.put(bucket.getType(), bucket.getId());
         }
+        BucketAssignmentEngine assignmentEngine = new BucketAssignmentEngine();
 
         List<Investment> allInvestments = db.investmentDao().getAllInvestmentsSync();
         Map<String, Investment> bySource = new HashMap<>();
@@ -90,10 +92,14 @@ public class InvestmentAutoIngestionEngine {
                 }
                 matched.setNotes(mergeAutoTokens(matched.getNotes(), signal));
                 indexInvestment(matched, bySource, byCorrelation);
+                result.investmentIdBySourceKey.put(signal.getSourceKey(), matched.getId());
                 continue;
             }
 
-            long targetBucketId = resolveBucketId(bucketIdByType, fallbackBucketId, signal.getAssetType());
+            BucketAssignmentEngine.AssignmentResult assignment = assignmentEngine.assign(db, signal, buckets);
+            long targetBucketId = assignment.bucketId > 0
+                    ? assignment.bucketId
+                    : resolveBucketId(bucketIdByType, fallbackBucketId, signal.getAssetType());
             long epochDay = Instant.ofEpochMilli(signal.getTimestampMillis())
                     .atZone(ZoneId.systemDefault())
                     .toLocalDate()
@@ -110,10 +116,16 @@ public class InvestmentAutoIngestionEngine {
             investment.setPlatform(signal.getPlatform());
             investment.setAutoFetched(true);
             investment.setNotes(mergeAutoTokens(investment.getNotes(), signal));
+            investment.setPrimaryCorrelationKey(signal.getCorrelationKey());
+            investment.setLastSourceType("AUTO_INGEST");
+            investment.setLastSourceKey(signal.getSourceKey());
             if (signal.getSignalType() == ParsedInvestmentSignal.SignalType.FD_BOOKED) {
                 investment.setJobTitle("FD Allocation");
             } else if (signal.getSignalType() == ParsedInvestmentSignal.SignalType.RD_BOOKED) {
                 investment.setJobTitle("RD Allocation");
+            }
+            if (assignment.needsUserConfirmation) {
+                investment.setNotes(appendToken(investment.getNotes(), "[auto-map-pending:true]"));
             }
 
             long insertedId = db.investmentDao().insert(investment);
@@ -121,6 +133,7 @@ public class InvestmentAutoIngestionEngine {
             allInvestments.add(investment);
             indexInvestment(investment, bySource, byCorrelation);
             result.inserted++;
+            result.investmentIdBySourceKey.put(signal.getSourceKey(), insertedId);
         }
         return result;
     }
@@ -190,6 +203,18 @@ public class InvestmentAutoIngestionEngine {
 
         if (existing.getPlatform() == null && signal.getPlatform() != null) {
             existing.setPlatform(signal.getPlatform());
+            changed = true;
+        }
+        if (!equalsSafe(existing.getPrimaryCorrelationKey(), signal.getCorrelationKey())) {
+            existing.setPrimaryCorrelationKey(signal.getCorrelationKey());
+            changed = true;
+        }
+        if (!equalsSafe(existing.getLastSourceKey(), signal.getSourceKey())) {
+            existing.setLastSourceKey(signal.getSourceKey());
+            changed = true;
+        }
+        if (!equalsSafe(existing.getLastSourceType(), "AUTO_INGEST")) {
+            existing.setLastSourceType("AUTO_INGEST");
             changed = true;
         }
         if (isWeakName(existing.getName()) && signal.getInvestmentName() != null) {

@@ -30,6 +30,9 @@ public class SpendWiseApplication extends Application {
         } else {
             WorkScheduler.cancelSmsAutoImportWork(this);
         }
+        WorkScheduler.scheduleSalaryAutomationWork(this);
+        WorkScheduler.scheduleInvestmentScheduleWork(this);
+        WorkScheduler.scheduleInvestmentDigestWork(this);
 
         // Run immediately to catch up on any missed work
         WorkScheduler.runRecurringExpenseWorkNow(this);
@@ -37,5 +40,7 @@ public class SpendWiseApplication extends Application {
         if (SmsAutoImportPrefs.isEnabled(this)) {
             WorkScheduler.runSmsAutoImportNow(this);
         }
+        WorkScheduler.runSalaryAutomationNow(this);
+        WorkScheduler.runInvestmentScheduleNow(this);
     }
 }

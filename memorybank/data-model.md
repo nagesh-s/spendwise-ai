@@ -6,11 +6,30 @@ Entities
 - QuickTile(id, categoryId, merchantId, label, amountCents)
 - RecurringExpense(id, amountCents, description, categoryId, merchantId, frequency, dayOfPeriod, monthOfYear, startDateEpochDay, endDateEpochDay, lastGeneratedEpochDay, isActive, reminderDaysBefore)
 - Tag(id, name, colorArgb)
-- ExpenseTag(expenseId, tagId)  -- many-to-many join table
-- Account(id, name, type, balanceCents, colorArgb, iconKey, isDefault)  -- types: CASH, BANK, CREDIT_CARD, WALLET, OTHER
-- FinancialGoal(id, name, type, targetAmountCents, currentAmountCents, startDateEpochDay, endDateEpochDay, status, colorArgb, iconKey, linkedCategoryId)  -- types: SAVINGS, LIMIT, DEBT
-- Bucket(id, name, type, targetPercent, currentBalanceCents, colorArgb, iconKey, sortOrder, isDefault, description, timelineLabel, investmentAdvice)  -- types: EMERGENCY, SHORT_TERM, MEDIUM_TERM, LONG_TERM, RETIREMENT, CUSTOM
-- BucketCategory(bucketId, categoryId)  -- links buckets to expense categories
-- Investment(id, bucketId, name, jobTitle, platform, assetType, investedAmountCents, currentValueCents, lastUpdatedEpochDay, notes, isSip)  -- per-bucket investment tracking
+- ExpenseTag(expenseId, tagId) -- many-to-many join table
+- Account(id, name, type, balanceCents, colorArgb, iconKey, isDefault) -- types: CASH, BANK, CREDIT_CARD, WALLET, OTHER
+- FinancialGoal(id, name, type, targetAmountCents, currentAmountCents, startDateEpochDay, endDateEpochDay, status, colorArgb, iconKey, linkedCategoryId) -- types: SAVINGS, LIMIT, DEBT
+- Bucket(id, name, type, targetPercent, currentBalanceCents, colorArgb, iconKey, sortOrder, isDefault, description, timelineLabel, investmentAdvice) -- types: EMERGENCY, SHORT_TERM, MEDIUM_TERM, LONG_TERM, RETIREMENT, CUSTOM
+- BucketCategory(id, bucketId, categoryId) -- links buckets to expense categories
+- Investment(id, bucketId, name, jobTitle, platform, assetType, investedAmountCents, currentValueCents, returnPercent, maturityDateEpochDay, interestRate, lastUpdatedEpochDay, notes, isAutoFetched, isSip, sipAmountCents, primaryCorrelationKey, lastSourceType, lastSourceKey)
+- InvestmentSchedule(id, name, bucketId, assetType, platform, amountCents, frequency, dayOfPeriod, startEpochDay, endEpochDay, isActive, source, notes)
+- InvestmentOccurrence(id, scheduleId, dueEpochDay, expectedAmountCents, status, confirmedAmountCents, confirmedAtMillis, linkedInvestmentId, correlationKey, sourceType) -- status: EXPECTED, CONFIRMED, ADJUSTED, SKIPPED
+- IngestionEvent(id, domain, sourceType, sourceKey, correlationKey, eventType, amountCents, eventTimestampMillis, payloadHash, processedAtMillis, status) -- domain: SALARY, INVESTMENT; sourceType: SMS, NOTIFICATION, MANUAL, SCHEDULE
+- InstrumentBucketMapping(id, instrumentPattern, platformPattern, assetType, bucketId, confidenceBoost, updatedAtMillis, source) -- source: USER, AI, RULE
 
-Database version: 5 (Migration 4→5 creates buckets, bucket_categories, investments; seeds 5 default buckets)
+Core relationships
+- Bucket 1..n Investment
+- Bucket 1..n InvestmentSchedule
+- InvestmentSchedule 1..n InvestmentOccurrence
+- InvestmentOccurrence n..1 Investment (optional reconciliation link)
+- IngestionEvent provides cross-source idempotency registry keyed by unique sourceKey
+- InstrumentBucketMapping stores learn-once bucket assignment memory for future auto-mapping
+
+Ledger model
+- Planned ledger: Bucket.currentBalanceCents (monthly salary allocation plan)
+- Actual ledger: Investment aggregates (confirmed holdings/net worth)
+- Net worth and portfolio totals use Investment only (expected occurrences never inflate net worth)
+
+Database version
+- Version: 6
+- Migration 5→6 introduces schedule/occurrence/event/mapping tables and reconciliation metadata columns on investments
