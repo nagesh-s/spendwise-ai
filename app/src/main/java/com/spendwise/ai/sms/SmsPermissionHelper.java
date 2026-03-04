@@ -126,4 +126,66 @@ public class SmsPermissionHelper {
 
         return transactions;
     }
+
+    /**
+     * Read recent raw SMS messages.
+     */
+    public static List<RawSmsMessage> readRecentMessages(@NonNull Context context, int dayLimit) {
+        return readMessagesSince(context, 0L, dayLimit);
+    }
+
+    /**
+     * Read raw SMS messages newer than the provided timestamp.
+     *
+     * This is used for non-expense SMS parsing (for example: investment-unit
+     * allotments and fixed-deposit confirmations).
+     */
+    public static List<RawSmsMessage> readMessagesSince(@NonNull Context context, long sinceTimestamp, int dayLimit) {
+        List<RawSmsMessage> messages = new ArrayList<>();
+
+        if (!hasReadSmsPermission(context)) {
+            return messages;
+        }
+
+        long now = System.currentTimeMillis();
+        long cutoffTime = now - (dayLimit * 24L * 60 * 60 * 1000);
+        long safeSinceTimestamp = Math.max(0L, Math.min(sinceTimestamp, now));
+        long queryStartTime = Math.max(cutoffTime, safeSinceTimestamp);
+
+        ContentResolver contentResolver = context.getContentResolver();
+        Uri smsUri = Uri.parse("content://sms");
+
+        String[] projection = { "address", "body", "date" };
+        String selection = "date >= ?";
+        String[] selectionArgs = { String.valueOf(queryStartTime) };
+        String sortOrder = "date DESC";
+
+        Cursor cursor = null;
+        try {
+            cursor = contentResolver.query(smsUri, projection, selection, selectionArgs, sortOrder);
+            if (cursor != null && cursor.moveToFirst()) {
+                int addressIdx = cursor.getColumnIndex("address");
+                int bodyIdx = cursor.getColumnIndex("body");
+                int dateIdx = cursor.getColumnIndex("date");
+
+                do {
+                    String sender = cursor.getString(addressIdx);
+                    String body = cursor.getString(bodyIdx);
+                    long timestamp = cursor.getLong(dateIdx);
+                    if (body == null || body.trim().isEmpty()) {
+                        continue;
+                    }
+                    messages.add(new RawSmsMessage(
+                            sender == null ? "" : sender,
+                            body,
+                            timestamp));
+                } while (cursor.moveToNext());
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
+        }
+        return messages;
+    }
 }

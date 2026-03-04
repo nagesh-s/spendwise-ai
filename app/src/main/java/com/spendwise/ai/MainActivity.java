@@ -60,9 +60,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void setupBottomNavigation(BottomNavigationView bottomNavView) {
         NavigationUI.setupWithNavController(bottomNavView, navController);
-        // Keep existing state/scroll when tapping the currently selected tab.
         bottomNavView.setOnItemReselectedListener(item -> {
-            // no-op
+            navController.popBackStack(item.getItemId(), false);
         });
     }
 

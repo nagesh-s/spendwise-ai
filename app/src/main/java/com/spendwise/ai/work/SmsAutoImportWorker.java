@@ -9,7 +9,11 @@ import androidx.work.WorkerParameters;
 import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.entity.Expense;
 import com.spendwise.ai.data.entity.Merchant;
+import com.spendwise.ai.engine.InvestmentAutoIngestionEngine;
+import com.spendwise.ai.sms.InvestmentSmsParser;
 import com.spendwise.ai.sms.ParsedTransaction;
+import com.spendwise.ai.sms.ParsedInvestmentSignal;
+import com.spendwise.ai.sms.RawSmsMessage;
 import com.spendwise.ai.sms.SmsExpenseClassifier;
 import com.spendwise.ai.sms.SmsPermissionHelper;
 import com.spendwise.ai.sms.SmsSyncState;
@@ -18,6 +22,7 @@ import org.threeten.bp.Instant;
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.ZoneId;
 
+import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -51,6 +56,14 @@ public class SmsAutoImportWorker extends Worker {
         if (transactions.isEmpty()) {
             transactions = SmsPermissionHelper.readRecentTransactions(context, FALLBACK_SCAN_DAYS);
         }
+        List<RawSmsMessage> rawMessages = SmsPermissionHelper.readMessagesSince(
+                context,
+                lastImportedTimestamp,
+                LOOKBACK_DAYS);
+        if (rawMessages.isEmpty()) {
+            rawMessages = SmsPermissionHelper.readRecentMessages(context, FALLBACK_SCAN_DAYS);
+        }
+
         List<com.spendwise.ai.data.entity.Category> categories = db.categoryDao().getAllCategoriesSync();
         List<com.spendwise.ai.data.entity.Account> accounts = db.accountDao().getAllAccountsSync();
 
@@ -98,6 +111,31 @@ public class SmsAutoImportWorker extends Worker {
                 expense.setAccountId(accountId);
             }
             db.expenseDao().insert(expense);
+        }
+
+        // Parse and ingest investment signals from raw SMS stream.
+        List<ParsedInvestmentSignal> investmentSignals = new ArrayList<>();
+        for (int i = rawMessages.size() - 1; i >= 0; i--) {
+            RawSmsMessage message = rawMessages.get(i);
+            long timestamp = message.getTimestampMillis();
+            if (timestamp <= lastImportedTimestamp) {
+                continue;
+            }
+            if (timestamp > latestSeenTimestamp) {
+                latestSeenTimestamp = timestamp;
+            }
+            ParsedInvestmentSignal signal = InvestmentSmsParser.parse(
+                    message.getSender(),
+                    message.getBody(),
+                    timestamp);
+            if (signal != null) {
+                investmentSignals.add(signal);
+            }
+        }
+
+        if (!investmentSignals.isEmpty()) {
+            InvestmentAutoIngestionEngine engine = new InvestmentAutoIngestionEngine();
+            engine.ingest(db, investmentSignals);
         }
 
         SmsSyncState.updateLastSyncTimestamp(context, latestSeenTimestamp);

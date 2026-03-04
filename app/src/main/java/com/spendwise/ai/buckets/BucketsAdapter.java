@@ -1,20 +1,26 @@
 package com.spendwise.ai.buckets;
 
+import android.content.Context;
 import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
+import androidx.core.graphics.ColorUtils;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.card.MaterialCardView;
+import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.spendwise.ai.R;
 import com.spendwise.ai.data.entity.Bucket;
 import com.spendwise.ai.data.pojo.BucketWithTotal;
+
+import java.util.Locale;
 
 /**
  * RecyclerView adapter for bucket cards on the main Buckets dashboard.
@@ -64,81 +70,95 @@ public class BucketsAdapter extends ListAdapter<BucketWithTotal, BucketsAdapter.
     }
 
     static class BucketViewHolder extends RecyclerView.ViewHolder {
+        private final MaterialCardView cardRoot;
         private final TextView textName;
+        private final TextView textTargetPercent;
         private final TextView textTimeline;
         private final TextView textValue;
+        private final TextView textInvested;
         private final TextView textPnl;
-        private final TextView textAdvice;
-        private final ProgressBar progressBar;
+        private final TextView textTargetHint;
+        private final LinearProgressIndicator progressBar;
         private final View colorStrip;
         private final TextView textGuiltFree;
+        private final MaterialCardView guiltFreeCard;
 
         BucketViewHolder(@NonNull View itemView) {
             super(itemView);
+            cardRoot = itemView.findViewById(R.id.card_bucket_root);
             textName = itemView.findViewById(R.id.text_bucket_name);
+            textTargetPercent = itemView.findViewById(R.id.text_bucket_target_percent);
             textTimeline = itemView.findViewById(R.id.text_bucket_timeline);
             textValue = itemView.findViewById(R.id.text_bucket_value);
+            textInvested = itemView.findViewById(R.id.text_bucket_invested);
             textPnl = itemView.findViewById(R.id.text_bucket_pnl);
-            textAdvice = itemView.findViewById(R.id.text_bucket_advice);
+            textTargetHint = itemView.findViewById(R.id.text_bucket_target_hint);
             progressBar = itemView.findViewById(R.id.progress_bucket);
             colorStrip = itemView.findViewById(R.id.view_color_strip);
             textGuiltFree = itemView.findViewById(R.id.text_guilt_free);
+            guiltFreeCard = itemView.findViewById(R.id.card_guilt_free);
         }
 
         void bind(BucketWithTotal item, OnBucketClickListener listener) {
+            Context context = itemView.getContext();
             Bucket bucket = item.bucket;
             textName.setText(bucket.getName());
+            textTargetPercent.setText(String.format(Locale.getDefault(), "%d%%", bucket.getTargetPercent()));
 
-            // Timeline label
             String timeline = bucket.getTimelineLabel();
             textTimeline.setText(timeline != null ? timeline : "");
             textTimeline.setVisibility(timeline != null ? View.VISIBLE : View.GONE);
 
-            // Current value (per-bucket, NOT total portfolio)
-            textValue.setText(String.format("₹%,.0f", item.totalValueCents / 100.0));
+            textValue.setText(formatCurrency(item.totalValueCents));
+            textInvested.setText(context.getString(
+                    R.string.label_invested_format,
+                    formatCurrency(item.totalInvestedCents)));
 
-            // P&L
             long pnl = item.getProfitLossCents();
             double returnPct = item.getReturnPercent();
             if (item.totalInvestedCents > 0) {
                 String pnlSign = pnl >= 0 ? "+" : "";
-                textPnl.setText(String.format("%s₹%,.0f (%.1f%%)", pnlSign, pnl / 100.0, returnPct));
-                textPnl.setTextColor(pnl >= 0 ? 0xFF43A047 : 0xFFE53935);
+                textPnl.setText(String.format(Locale.getDefault(), "%s%s (%.1f%%)",
+                        pnlSign, formatCurrency(pnl), returnPct));
+                textPnl.setTextColor(pnl >= 0
+                        ? ContextCompat.getColor(context, R.color.sw_income)
+                        : ContextCompat.getColor(context, R.color.sw_error));
                 textPnl.setVisibility(View.VISIBLE);
             } else {
                 textPnl.setVisibility(View.GONE);
             }
 
-            // Investment advice tag
-            String advice = bucket.getInvestmentAdvice();
-            textAdvice.setText(advice != null ? advice : "");
-            textAdvice.setVisibility(advice != null ? View.VISIBLE : View.GONE);
-
-            // Progress bar (allocation percentage)
             progressBar.setMax(100);
             progressBar.setProgress(bucket.getTargetPercent());
+            progressBar.setIndicatorColor(bucket.getColorArgb());
+            textTargetHint.setText(context.getString(
+                    R.string.bucket_salary_target_format,
+                    bucket.getTargetPercent()));
 
-            // Color strip
             GradientDrawable bg = new GradientDrawable();
             bg.setColor(bucket.getColorArgb());
             bg.setCornerRadius(8f);
             colorStrip.setBackground(bg);
+            cardRoot.setStrokeColor(ColorUtils.setAlphaComponent(bucket.getColorArgb(), 110));
 
-            // Guilt-free banner (only for short-term bucket)
-            if (Bucket.TYPE_SHORT_TERM.equals(bucket.getType())) {
+            if (Bucket.TYPE_SHORT_TERM.equals(bucket.getType()) && item.totalValueCents > 0) {
+                guiltFreeCard.setVisibility(View.VISIBLE);
                 textGuiltFree.setVisibility(View.VISIBLE);
-                textGuiltFree.setText(String.format(
-                        "Spend ₹%,.0f guilt-free — your future is funded ✓",
-                        item.totalValueCents / 100.0));
+                textGuiltFree.setText(context.getString(
+                        R.string.bucket_guilt_free_banner_format,
+                        formatCurrency(item.totalValueCents)));
             } else {
-                textGuiltFree.setVisibility(View.GONE);
+                guiltFreeCard.setVisibility(View.GONE);
             }
 
-            // Click listener → navigate to detail
             itemView.setOnClickListener(v -> {
                 if (listener != null)
                     listener.onBucketClick(item);
             });
+        }
+
+        private String formatCurrency(long amountCents) {
+            return String.format(Locale.getDefault(), "₹%,.0f", amountCents / 100.0);
         }
     }
 }

@@ -1,4 +1,4 @@
-# Release Smoke Checklist (v1.6.0)
+# Release Smoke Checklist (v1.7.0)
 
 Use this checklist before publishing any build candidate.
 
@@ -47,6 +47,16 @@ Use this checklist before publishing any build candidate.
 - [ ] XP is awarded only on new expense save (not edit)
 - [ ] CSV export produces valid rows with escaped values
 - [ ] PDF export writes a readable report file
+
+## Buckets + investment sync checks
+- [ ] Buckets tab shows compact grid (2-column on phone) without major text truncation
+- [ ] Eye icon toggles net worth visibility (`hidden` -> `visible`) correctly
+- [ ] Re-tapping Buckets tab from Bucket Detail returns to Buckets root
+- [ ] Bucket detail add/edit forms do not overlap fields on small devices
+- [ ] `Auto-import from SMS now` ingests investment messages without duplicates
+- [ ] `Sync from notifications (apps/email)` prompts notification access when disabled
+- [ ] With notification access enabled, broker/email notification signals are ingested
+- [ ] Debit/allotment/correction notification/SMS sequence updates a single investment row where correlation matches
 
 ## Permission and resilience checks
 - [ ] SMS denied flow shows rationale

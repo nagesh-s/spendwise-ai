@@ -26,6 +26,7 @@
 | Settings | [settings.md](./modules/settings.md) | Dark mode, JSON/CSV/PDF export, feature entry points |
 | Profile & Gamification | [profile-gamification.md](./modules/profile-gamification.md) | XP, levels, badges, profile screen |
 | Onboarding | [onboarding.md](./modules/onboarding.md) | First-run intro flow and launch logic |
+| Buckets & Investments | [buckets.md](./modules/buckets.md) | Reverse budgeting, salary split, holdings import (SMS + notifications) |
 
 ---
 
@@ -78,7 +79,10 @@ app/src/main/java/com/spendwise/ai/
 ├── SpendWiseApplication.java  # ThreeTen init
 ├── dashboard/                 # Dashboard screen
 ├── insights/                  # AI insight/prediction models + adapters
+├── buckets/                   # Bucket dashboard and bucket detail flows
 ├── voice/                     # Voice input and parser
+├── sms/                       # SMS parsing and import workers
+├── notifications/             # Notification listener and investment sync helper
 ├── calendar/                  # Calendar screen
 ├── categories/                # Categories & budgets
 ├── merchants/                 # Merchant analytics
@@ -106,4 +110,4 @@ app/src/main/res/
 ---
 
 ## 📅 Last Updated
-2026-02-14 - v1.6.0 docs refreshed for insights, voice, reports, gamification, onboarding, and release audit fixes
+2026-03-04 - v1.7 docs refreshed for bucket UX refactor and notification-based investment sync

@@ -112,8 +112,93 @@
     <string name="biometric_not_supported">Biometric authentication is not supported on this device</string>
     <string name="biometric_setup_required">Set up fingerprint/face lock in device settings first</string>
 
+    <!-- Buckets -->
+    <string name="buckets_subtitle">Goal-based money system</string>
+    <string name="buckets_toggle_net_worth">Toggle net worth visibility</string>
+    <string name="buckets_show_net_worth">Show Net Worth</string>
+    <string name="buckets_hide_net_worth">Hide Net Worth</string>
+    <string name="buckets_overview_format">%1$d buckets • target mix %2$d%% • %3$s</string>
+    <string name="buckets_count_label">Active buckets</string>
+    <string name="buckets_target_mix_label">Target mix</string>
+    <string name="buckets_allocate_salary">Allocate Salary</string>
+    <string name="buckets_empty_title">No buckets yet</string>
+    <string name="buckets_empty_subtitle">Create your first bucket to split salary into clear goals.</string>
+    <string name="buckets_add_bucket">Add Bucket</string>
+    <string name="buckets_net_worth_hidden">Net worth hidden</string>
+    <string name="buckets_net_worth_format">Net worth: %1$s</string>
+    <string name="buckets_mix_balanced">Balanced target mix. Salary split is ready.</string>
+    <string name="buckets_mix_under_allocated">%1$d%% unallocated. Add or adjust buckets.</string>
+    <string name="buckets_mix_over_allocated">%1$d%% overallocated. Allocation will normalize on salary split.</string>
+    <string name="buckets_mix_balanced_short">balanced</string>
+    <string name="buckets_mix_under_allocated_short">%1$d%% unallocated</string>
+    <string name="buckets_mix_over_allocated_short">%1$d%% over</string>
+    <string name="buckets_add_dialog_title">Create Bucket</string>
+    <string name="buckets_add_name_hint">Bucket name</string>
+    <string name="buckets_add_timeline_hint">Timeline label (optional)</string>
+    <string name="buckets_add_target_hint">Target split % (0-100)</string>
+    <string name="buckets_add_dialog_save">Create</string>
+    <string name="buckets_add_error_name">Enter a bucket name</string>
+    <string name="buckets_add_error_target">Enter a valid target between 0 and 100</string>
+    <string name="buckets_add_success">Bucket created</string>
+    <string name="buckets_add_total_warning">Target mix is now %1$d%%. Salary split will normalize.</string>
+    <string name="bucket_custom_timeline_default">Custom timeline</string>
+    <string name="bucket_custom_advice_default">Assign instruments based on your time horizon and risk.</string>
+    <string name="bucket_salary_target_format">Salary split target: %1$d%%</string>
+    <string name="bucket_guilt_free_banner_format">Spend %1$s guilt-free this month.</string>
+    <string name="buckets_salary_dialog_title">Set Your Monthly Salary</string>
+    <string name="buckets_salary_hint">Enter your monthly salary. We save this and ask only for quick confirmation each month.</string>
+    <string name="buckets_salary_amount_hint">Monthly salary (₹)</string>
+    <string name="buckets_salary_save_allocate">Save and Allocate</string>
+    <string name="buckets_salary_invalid">Enter a valid salary amount</string>
+
+    <!-- Bucket Detail -->
+    <string name="bucket_detail_subtitle">Track holdings and update values manually, from SMS, or from notifications.</string>
+    <string name="bucket_detail_holdings_summary">Holdings summary</string>
+    <string name="bucket_detail_total_value">Current value</string>
+    <string name="bucket_detail_total_invested">Total invested</string>
+    <string name="bucket_detail_empty_title">No holdings in this bucket</string>
+    <string name="bucket_detail_empty_subtitle">Add your first investment to start tracking growth and P/L.</string>
+    <string name="bucket_detail_add_investment">Add Investment</string>
+    <string name="bucket_detail_updated_on">Updated %1$s</string>
+    <string name="bucket_detail_investment_dialog_add_title">Add Investment</string>
+    <string name="bucket_detail_investment_dialog_edit_title">Edit Investment</string>
+    <string name="bucket_detail_investment_name_hint">Investment name</string>
+    <string name="bucket_detail_investment_job_hint">Goal label (optional)</string>
+    <string name="bucket_detail_investment_platform_hint">Platform (optional)</string>
+    <string name="bucket_detail_investment_invested_hint">Invested amount (₹)</string>
+    <string name="bucket_detail_investment_current_hint">Current value (₹)</string>
+    <string name="bucket_detail_investment_asset_label">Asset type</string>
+    <string name="bucket_detail_investment_save">Save</string>
+    <string name="bucket_detail_investment_update">Update</string>
+    <string name="bucket_detail_investment_error_name">Enter an investment name</string>
+    <string name="bucket_detail_investment_error_amount">Enter valid invested and current values</string>
+    <string name="bucket_detail_investment_saved">Investment saved</string>
+    <string name="bucket_detail_investment_updated">Investment updated</string>
+    <string name="bucket_detail_import_holdings">Import Holdings</string>
+    <string name="bucket_detail_voice_add">Add by voice</string>
+    <string name="bucket_detail_voice_listening">Listening for investment details…</string>
+    <string name="bucket_detail_voice_permission_needed">Microphone permission is needed for voice add</string>
+    <string name="bucket_detail_voice_parse_failed">Couldn’t parse investment details from voice</string>
+    <string name="bucket_detail_voice_error_format">Voice error: %1$s</string>
+    <string name="bucket_import_option_sms">Auto-import from SMS now</string>
+    <string name="bucket_import_option_notifications">Sync from notifications (apps/email)</string>
+    <string name="bucket_import_sms_started">Started SMS holdings sync</string>
+    <string name="bucket_import_notifications_started">Started notification holdings sync</string>
+    <string name="bucket_import_notifications_access_title">Enable notification access</string>
+    <string name="bucket_import_notifications_access_message">Allow notification access to auto-read investment alerts from broker apps and email notifications.</string>
+    <string name="bucket_import_notifications_open_settings">Open Notification Access</string>
+    <string name="bucket_notification_listener_label">SpendWise investment notification sync</string>
+
+    <!-- Common -->
+    <string name="label_invested_format">Invested %1$s</string>
+
     <plurals name="over_budget_categories_count">
         <item quantity="one">%d category over budget</item>
         <item quantity="other">%d categories over budget</item>
+    </plurals>
+
+    <plurals name="bucket_detail_holdings_count">
+        <item quantity="one">%d holding</item>
+        <item quantity="other">%d holdings</item>
     </plurals>
 </resources>

@@ -9,3 +9,8 @@ If biometric hardware exists but enrollment is missing, settings should guide us
 For advanced local inference, `offlineLlm` flavor uses on-device MediaPipe LLM with a bundled Gemma model asset auto-copied into app-private storage; no transcript is sent to a server.
 
 SMS auto-import now stores only a local last-sync timestamp (`SmsSyncState`) to support incremental scans; message content is not uploaded.
+
+Notification-based holdings sync is consent-gated via Android Notification Listener access:
+- User must explicitly enable listener access in system settings.
+- Parsing runs fully on-device from notification text payloads.
+- Parsed signals reuse existing local dedupe/merge logic to avoid duplicate ledger entries.

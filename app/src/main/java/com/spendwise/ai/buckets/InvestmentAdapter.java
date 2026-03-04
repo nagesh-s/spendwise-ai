@@ -1,17 +1,24 @@
 package com.spendwise.ai.buckets;
 
+import android.content.Context;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.DiffUtil;
 import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.spendwise.ai.R;
 import com.spendwise.ai.data.entity.Investment;
+
+import org.threeten.bp.LocalDate;
+import org.threeten.bp.format.DateTimeFormatter;
+
+import java.util.Locale;
 
 /**
  * RecyclerView adapter for investments inside a bucket detail screen.
@@ -62,8 +69,11 @@ public class InvestmentAdapter extends ListAdapter<Investment, InvestmentAdapter
         private final TextView textJobTitle;
         private final TextView textPlatform;
         private final TextView textValue;
+        private final TextView textInvested;
         private final TextView textPnl;
         private final TextView textAssetType;
+        private final TextView textUpdated;
+        private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
 
         InvestmentViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -71,14 +81,16 @@ public class InvestmentAdapter extends ListAdapter<Investment, InvestmentAdapter
             textJobTitle = itemView.findViewById(R.id.text_investment_job_title);
             textPlatform = itemView.findViewById(R.id.text_investment_platform);
             textValue = itemView.findViewById(R.id.text_investment_value);
+            textInvested = itemView.findViewById(R.id.text_investment_invested);
             textPnl = itemView.findViewById(R.id.text_investment_pnl);
             textAssetType = itemView.findViewById(R.id.text_investment_asset_type);
+            textUpdated = itemView.findViewById(R.id.text_investment_updated);
         }
 
         void bind(Investment inv, OnInvestmentClickListener listener) {
+            Context context = itemView.getContext();
             textName.setText(inv.getName());
 
-            // Job title
             String jobTitle = inv.getJobTitle();
             if (jobTitle != null && !jobTitle.isEmpty()) {
                 textJobTitle.setText(jobTitle);
@@ -87,7 +99,6 @@ public class InvestmentAdapter extends ListAdapter<Investment, InvestmentAdapter
                 textJobTitle.setVisibility(View.GONE);
             }
 
-            // Platform
             String platform = inv.getPlatform();
             if (platform != null && !platform.isEmpty()) {
                 textPlatform.setText(platform);
@@ -96,28 +107,39 @@ public class InvestmentAdapter extends ListAdapter<Investment, InvestmentAdapter
                 textPlatform.setVisibility(View.GONE);
             }
 
-            // Current value
-            textValue.setText(String.format("₹%,.0f", inv.getCurrentValueCents() / 100.0));
+            textValue.setText(formatCurrency(inv.getCurrentValueCents()));
+            textInvested.setText(context.getString(
+                    R.string.label_invested_format,
+                    formatCurrency(inv.getInvestedAmountCents())));
 
-            // P&L
             long pnl = inv.getProfitLossCents();
             double returnPct = inv.calculateReturnPercent();
             if (inv.getInvestedAmountCents() > 0) {
                 String sign = pnl >= 0 ? "+" : "";
-                textPnl.setText(String.format("%s₹%,.0f (%.1f%%)", sign, pnl / 100.0, returnPct));
-                textPnl.setTextColor(pnl >= 0 ? 0xFF43A047 : 0xFFE53935);
+                textPnl.setText(String.format(Locale.getDefault(), "%s%s (%.1f%%)",
+                        sign, formatCurrency(pnl), returnPct));
+                textPnl.setTextColor(pnl >= 0
+                        ? ContextCompat.getColor(context, R.color.sw_income)
+                        : ContextCompat.getColor(context, R.color.sw_error));
                 textPnl.setVisibility(View.VISIBLE);
             } else {
                 textPnl.setVisibility(View.GONE);
             }
 
-            // Asset type label
             textAssetType.setText(formatAssetType(inv.getAssetType()));
+            LocalDate updatedDate = LocalDate.ofEpochDay(inv.getLastUpdatedEpochDay());
+            textUpdated.setText(context.getString(
+                    R.string.bucket_detail_updated_on,
+                    updatedDate.format(dateFormatter)));
 
             itemView.setOnClickListener(v -> {
                 if (listener != null)
                     listener.onInvestmentClick(inv);
             });
+        }
+
+        private String formatCurrency(long amountCents) {
+            return String.format(Locale.getDefault(), "₹%,.0f", amountCents / 100.0);
         }
 
         private String formatAssetType(String type) {

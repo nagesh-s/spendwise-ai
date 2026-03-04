@@ -1,18 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/card_bucket_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="12dp"
-    app:cardCornerRadius="16dp"
-    app:cardElevation="2dp">
+    android:layout_margin="6dp"
+    android:clickable="true"
+    android:focusable="true"
+    android:foreground="?attr/selectableItemBackground"
+    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="0dp"
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:strokeWidth="1dp">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal">
 
-        <!-- Color Strip -->
         <View
             android:id="@+id/view_color_strip"
             android:layout_width="6dp"
@@ -22,9 +29,8 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="12dp">
 
-            <!-- Name + Timeline Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -33,74 +39,124 @@
 
                 <TextView
                     android:id="@+id/text_bucket_name"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1"
                     android:textAppearance="?attr/textAppearanceTitleMedium"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:id="@+id/text_bucket_timeline"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:textAppearance="?attr/textAppearanceLabelSmall"
-                    android:textColor="?attr/colorOnSurfaceVariant" />
+                    android:textStyle="bold"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    tools:text="Enjoy the Present" />
             </LinearLayout>
 
-            <!-- Value + P&L Row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="8dp"
+                android:layout_marginTop="4dp"
                 android:gravity="center_vertical"
                 android:orientation="horizontal">
 
                 <TextView
-                    android:id="@+id/text_bucket_value"
+                    android:id="@+id/text_bucket_timeline"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
-                    android:textAppearance="?attr/textAppearanceHeadlineSmall" />
+                    android:background="?attr/colorSurfaceVariant"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="3dp"
+                    android:textAppearance="?attr/textAppearanceLabelSmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    tools:text="Now to 2 years" />
+
+                <TextView
+                    android:id="@+id/text_bucket_target_percent"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:background="?attr/colorSecondaryContainer"
+                    android:paddingHorizontal="8dp"
+                    android:paddingVertical="4dp"
+                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                    android:textColor="?attr/colorOnSecondaryContainer"
+                    tools:text="30%" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/text_bucket_value"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:textAppearance="?attr/textAppearanceTitleLarge"
+                android:textStyle="bold"
+                tools:text="₹4,85,500" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/text_bucket_invested"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    tools:text="Invested ₹4,20,000" />
 
                 <TextView
                     android:id="@+id/text_bucket_pnl"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:textAppearance="?attr/textAppearanceBodyMedium" />
+                    android:textAppearance="?attr/textAppearanceBodySmall"
+                    android:textStyle="bold"
+                    tools:text="+₹65,500 (15.6%)" />
             </LinearLayout>
 
-            <!-- Allocation Progress Bar -->
             <com.google.android.material.progressindicator.LinearProgressIndicator
                 android:id="@+id/progress_bucket"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                app:trackCornerRadius="4dp"
-                app:trackThickness="6dp" />
+                app:trackCornerRadius="6dp"
+                app:trackThickness="6dp"
+                tools:progress="30" />
 
-            <!-- Investment Advice Tag -->
             <TextView
-                android:id="@+id/text_bucket_advice"
-                android:layout_width="wrap_content"
+                android:id="@+id/text_bucket_target_hint"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
+                android:layout_marginTop="4dp"
                 android:textAppearance="?attr/textAppearanceLabelSmall"
                 android:textColor="?attr/colorOnSurfaceVariant"
-                android:textStyle="italic" />
+                tools:text="Salary split target: 30%" />
 
-            <!-- Guilt-Free Banner (visible only on SHORT_TERM bucket) -->
-            <TextView
-                android:id="@+id/text_guilt_free"
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_guilt_free"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
-                android:background="@android:color/transparent"
-                android:paddingVertical="6dp"
-                android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textColor="#43A047"
-                android:textStyle="bold"
-                android:visibility="gone" />
+                android:visibility="gone"
+                app:cardBackgroundColor="?attr/colorSecondaryContainer"
+                app:cardCornerRadius="10dp"
+                app:cardElevation="0dp">
 
+                <TextView
+                    android:id="@+id/text_guilt_free"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="8dp"
+                    android:maxLines="2"
+                    android:ellipsize="end"
+                    android:textAppearance="?attr/textAppearanceLabelMedium"
+                    android:textColor="?attr/colorOnSecondaryContainer"
+                    tools:text="Spend ₹40,000 guilt-free this month." />
+            </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
     </LinearLayout>
 

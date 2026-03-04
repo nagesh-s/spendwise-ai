@@ -6,6 +6,8 @@
   - `navigation_buckets` -> `BucketsFragment` (3rd tab — bucket reverse budgeting dashboard)
   - `navigation_merchants` -> `MerchantsFragment`
   - `navigation_settings` -> `SettingsFragment`
+- Bottom nav behavior:
+  - Re-selecting the current tab pops to that tab root destination (for example, Bucket Detail -> Buckets list).
 - Additional fragment routes:
   - `navigation_categories` (from Settings: Budgets & Categories card)
   - `navigation_quick_tiles` (from Settings card)

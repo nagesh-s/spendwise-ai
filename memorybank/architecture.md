@@ -14,9 +14,14 @@
 - QuickTiles widget behavior: tile tap inserts expense directly in background and shows toast; app launch is not required for one-tap add.
 - Widget refresh strategy: use `notifyAppWidgetViewDataChanged` for grid updates to minimize flicker from full widget redraw.
 - SMS import architecture: manual scan (`AutoTransactionsFragment`) and periodic worker (`SmsAutoImportWorker`) share `SmsSyncState` so scans resume from last imported timestamp instead of re-reading the full lookback window.
+- Investment ingestion architecture:
+  - SMS path: `InvestmentSmsParser` parses raw SMS messages; `InvestmentAutoIngestionEngine` deduplicates and merges debit + allotment/correction phases by source/correlation keys.
+  - Notification path: `InvestmentNotificationListenerService` reads posted notifications (broker + email apps), extracts text payload, reuses `InvestmentSmsParser`, and ingests via the same engine.
+  - Access flow: `InvestmentNotificationSyncHelper` checks listener access and opens `Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS` when disabled.
 - Bucket module (in-app): `buckets/` package with 5-bucket reverse budgeting system.
   - Engine pipeline: SMS credit → `SalaryDetector` (keyword + amount + NEFT signal scoring) → `CashflowGuardrail` (emergency threshold, bills buffer, overspend checks) → `BucketAllocationEngine` (priority-ordered allocation with guilt-free remainder).
-  - UI: `BucketsFragment` (3rd bottom nav tab) with allocation bar, per-bucket cards, anti-Upstox net-worth-hidden UX; `BucketDetailFragment` for investments per bucket.
+  - UI: `BucketsFragment` (3rd bottom nav tab) with allocation bar, compact grid cards (2 columns on phone, 3 on larger screens), eye-icon net worth toggle, and tab-reselect pop-to-root behavior; `BucketDetailFragment` for investments per bucket.
+  - Import UI: bucket detail now exposes only active routes (`Auto-import from SMS now`, `Sync from notifications`); non-functional direct AA/Broker/Email options removed.
   - `AllocationSuggestionDialog` shows the reverse budgeting split with guardrail warnings and guilt-free highlight.
   - `BucketSalaryPrefs` stores expected salary, payday, manual toggle, and show-net-worth preference.
   - Smart fallback: if no salary SMS is detected by payday, the app prompts manual "I Got Paid" flow with saved expected salary (confirm/edit).

@@ -4,13 +4,36 @@
 
 ---
 
-## Current State: v1.6.0 (Release-Candidate Ready)
+## Current State: v1.7.0 (Buckets + Investment Sync Expansion)
 
 | Metric | Value |
 |---|---|
-| Version | `v1.6.0` |
-| Status | Phase 1-6 features implemented, validated, and documented |
-| Last Updated | 2026-02-17 (navigation + SMS toggles + recurring interval extension) |
+| Version | `v1.7.0` |
+| Status | Buckets UX refactor + holdings ingestion (SMS + notification listener) implemented and validated |
+| Last Updated | 2026-03-04 (bucket grid UX + notification sync + import route cleanup) |
+
+---
+
+## Buckets UX + Investment Sync Sweep (2026-03-04)
+
+- Buckets UX refactor:
+  - bucket cards moved to denser grid view to keep 4 buckets visible quickly
+  - top pinned block removed; action row compacted for better bucket visibility
+  - net worth toggle switched to eye/eye-off icon interaction
+  - bottom-tab reselect now pops back to tab root (Bucket Detail -> Buckets home)
+- Bucket detail form stability:
+  - investment add/edit and salary dialogs moved to dedicated layouts to avoid overlap on smaller screens
+- Investment ingestion expansion:
+  - added `InvestmentSmsParser` + `InvestmentAutoIngestionEngine` dedupe pipeline
+  - supports debit/allotment/correction phase merging using source/correlation keys
+  - voice-assisted investment entry added in bucket detail
+- Import route cleanup:
+  - removed non-functional direct AA/Broker/Email menu paths
+  - added notification-based sync route (broker/email app notifications)
+  - added notification listener service with access-check helper and settings handoff
+- Validation executed:
+  - `./gradlew :app:assembleStandardDebug`
+  - `./gradlew :app:testStandardDebugUnitTest`
 
 ---
 

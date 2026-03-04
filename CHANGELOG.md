@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Buckets UX Refresh** - Redesigned Buckets dashboard with stronger hierarchy (overview card, allocation health, dynamic allocation bar, cleaner list spacing) and modern card styling.
+- **Bucket Detail UX Refresh** - Added holdings summary panel (current value, invested, P/L, count) and improved investment card readability with updated metadata and P/L emphasis.
+- **Net Worth Toggle Persistence** - Buckets screen now persists net-worth visibility preference via `BucketSalaryPrefs`.
+- **Buckets Layout Density** - Buckets list now uses a compact 2-column grid on phones (3-column on larger screens) to keep ~4 buckets visible without scrolling.
+- **Buckets Action Placement** - Salary allocation and net-worth controls moved into a compact top action row; oversized top block removed to maximize visible bucket area.
+- **Bottom Nav Reselect Behavior** - Re-tapping the current bottom tab now pops back to that tab's root destination (e.g., Bucket Detail → Buckets home).
+- **Net Worth Toggle UX** - Replaced text toggle with eye icon states (`eye-off` hidden / `eye` visible) and active tint feedback.
+- **Bucket Card Readability** - Optimized 2-column card content hierarchy to reduce truncation (multi-line bucket names + timeline/target split row).
+
+### Added
+- **Custom Bucket Creation Flow** - Wired `Add Bucket` actions (empty state + FAB) to create custom buckets with name, timeline, target split, and auto color/sort assignment.
+- **Investment Editor Flow** - Wired `Add Investment` and item-tap edit in Bucket Detail with asset type, amounts, platform, and goal-label inputs.
+- **Dialog Form Layouts** - Added dedicated Material dialog layouts for salary, bucket, and investment forms to avoid field overlap and improve small-screen keyboard behavior.
+- **Investment Auto-Ingestion Engine** - Added SMS-driven investment ingestion with source/correlation key dedupe to merge debit + unit-allotment phases and prevent double entries.
+- **Investment SMS Parser** - Added parser for MF/ETF/stock/FD/RD confirmation flows (including correction messages) and asset-type inference.
+- **Voice Investment Entry** - Added voice-based investment capture in Bucket Detail with transcript parsing and prefilled add-investment form.
+- **Notification-Based Holdings Sync** - Added notification listener ingestion for broker and email app notifications, reusing duplicate-safe merge logic from SMS investment import.
+- **Import Source Menu Simplification** - Bucket Detail import menu now exposes only working routes (SMS now + notification sync), removing non-functional AA/Broker/Email placeholders.
+
 ---
 
 ## [1.7.0] - 2026-03-04
