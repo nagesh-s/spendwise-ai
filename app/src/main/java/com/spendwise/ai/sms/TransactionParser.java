@@ -67,6 +67,27 @@ public class TransactionParser {
                     "GPAY|PHONEPE|BHIM|UPI)",
             Pattern.CASE_INSENSITIVE);
 
+    public static boolean isPromotionalSms(String body) {
+        if (body == null || body.trim().isEmpty()) {
+            return false;
+        }
+        String normalized = body.toLowerCase(java.util.Locale.US);
+        String[] promoTokens = {
+                "you are eligible for", "pre-approved", "pre approved",
+                "apply now", "avail now", "limited offer", "special offer",
+                "congratulations! you", "congrats!",
+                "click here", "bit.ly/", "apply.link",
+                "call to opt", "sms stop", "unsubscribe",
+                "eligible for", "instant loan", "loan offer", "upgrade", "personal loan"
+        };
+        for (String token : promoTokens) {
+            if (normalized.contains(token)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     /**
      * Check if an SMS is likely a bank transaction message.
      * 
@@ -75,11 +96,12 @@ public class TransactionParser {
      * @return true if the message appears to be a transaction SMS
      */
     public static boolean isTransactionSms(String sender, String body) {
-        if (body == null)
+        if (body == null || isPromotionalSms(body))
             return false;
         String safeSender = sender == null ? "" : sender;
 
-        // Check sender looks like a known bank sender or a DLT-style transactional header.
+        // Check sender looks like a known bank sender or a DLT-style transactional
+        // header.
         // Generic "XX-anything" senders are not trusted.
         boolean bankSender = safeSender.length() <= 15 &&
                 (BANK_SENDER_PATTERN.matcher(safeSender).find() ||
@@ -104,7 +126,7 @@ public class TransactionParser {
      * @return ParsedTransaction or null if parsing fails
      */
     @Nullable
-    public static ParsedTransaction parse(String body, long timestampMillis) {
+    public static ParsedTransaction parse(String sender, String body, long timestampMillis) {
         if (body == null || body.isEmpty())
             return null;
 
@@ -167,7 +189,7 @@ public class TransactionParser {
             }
         }
 
-        return new ParsedTransaction(type, amountCents, merchant,
+        return new ParsedTransaction(type, sender, amountCents, merchant,
                 accountInfo, body, timestampMillis);
     }
 

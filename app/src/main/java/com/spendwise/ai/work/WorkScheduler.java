@@ -201,8 +201,41 @@ public class WorkScheduler {
         public static void runSmsAutoImportNow(Context context) {
                 OneTimeWorkRequest oneTimeRequest = new OneTimeWorkRequest.Builder(
                                 SmsAutoImportWorker.class)
+                                .setInputData(SmsAutoImportWorker.buildInputData(true, true, 0))
                                 .build();
                 WorkManager.getInstance(context).enqueue(oneTimeRequest);
+        }
+
+        /**
+         * Run a manual holdings repair pass that only scans investments and
+         * backfills a wider SMS window.
+         */
+        public static void runInvestmentSmsRepairNow(Context context) {
+                OneTimeWorkRequest oneTimeRequest = new OneTimeWorkRequest.Builder(
+                                SmsAutoImportWorker.class)
+                                .setInputData(SmsAutoImportWorker.buildInputData(
+                                                false,
+                                                true,
+                                                SmsAutoImportWorker.defaultRepairLookbackDays()))
+                                .build();
+                WorkManager.getInstance(context).enqueue(oneTimeRequest);
+        }
+
+        /**
+         * Re-scan a full year of SMS to backfill sender/body on existing
+         * ingestion events that were created before migration added those columns.
+         */
+        public static final String SOURCE_REFRESH_WORK = "source_refresh_work";
+
+        public static void runSourceRefreshNow(Context context) {
+                OneTimeWorkRequest oneTimeRequest = new OneTimeWorkRequest.Builder(
+                                SmsAutoImportWorker.class)
+                                .setInputData(SmsAutoImportWorker.buildInputData(true, true, 365))
+                                .build();
+                WorkManager.getInstance(context).enqueueUniqueWork(
+                                SOURCE_REFRESH_WORK,
+                                androidx.work.ExistingWorkPolicy.REPLACE,
+                                oneTimeRequest);
         }
 
         /**

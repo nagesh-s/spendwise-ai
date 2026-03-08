@@ -42,6 +42,12 @@ public interface InvestmentDao {
     @Query("SELECT * FROM investments WHERE id = :id")
     Investment getById(long id);
 
+    @Query("SELECT * FROM investments WHERE lastSourceKey = :sourceKey LIMIT 1")
+    Investment getByLastSourceKey(String sourceKey);
+
+    @Query("SELECT * FROM investments WHERE primaryCorrelationKey = :correlationKey LIMIT 1")
+    Investment getByPrimaryCorrelationKey(String correlationKey);
+
     @Query("SELECT COALESCE(SUM(currentValueCents), 0) FROM investments")
     LiveData<Long> getTotalPortfolioValue();
 

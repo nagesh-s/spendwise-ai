@@ -43,6 +43,17 @@
                 android:textAppearance="?attr/textAppearanceLabelMedium"
                 android:textColor="?attr/colorOnSecondaryContainer"
                 tools:text="Mutual Fund" />
+
+            <ImageView
+                android:id="@+id/btn_investment_info"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="View Source"
+                android:padding="6dp"
+                android:src="@drawable/ic_info_outline"
+                app:tint="?attr/colorOnSurfaceVariant" />
         </LinearLayout>
 
         <TextView

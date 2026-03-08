@@ -72,6 +72,8 @@ public class SalaryAllocationOrchestrator {
                 "SALARY_CREDIT",
                 salaryAmountCents,
                 timestampMillis,
+                sourceType, // as sender
+                payload, // as body
                 payload);
         if (ingestResult.duplicate) {
             result.duplicate = true;
@@ -129,6 +131,8 @@ public class SalaryAllocationOrchestrator {
                 "SALARY_FALLBACK",
                 expectedSalaryCents,
                 nowMillis,
+                IngestionEvent.SOURCE_SCHEDULE, // sender
+                "fallback", // body
                 "fallback");
         if (ingestResult.duplicate) {
             result.duplicate = true;
@@ -193,7 +197,7 @@ public class SalaryAllocationOrchestrator {
 
         long today = LocalDate.now().toEpochDay();
         long monthStart = LocalDate.now().withDayOfMonth(1).toEpochDay();
-        long thisMonthSpend = db.expenseDao().getTotalForRange(monthStart, today);
+        long thisMonthSpend = db.expenseDao().getConsumptionTotalForRange(monthStart, today);
 
         long emergencyBalance = 0L;
         for (Bucket bucket : buckets) {

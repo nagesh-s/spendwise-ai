@@ -17,6 +17,7 @@ import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 import androidx.lifecycle.ViewModelProvider;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.textfield.TextInputEditText;
@@ -38,10 +39,8 @@ import com.spendwise.ai.voice.VoiceInvestmentParser;
 import org.threeten.bp.LocalDate;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 /**
  * Drill-down fragment for a single bucket.
@@ -79,6 +78,7 @@ public class BucketDetailFragment extends Fragment
 
     private BucketDetailViewModel viewModel;
     private InvestmentAdapter adapter;
+    private PendingInvestmentAdapter pendingAdapter;
     private long bucketId = -1;
     private String bucketName = "Bucket";
     private TextView textTotalValue;
@@ -86,14 +86,14 @@ public class BucketDetailFragment extends Fragment
     private TextView textTotalPnl;
     private TextView textHoldingsCount;
     private View emptyState;
+    private View pendingSection;
     private RecyclerView recyclerInvestments;
+    private RecyclerView recyclerPendingInvestments;
     private RecyclerView recyclerExpectedSips;
     private TextView textExpectedEmpty;
     private ExpectedSipAdapter expectedSipAdapter;
     private VoiceInputHelper voiceInputHelper;
     private final VoiceInvestmentParser voiceInvestmentParser = new VoiceInvestmentParser();
-    private final Set<Long> promptedMappingIds = new HashSet<>();
-    private boolean mappingDialogVisible;
 
     @Nullable
     @Override
@@ -131,6 +131,8 @@ public class BucketDetailFragment extends Fragment
         }
 
         recyclerInvestments = view.findViewById(R.id.recycler_investments);
+        recyclerPendingInvestments = view.findViewById(R.id.recycler_pending_investments);
+        pendingSection = view.findViewById(R.id.layout_pending_section);
         TextView textBucketName = view.findViewById(R.id.text_detail_bucket_name);
         textTotalValue = view.findViewById(R.id.text_detail_total_value);
         textTotalInvested = view.findViewById(R.id.text_detail_total_invested);
@@ -145,6 +147,26 @@ public class BucketDetailFragment extends Fragment
 
         adapter = new InvestmentAdapter(this);
         recyclerInvestments.setAdapter(adapter);
+        attachSwipeToDelete();
+
+        pendingAdapter = new PendingInvestmentAdapter(new PendingInvestmentAdapter.PendingActionListener() {
+            @Override
+            public void onAccept(Investment investment) {
+                acceptPendingInvestment(investment);
+            }
+
+            @Override
+            public void onReject(Investment investment) {
+                rejectPendingInvestment(investment);
+            }
+
+            @Override
+            public void onInfoClick(Investment investment) {
+                showSourceDetailSheet(investment);
+            }
+        });
+        recyclerPendingInvestments.setAdapter(pendingAdapter);
+
         expectedSipAdapter = new ExpectedSipAdapter(this);
         recyclerExpectedSips.setAdapter(expectedSipAdapter);
 
@@ -156,16 +178,8 @@ public class BucketDetailFragment extends Fragment
 
         if (bucketId >= 0) {
             viewModel.getInvestmentsForBucket(bucketId).observe(getViewLifecycleOwner(), investments -> {
-                adapter.submitList(investments);
+                splitAndDisplayInvestments(investments);
                 updateSummary(investments);
-                maybePromptForBucketMapping(investments);
-                if (investments == null || investments.isEmpty()) {
-                    emptyState.setVisibility(View.VISIBLE);
-                    recyclerInvestments.setVisibility(View.GONE);
-                } else {
-                    emptyState.setVisibility(View.GONE);
-                    recyclerInvestments.setVisibility(View.VISIBLE);
-                }
             });
             viewModel.getExpectedOccurrencesForBucket(bucketId).observe(getViewLifecycleOwner(), rows -> {
                 expectedSipAdapter.submitList(rows);
@@ -176,9 +190,93 @@ public class BucketDetailFragment extends Fragment
         }
     }
 
+    private void splitAndDisplayInvestments(@Nullable List<Investment> investments) {
+        if (investments == null || investments.isEmpty()) {
+            adapter.submitList(null);
+            pendingAdapter.submitList(null);
+            pendingSection.setVisibility(View.GONE);
+            emptyState.setVisibility(View.VISIBLE);
+            recyclerInvestments.setVisibility(View.GONE);
+            return;
+        }
+        List<Investment> confirmed = new ArrayList<>();
+        List<Investment> pending = new ArrayList<>();
+        for (Investment inv : investments) {
+            String notes = inv.getNotes();
+            if (notes != null && notes.contains("[auto-map-pending:true]")) {
+                pending.add(inv);
+            } else {
+                confirmed.add(inv);
+            }
+        }
+        pendingAdapter.submitList(pending);
+        pendingSection.setVisibility(pending.isEmpty() ? View.GONE : View.VISIBLE);
+
+        adapter.submitList(confirmed);
+        boolean noConfirmed = confirmed.isEmpty();
+        emptyState.setVisibility(noConfirmed && pending.isEmpty() ? View.VISIBLE : View.GONE);
+        recyclerInvestments.setVisibility(noConfirmed ? View.GONE : View.VISIBLE);
+    }
+
+    private void acceptPendingInvestment(@NonNull Investment investment) {
+        final android.content.Context appContext = requireContext().getApplicationContext();
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            AppDatabase db = AppDatabase.getInstance(appContext);
+            Investment current = db.investmentDao().getById(investment.getId());
+            if (current == null)
+                return;
+            // Clear the pending token
+            String notes = current.getNotes();
+            if (notes != null) {
+                notes = notes.replace("[auto-map-pending:true]", "").trim();
+                current.setNotes(notes);
+            }
+            db.investmentDao().update(current);
+            // Learn mapping
+            ParsedInvestmentSignal signal = new ParsedInvestmentSignal(
+                    ParsedInvestmentSignal.SignalType.UNIT_ALLOTTED,
+                    null, // sender not available
+                    current.getPlatform(),
+                    current.getName(),
+                    current.getAssetType(),
+                    current.getInvestedAmountCents(),
+                    System.currentTimeMillis(),
+                    "accept_map_" + current.getId(),
+                    current.getPrimaryCorrelationKey() == null
+                            ? "accept_map_corr_" + current.getId()
+                            : current.getPrimaryCorrelationKey(),
+                    current.getName(),
+                    false);
+            new BucketAssignmentEngine().learnMapping(db, signal, current.getBucketId(), "USER");
+            androidx.fragment.app.FragmentActivity activity = getActivity();
+            if (activity != null) {
+                String msg = appContext.getString(
+                        R.string.bucket_detail_pending_accepted, investment.getName());
+                activity.runOnUiThread(() -> Toast.makeText(appContext, msg, Toast.LENGTH_SHORT).show());
+            }
+        });
+    }
+
+    private void rejectPendingInvestment(@NonNull Investment investment) {
+        viewModel.deleteInvestment(investment);
+        Toast.makeText(requireContext(),
+                getString(R.string.bucket_detail_pending_rejected, investment.getName()),
+                Toast.LENGTH_SHORT).show();
+    }
+
     @Override
     public void onInvestmentClick(Investment investment) {
         showInvestmentEditorDialog(investment);
+    }
+
+    @Override
+    public void onInfoClick(Investment investment) {
+        showSourceDetailSheet(investment);
+    }
+
+    private void showSourceDetailSheet(Investment investment) {
+        SourceDetailBottomSheet sheet = SourceDetailBottomSheet.newInstance(investment.getId());
+        sheet.show(getChildFragmentManager(), "SourceDetailSheet");
     }
 
     @Override
@@ -200,14 +298,55 @@ public class BucketDetailFragment extends Fragment
                 .setItems(actions, (dialog, which) -> {
                     String action = actions[which];
                     if (getString(R.string.bucket_detail_action_confirm).equals(action)) {
-                        resolveOccurrence(occurrence, InvestmentOccurrence.STATUS_CONFIRMED, occurrence.expectedAmountCents);
+                        resolveOccurrence(occurrence, InvestmentOccurrence.STATUS_CONFIRMED,
+                                occurrence.expectedAmountCents);
                     } else if (getString(R.string.bucket_detail_action_skip).equals(action)) {
-                        resolveOccurrence(occurrence, InvestmentOccurrence.STATUS_SKIPPED, occurrence.expectedAmountCents);
+                        resolveOccurrence(occurrence, InvestmentOccurrence.STATUS_SKIPPED,
+                                occurrence.expectedAmountCents);
                     } else {
                         showAdjustAmountDialog(occurrence);
                     }
                 })
                 .setNegativeButton(R.string.cancel, null)
+                .show();
+    }
+
+    private void attachSwipeToDelete() {
+        ItemTouchHelper.SimpleCallback callback = new ItemTouchHelper.SimpleCallback(0,
+                ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT) {
+            @Override
+            public boolean onMove(@NonNull RecyclerView recyclerView,
+                    @NonNull RecyclerView.ViewHolder viewHolder,
+                    @NonNull RecyclerView.ViewHolder target) {
+                return false;
+            }
+
+            @Override
+            public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
+                int position = viewHolder.getAdapterPosition();
+                Investment investment = adapter.getCurrentList().get(position);
+                if (investment == null) {
+                    adapter.notifyItemChanged(position);
+                    return;
+                }
+                confirmDeleteInvestment(investment, position);
+            }
+        };
+        new ItemTouchHelper(callback).attachToRecyclerView(recyclerInvestments);
+    }
+
+    private void confirmDeleteInvestment(@NonNull Investment investment, int adapterPosition) {
+        new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
+                .setTitle(getString(R.string.bucket_detail_delete_title))
+                .setMessage(getString(R.string.bucket_detail_delete_message, investment.getName()))
+                .setNegativeButton(R.string.cancel, (dialog, which) -> adapter.notifyItemChanged(adapterPosition))
+                .setPositiveButton(R.string.delete, (dialog, which) -> {
+                    viewModel.deleteInvestment(investment);
+                    Toast.makeText(requireContext(),
+                            getString(R.string.bucket_detail_delete_done, investment.getName()),
+                            Toast.LENGTH_SHORT).show();
+                })
+                .setOnCancelListener(dialog -> adapter.notifyItemChanged(adapterPosition))
                 .show();
     }
 
@@ -246,8 +385,8 @@ public class BucketDetailFragment extends Fragment
     }
 
     private boolean hasAudioPermission() {
-        return ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.RECORD_AUDIO)
-                == PackageManager.PERMISSION_GRANTED;
+        return ContextCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED;
     }
 
     private void handleVoiceInvestmentText(@Nullable String text) {
@@ -275,7 +414,7 @@ public class BucketDetailFragment extends Fragment
                 .setItems(options, (dialog, which) -> {
                     switch (which) {
                         case 0:
-                            WorkScheduler.runSmsAutoImportNow(requireContext());
+                            WorkScheduler.runInvestmentSmsRepairNow(requireContext());
                             Toast.makeText(requireContext(), R.string.bucket_import_sms_started, Toast.LENGTH_SHORT)
                                     .show();
                             break;
@@ -463,118 +602,6 @@ public class BucketDetailFragment extends Fragment
                 "manual_occurrence_" + occurrence.id,
                 IngestionEvent.SOURCE_MANUAL);
         Toast.makeText(requireContext(), R.string.bucket_detail_occurrence_updated, Toast.LENGTH_SHORT).show();
-    }
-
-    private void maybePromptForBucketMapping(@Nullable List<Investment> investments) {
-        if (mappingDialogVisible || investments == null || investments.isEmpty()) {
-            return;
-        }
-        Investment pending = null;
-        for (Investment investment : investments) {
-            if (investment.getId() <= 0 || promptedMappingIds.contains(investment.getId())) {
-                continue;
-            }
-            String notes = investment.getNotes();
-            if (notes != null && notes.contains("[auto-map-pending:true]")) {
-                pending = investment;
-                break;
-            }
-        }
-        if (pending == null) {
-            return;
-        }
-        promptedMappingIds.add(pending.getId());
-        final Investment target = pending;
-        final android.content.Context appContext = requireContext().getApplicationContext();
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            List<Bucket> buckets = AppDatabase.getInstance(appContext).bucketDao().getAllBucketsSync();
-            if (buckets == null || buckets.isEmpty()) {
-                return;
-            }
-            androidx.fragment.app.FragmentActivity activity = getActivity();
-            if (activity == null) {
-                return;
-            }
-            activity.runOnUiThread(() -> showMappingDialog(target, buckets));
-        });
-    }
-
-    private void showMappingDialog(@NonNull Investment investment, @NonNull List<Bucket> buckets) {
-        if (!isAdded()) {
-            return;
-        }
-        mappingDialogVisible = true;
-        String[] options = new String[buckets.size()];
-        int currentIndex = 0;
-        for (int i = 0; i < buckets.size(); i++) {
-            options[i] = buckets.get(i).getName();
-            if (buckets.get(i).getId() == investment.getBucketId()) {
-                currentIndex = i;
-            }
-        }
-        final int defaultIndex = currentIndex;
-        new AlertDialog.Builder(requireContext())
-                .setTitle(R.string.bucket_detail_mapping_title)
-                .setSingleChoiceItems(options, defaultIndex, null)
-                .setMessage(R.string.bucket_detail_mapping_message)
-                .setPositiveButton(R.string.save, (dialog, which) -> {
-                    AlertDialog alertDialog = (AlertDialog) dialog;
-                    int selectedIndex = alertDialog.getListView().getCheckedItemPosition();
-                    if (selectedIndex < 0 || selectedIndex >= buckets.size()) {
-                        selectedIndex = defaultIndex;
-                    }
-                    applyMappingDecision(investment, buckets.get(selectedIndex));
-                    mappingDialogVisible = false;
-                })
-                .setNegativeButton(R.string.cancel, (dialog, which) -> {
-                    mappingDialogVisible = false;
-                    dialog.dismiss();
-                })
-                .setOnDismissListener(dialog -> mappingDialogVisible = false)
-                .show();
-    }
-
-    private void applyMappingDecision(@NonNull Investment investment, @NonNull Bucket selectedBucket) {
-        final android.content.Context appContext = requireContext().getApplicationContext();
-        AppDatabase.databaseWriteExecutor.execute(() -> {
-            AppDatabase db = AppDatabase.getInstance(appContext);
-            Investment current = db.investmentDao().getById(investment.getId());
-            if (current == null) {
-                return;
-            }
-            current.setBucketId(selectedBucket.getId());
-            String notes = current.getNotes();
-            if (notes != null) {
-                notes = notes.replace("[auto-map-pending:true]", "").trim();
-                current.setNotes(notes);
-            }
-            db.investmentDao().update(current);
-
-            ParsedInvestmentSignal signal = new ParsedInvestmentSignal(
-                    ParsedInvestmentSignal.SignalType.UNIT_ALLOTTED,
-                    current.getPlatform(),
-                    current.getName(),
-                    current.getAssetType(),
-                    current.getInvestedAmountCents(),
-                    System.currentTimeMillis(),
-                    "manual_map_" + current.getId(),
-                    current.getPrimaryCorrelationKey() == null
-                            ? "manual_map_corr_" + current.getId()
-                            : current.getPrimaryCorrelationKey(),
-                    current.getName(),
-                    false);
-            new BucketAssignmentEngine().learnMapping(
-                    db,
-                    signal,
-                    selectedBucket.getId(),
-                    "USER");
-            androidx.fragment.app.FragmentActivity activity = getActivity();
-            if (activity != null) {
-                activity.runOnUiThread(
-                        () -> Toast.makeText(appContext, R.string.bucket_detail_mapping_saved, Toast.LENGTH_SHORT)
-                                .show());
-            }
-        });
     }
 
     private void updateSummary(@Nullable List<Investment> investments) {

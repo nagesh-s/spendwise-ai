@@ -29,6 +29,7 @@ Investment ingestion and reconciliation pipeline
 - Unified event registry:
   - `EventIngestionPipeline` writes `ingestion_events` with unique `sourceKey`.
   - Duplicate delivery from retries/restarts is ignored deterministically.
+  - On duplicate, pipeline auto-backfills `sourceSender`/`sourceBody` if null (for pre-migration data).
 - Holding updates:
   - `InvestmentAutoIngestionEngine` inserts/updates confirmed holdings.
   - Supports debit/allotment/correction flows and keeps audit metadata on `Investment`.
@@ -50,3 +51,15 @@ Gamification and digest
 Notification routing
 - `NotificationHelper.showInvestmentDigestNotification` deep links with action `view_buckets`.
 - `MainActivity` handles `view_buckets` and `view_recurring` intent actions for direct navigation.
+
+Source traceability
+- `SourceDetailBottomSheet` shows message origin, sender, and body for investments and expenses.
+  - Supports investment lookup via `lastSourceKey` → `correlationKey` fallback chain.
+  - Supports expense lookup via `canonicalSourceKey` → legacy description heuristic.
+  - Shows "Manually Added" for entries without source data.
+- "Refresh Sources" button triggers `WorkScheduler.runSourceRefreshNow()`:
+  - Re-scans 365 days of SMS via `SmsAutoImportWorker` with `repairLookbackDays=365`.
+  - Expense repair now bypasses `lastTransactionImportedTimestamp` and uses `readRecentTransactions`.
+  - On duplicate, `EventIngestionPipeline` backfills `sourceSender`/`sourceBody` via `IngestionEventDao.backfillSourceInfo`.
+  - Duplicate expenses also get `canonicalSourceKey` set on the existing row.
+  - Completion is observed via `WorkManager.getWorkInfosForUniqueWorkLiveData` with success/failure toast.

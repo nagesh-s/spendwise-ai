@@ -64,7 +64,7 @@ public class PredictionEngine {
         long monthStart = DateUtils.getMonthStartEpochDay(thisMonth);
         long todayEpoch = today.toEpochDay();
 
-        long currentTotal = expenseDao.getTotalForRange(monthStart, todayEpoch);
+        long currentTotal = expenseDao.getConsumptionTotalForRange(monthStart, todayEpoch);
         if (currentTotal == 0)
             return;
 
@@ -104,7 +104,7 @@ public class PredictionEngine {
         long todayEpoch = today.toEpochDay();
         int daysInMonth = thisMonth.lengthOfMonth();
 
-        List<CategoryTotal> totals = expenseDao.getCategoryTotalsForRangeSync(monthStart, todayEpoch);
+        List<CategoryTotal> totals = expenseDao.getConsumptionCategoryTotalsForRangeSync(monthStart, todayEpoch);
         if (totals == null || totals.isEmpty())
             return;
 

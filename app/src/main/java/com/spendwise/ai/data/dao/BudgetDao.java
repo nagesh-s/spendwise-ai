@@ -69,6 +69,7 @@ public interface BudgetDao {
            "JOIN categories c ON b.categoryId = c.id " +
            "LEFT JOIN expenses e ON e.categoryId = b.categoryId " +
            "    AND e.dateEpochDay BETWEEN :startDay AND :endDay " +
+           "    AND e.isInvestmentTransfer = 0 " +
            "WHERE b.monthKeyYYYYMM = :monthKey " +
            "GROUP BY b.id " +
            "ORDER BY c.name ASC")
@@ -84,6 +85,7 @@ public interface BudgetDao {
            "JOIN categories c ON b.categoryId = c.id " +
            "LEFT JOIN expenses e ON e.categoryId = b.categoryId " +
            "    AND e.dateEpochDay BETWEEN :startDay AND :endDay " +
+           "    AND e.isInvestmentTransfer = 0 " +
            "WHERE b.monthKeyYYYYMM = :monthKey " +
            "GROUP BY b.id " +
            "ORDER BY c.name ASC")

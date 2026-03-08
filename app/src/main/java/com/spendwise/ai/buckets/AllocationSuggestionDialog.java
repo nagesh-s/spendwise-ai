@@ -68,7 +68,7 @@ public class AllocationSuggestionDialog {
                     .withDayOfMonth(1).toEpochDay();
             long endOfMonth = org.threeten.bp.LocalDate.now()
                     .withDayOfMonth(org.threeten.bp.LocalDate.now().lengthOfMonth()).toEpochDay();
-            long thisMonthSpend = db.expenseDao().getTotalForRange(startOfMonth, endOfMonth);
+            long thisMonthSpend = db.expenseDao().getConsumptionTotalForRange(startOfMonth, endOfMonth);
             avgMonthlySpend = thisMonthSpend > 0 ? thisMonthSpend : shortTermAlloc;
 
             CashflowGuardrail guardrail = new CashflowGuardrail();

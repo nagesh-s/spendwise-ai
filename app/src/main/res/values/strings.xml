@@ -211,9 +211,9 @@
     <string name="bucket_detail_adjust_title">Adjust SIP Amount</string>
     <string name="bucket_detail_adjust_amount_hint">Resolved amount (₹)</string>
     <string name="bucket_detail_occurrence_updated">Expected SIP updated</string>
-    <string name="bucket_detail_mapping_title">Map this investment to a bucket</string>
-    <string name="bucket_detail_mapping_message">Choose where similar investments should be auto-assigned next time.</string>
-    <string name="bucket_detail_mapping_saved">Bucket mapping learned</string>
+    <string name="bucket_detail_mapping_title">Map \'%1$s\' to a bucket</string>
+    <string name="bucket_detail_mapping_message">\'%1$s\' (%2$s) was auto-assigned here. Choose where similar investments should go.</string>
+    <string name="bucket_detail_mapping_saved">\'%1$s\' mapped to %2$s</string>
     <string name="bucket_detail_total_value">Current value</string>
     <string name="bucket_detail_total_invested">Total invested</string>
     <string name="bucket_detail_empty_title">No holdings in this bucket</string>
@@ -234,15 +234,25 @@
     <string name="bucket_detail_investment_error_amount">Enter valid invested and current values</string>
     <string name="bucket_detail_investment_saved">Investment saved</string>
     <string name="bucket_detail_investment_updated">Investment updated</string>
-    <string name="bucket_detail_import_holdings">Import Holdings</string>
+    <string name="bucket_detail_delete_title">Delete Investment</string>
+    <string name="bucket_detail_delete_message">Delete \'%1$s\'? This cannot be undone.</string>
+    <string name="bucket_detail_delete_done">\'%1$s\' deleted</string>
+    <string name="bucket_detail_import_holdings">Import</string>
+    <string name="bucket_detail_holdings_header">Holdings</string>
+    <string name="bucket_detail_pending_title">Needs Review</string>
+    <string name="bucket_detail_pending_subtitle">These investments were auto-assigned. Accept to keep or reject to remove.</string>
+    <string name="bucket_detail_pending_accept">Accept</string>
+    <string name="bucket_detail_pending_reject">Reject</string>
+    <string name="bucket_detail_pending_accepted">\'%1$s\' confirmed in this bucket</string>
+    <string name="bucket_detail_pending_rejected">\'%1$s\' removed</string>
     <string name="bucket_detail_voice_add">Add by voice</string>
     <string name="bucket_detail_voice_listening">Listening for investment details…</string>
     <string name="bucket_detail_voice_permission_needed">Microphone permission is needed for voice add</string>
     <string name="bucket_detail_voice_parse_failed">Couldn’t parse investment details from voice</string>
     <string name="bucket_detail_voice_error_format">Voice error: %1$s</string>
-    <string name="bucket_import_option_sms">Auto-import from SMS now</string>
+    <string name="bucket_import_option_sms">Repair holdings from SMS (last 180 days)</string>
     <string name="bucket_import_option_notifications">Sync from notifications (apps/email)</string>
-    <string name="bucket_import_sms_started">Started SMS holdings sync</string>
+    <string name="bucket_import_sms_started">Started SMS holdings repair</string>
     <string name="bucket_import_notifications_started">Started notification holdings sync</string>
     <string name="bucket_import_notifications_access_title">Enable notification access</string>
     <string name="bucket_import_notifications_access_message">Allow notification access to auto-read investment alerts from broker apps and email notifications.</string>
@@ -262,4 +272,10 @@
         <item quantity="one">%d holding</item>
         <item quantity="other">%d holdings</item>
     </plurals>
+    <string name="source_detail_title">Transaction Source</string>
+    <string name="source_detail_origin">Original Source</string>
+    <string name="source_detail_sender">Sender</string>
+    <string name="source_detail_message">Message Body</string>
+    <string name="source_detail_not_found">Details unavailable for this transaction.</string>
+    <string name="source_detail_refresh">Refresh Sources</string>
 </resources>

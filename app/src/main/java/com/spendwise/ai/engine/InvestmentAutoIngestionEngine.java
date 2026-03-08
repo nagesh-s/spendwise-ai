@@ -5,6 +5,7 @@ import androidx.annotation.Nullable;
 
 import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.entity.Bucket;
+import com.spendwise.ai.data.entity.IngestionEvent;
 import com.spendwise.ai.data.entity.Investment;
 import com.spendwise.ai.sms.ParsedInvestmentSignal;
 
@@ -68,6 +69,8 @@ public class InvestmentAutoIngestionEngine {
         Map<String, Investment> byCorrelation = new HashMap<>();
         indexExistingInvestments(allInvestments, bySource, byCorrelation);
 
+        EventIngestionPipeline pipeline = new EventIngestionPipeline();
+
         for (ParsedInvestmentSignal signal : orderedSignals) {
             if (signal.getAmountCents() <= 0
                     && signal.getSignalType() != ParsedInvestmentSignal.SignalType.MATURITY_CREDIT) {
@@ -105,6 +108,19 @@ public class InvestmentAutoIngestionEngine {
                     .toLocalDate()
                     .toEpochDay();
 
+            String sourceKey = signal.getSourceKey();
+            EventIngestionPipeline.IngestResult event = pipeline.ingest(
+                    db,
+                    IngestionEvent.DOMAIN_INVESTMENT,
+                    IngestionEvent.SOURCE_SMS,
+                    sourceKey,
+                    signal.getCorrelationKey(),
+                    signal.getSignalType().name(),
+                    signal.getAmountCents(),
+                    signal.getTimestampMillis(),
+                    signal.getSender(),
+                    signal.getRawMessage(), // payloadHashBase
+                    signal.getRawMessage()); // rawMessage
             long baseAmount = Math.max(0L, signal.getAmountCents());
             Investment investment = new Investment(
                     targetBucketId,
@@ -174,10 +190,15 @@ public class InvestmentAutoIngestionEngine {
         String normalizedPlatform = normalize(signal.getPlatform());
 
         for (Investment candidate : allInvestments) {
-            if (!normalize(candidate.getAssetType()).equals(normalize(signal.getAssetType()))) {
+            boolean assetMatches = normalize(candidate.getAssetType()).equals(normalize(signal.getAssetType()))
+                    || Investment.ASSET_OTHER.equals(candidate.getAssetType())
+                    || Investment.ASSET_OTHER.equals(signal.getAssetType());
+            if (!assetMatches) {
                 continue;
             }
             if (!normalizedSignalName.isEmpty()
+                    && !isWeakName(signal.getInvestmentName())
+                    && !isWeakName(candidate.getName())
                     && !normalize(candidate.getName()).equals(normalizedSignalName)) {
                 continue;
             }
@@ -185,11 +206,26 @@ public class InvestmentAutoIngestionEngine {
                     && !normalize(candidate.getPlatform()).equals(normalizedPlatform)) {
                 continue;
             }
-            if (Math.abs(candidate.getLastUpdatedEpochDay() - signalDay) > FUZZY_DAY_WINDOW) {
-                continue;
+            boolean isFixedDeposit = Investment.ASSET_FD.equals(candidate.getAssetType())
+                    || Investment.ASSET_RD.equals(candidate.getAssetType());
+            long dayDifference = Math.abs(candidate.getLastUpdatedEpochDay() - signalDay);
+
+            if (dayDifference > FUZZY_DAY_WINDOW) {
+                // If it's not a rigid asset type like FD/RD, respect the narrow 7-day window
+                if (!isFixedDeposit) {
+                    continue;
+                }
+                // For FD/RD, allow matching over a longer timeframe (e.g. 10 years maturity)
+                // but ONLY if the platform and amount are very close.
+                if (dayDifference > 3650) {
+                    continue; // Extremely far apart
+                }
             }
+
             long base = Math.max(1L, candidate.getInvestedAmountCents());
-            long tolerance = Math.max(FUZZY_AMOUNT_TOLERANCE_CENTS, Math.round(base * 0.15d));
+            // For FD/RD updates over long periods, interest can be up to 40%
+            double allowedVariance = isFixedDeposit ? 0.40d : 0.15d;
+            long tolerance = Math.max(FUZZY_AMOUNT_TOLERANCE_CENTS, Math.round(base * allowedVariance));
             if (Math.abs(candidate.getInvestedAmountCents() - signal.getAmountCents()) <= tolerance) {
                 return candidate;
             }
@@ -326,7 +362,13 @@ public class InvestmentAutoIngestionEngine {
         String normalized = value.trim().toLowerCase(Locale.US);
         return normalized.equals("investment")
                 || normalized.equals("investment allocation")
-                || normalized.equals("investment units");
+                || normalized.equals("investment units")
+                || normalized.equals("fixed deposit")
+                || normalized.equals("recurring deposit")
+                || normalized.equals("fd allocation")
+                || normalized.equals("rd allocation")
+                || normalized.endsWith(" fixed deposit")
+                || normalized.endsWith(" recurring deposit");
     }
 
     private long epochDay(long timestampMillis) {

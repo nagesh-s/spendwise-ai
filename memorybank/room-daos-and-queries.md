@@ -2,8 +2,17 @@ ExpenseDao key queries
 @Query("SELECT COALESCE(SUM(amountCents),0) FROM expenses WHERE dateEpochDay BETWEEN :start AND :end")
 long totalForRange(long start, long end);
 
+@Query("SELECT COALESCE(SUM(amountCents),0) FROM expenses WHERE isInvestmentTransfer = 0 AND dateEpochDay BETWEEN :start AND :end")
+long consumptionTotalForRange(long start, long end);
+
 @Query("SELECT c.name, COALESCE(SUM(e.amountCents),0) AS total FROM expenses e JOIN categories c ON e.categoryId=c.id WHERE e.dateEpochDay BETWEEN :start AND :end GROUP BY c.id ORDER BY total DESC")
 List<CategoryTotal> categoryTotals(long start, long end);
+
+@Query("SELECT c.name, COALESCE(SUM(e.amountCents),0) AS total FROM expenses e JOIN categories c ON e.categoryId=c.id WHERE e.isInvestmentTransfer = 0 AND e.dateEpochDay BETWEEN :start AND :end GROUP BY c.id ORDER BY total DESC")
+List<CategoryTotal> consumptionCategoryTotals(long start, long end);
+
+@Query("SELECT * FROM expenses WHERE dateEpochDay BETWEEN :startDay AND :endDay AND isInvestmentTransfer = 0 AND recoveryStatus != 'CONVERTED' AND recoveryStatus != 'IGNORED' ORDER BY dateEpochDay DESC, id DESC")
+List<Expense> getExpenseCandidatesForInvestmentRecoverySync(long startDay, long endDay);
 
 Merchant analytics
 @Query("SELECT m.name, COUNT(e.id) AS txns, COALESCE(SUM(e.amountCents),0) AS total, AVG(e.amountCents) AS avgAmt FROM expenses e JOIN merchants m ON e.merchantId=m.id WHERE e.dateEpochDay BETWEEN :start AND :end GROUP BY m.id ORDER BY total DESC LIMIT :limit")
@@ -19,6 +28,12 @@ void updateBalance(long bucketId, long balanceCents);
 InvestmentDao key queries
 @Query("SELECT * FROM investments WHERE bucketId = :bucketId ORDER BY name ASC")
 LiveData<List<Investment>> getInvestmentsForBucket(long bucketId);
+
+@Query("SELECT * FROM investments WHERE lastSourceKey = :sourceKey LIMIT 1")
+Investment getByLastSourceKey(String sourceKey);
+
+@Query("SELECT * FROM investments WHERE primaryCorrelationKey = :correlationKey LIMIT 1")
+Investment getByPrimaryCorrelationKey(String correlationKey);
 
 @Query("SELECT COALESCE(SUM(currentValueCents), 0) FROM investments")
 LiveData<Long> getTotalPortfolioValue();
@@ -50,6 +65,13 @@ IngestionEvent getBySourceKey(String sourceKey);
 @Query("UPDATE ingestion_events SET status = :status, processedAtMillis = :processedAtMillis WHERE id = :id")
 void markProcessed(long id, String status, long processedAtMillis);
 
+@Query("UPDATE ingestion_events SET sourceSender = :sender, sourceBody = :body WHERE sourceKey = :sourceKey AND (sourceSender IS NULL OR sourceSender = '')")
+int backfillSourceInfo(String sourceKey, String sender, String body);
+
 InstrumentBucketMappingDao key queries
 @Query("SELECT * FROM instrument_bucket_mappings WHERE assetType = :assetType ORDER BY confidenceBoost DESC, updatedAtMillis DESC")
 List<InstrumentBucketMapping> getByAssetTypeSync(String assetType);
+
+ExpenseDao source-traceability queries
+@Query("SELECT * FROM expenses WHERE dateEpochDay = :dateEpochDay AND amountCents = :amountCents AND IFNULL(description, '') = IFNULL(:description, '') LIMIT 1")
+Expense getByDateAmountDescription(long dateEpochDay, long amountCents, String description);

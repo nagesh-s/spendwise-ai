@@ -72,13 +72,13 @@ public class InsightsEngine {
         long todayEpoch = today.toEpochDay();
 
         // Current month-to-date total
-        long currentTotal = expenseDao.getTotalForRange(thisMonthStart, todayEpoch);
+        long currentTotal = expenseDao.getConsumptionTotalForRange(thisMonthStart, todayEpoch);
 
         // Same number of days into last month
         int dayOfMonth = today.getDayOfMonth();
         long lastMonthStart = DateUtils.getMonthStartEpochDay(lastMonth);
         long lastMonthSameDay = lastMonthStart + dayOfMonth - 1;
-        long lastTotal = expenseDao.getTotalForRange(lastMonthStart, lastMonthSameDay);
+        long lastTotal = expenseDao.getConsumptionTotalForRange(lastMonthStart, lastMonthSameDay);
 
         if (lastTotal <= 0)
             return; // no data to compare
@@ -122,7 +122,7 @@ public class InsightsEngine {
         long start = DateUtils.getMonthStartEpochDay(thisMonth);
         long end = LocalDate.now().toEpochDay();
 
-        List<CategoryTotal> totals = expenseDao.getCategoryTotalsForRangeSync(start, end);
+        List<CategoryTotal> totals = expenseDao.getConsumptionCategoryTotalsForRangeSync(start, end);
         if (totals == null || totals.isEmpty())
             return;
 
@@ -207,14 +207,14 @@ public class InsightsEngine {
         long todayEpoch = today.toEpochDay();
 
         // Get this week's total
-        long thisWeekTotal = expenseDao.getTotalForRange(weekStart, todayEpoch);
+        long thisWeekTotal = expenseDao.getConsumptionTotalForRange(weekStart, todayEpoch);
         if (thisWeekTotal == 0)
             return;
 
         // Get 4-week average (week-2 through week-5 ago)
         long fourWeekStart = today.minusDays(34).toEpochDay(); // 5 weeks ago
         long fourWeekEnd = today.minusDays(7).toEpochDay(); // 1 week ago
-        long fourWeekTotal = expenseDao.getTotalForRange(fourWeekStart, fourWeekEnd);
+        long fourWeekTotal = expenseDao.getConsumptionTotalForRange(fourWeekStart, fourWeekEnd);
 
         long weeklyAvg = fourWeekTotal / 4;
         if (weeklyAvg <= 0)
@@ -256,7 +256,7 @@ public class InsightsEngine {
         // Walk backwards from yesterday — today might not be over yet
         for (int i = 1; i <= 30; i++) {
             long day = today.minusDays(i).toEpochDay();
-            long total = expenseDao.getTotalForRange(day, day);
+            long total = expenseDao.getConsumptionTotalForRange(day, day);
             if (total == 0) {
                 streakDays++;
             } else {
@@ -295,7 +295,7 @@ public class InsightsEngine {
                 YearMonth lastMonth = YearMonth.now().minusMonths(1);
                 long lastMonthStart = DateUtils.getMonthStartEpochDay(lastMonth);
                 long lastMonthEnd = DateUtils.getMonthEndEpochDay(lastMonth);
-                long monthlySpend = expenseDao.getTotalForRange(lastMonthStart, lastMonthEnd);
+                long monthlySpend = expenseDao.getConsumptionTotalForRange(lastMonthStart, lastMonthEnd);
 
                 if (monthlySpend <= 0)
                     return;

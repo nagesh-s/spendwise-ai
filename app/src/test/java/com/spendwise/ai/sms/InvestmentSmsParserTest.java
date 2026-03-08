@@ -38,4 +38,14 @@ public class InvestmentSmsParserTest {
         Assert.assertNotNull(signal);
         Assert.assertTrue(signal.isCorrection());
     }
+
+    @Test
+    public void parse_brokerDebitWithoutUnits_shouldStillInferInvestment() {
+        String debitMessage = "Rs 5000 debited via UPI to Upstox. Ref 77AB8899.";
+        ParsedInvestmentSignal signal = InvestmentSmsParser.parse("VK-HDFCBK", debitMessage, 1700000000000L);
+
+        Assert.assertNotNull(signal);
+        Assert.assertEquals("Upstox", signal.getPlatform());
+        Assert.assertEquals(ParsedInvestmentSignal.SignalType.INVESTMENT_DEBIT, signal.getSignalType());
+    }
 }

@@ -44,6 +44,12 @@ public interface ExpenseDao {
        @Query("SELECT * FROM expenses ORDER BY dateEpochDay DESC, id DESC")
        List<Expense> getAllExpensesSync();
 
+       @Query("SELECT * FROM expenses WHERE isInvestmentTransfer = 0 ORDER BY dateEpochDay DESC, id DESC")
+       LiveData<List<Expense>> getAllConsumptionExpenses();
+
+       @Query("SELECT * FROM expenses WHERE isInvestmentTransfer = 0 ORDER BY dateEpochDay DESC, id DESC")
+       List<Expense> getAllConsumptionExpensesSync();
+
        // ==================== Date-based Queries ====================
 
        /**
@@ -75,6 +81,18 @@ public interface ExpenseDao {
        @Query("SELECT IFNULL(SUM(amountCents), 0) FROM expenses WHERE dateEpochDay BETWEEN :startDay AND :endDay")
        LiveData<Long> getTotalForRangeLive(long startDay, long endDay);
 
+       @Query("SELECT IFNULL(SUM(amountCents), 0) FROM expenses " +
+                     "WHERE isInvestmentTransfer = 0 AND dateEpochDay BETWEEN :startDay AND :endDay")
+       long getConsumptionTotalForRange(long startDay, long endDay);
+
+       @Query("SELECT IFNULL(SUM(amountCents), 0) FROM expenses " +
+                     "WHERE isInvestmentTransfer = 0 AND dateEpochDay BETWEEN :startDay AND :endDay")
+       LiveData<Long> getConsumptionTotalForRangeLive(long startDay, long endDay);
+
+       @Query("SELECT IFNULL(SUM(amountCents), 0) FROM expenses " +
+                     "WHERE isInvestmentTransfer = 1 AND dateEpochDay BETWEEN :startDay AND :endDay")
+       LiveData<Long> getInvestmentTransferTotalForRangeLive(long startDay, long endDay);
+
        /**
         * Get spending totals grouped by category for a date range.
         * Used for Dashboard pie chart.
@@ -99,6 +117,24 @@ public interface ExpenseDao {
                      "ORDER BY total DESC")
        List<CategoryTotal> getCategoryTotalsForRangeSync(long startDay, long endDay);
 
+       @Query("SELECT c.name AS name, IFNULL(SUM(e.amountCents), 0) AS total, c.colorArgb AS colorArgb " +
+                     "FROM expenses e " +
+                     "JOIN categories c ON e.categoryId = c.id " +
+                     "WHERE e.isInvestmentTransfer = 0 " +
+                     "AND e.dateEpochDay BETWEEN :startDay AND :endDay " +
+                     "GROUP BY c.id " +
+                     "ORDER BY total DESC")
+       LiveData<List<CategoryTotal>> getConsumptionCategoryTotalsForRange(long startDay, long endDay);
+
+       @Query("SELECT c.name AS name, IFNULL(SUM(e.amountCents), 0) AS total, c.colorArgb AS colorArgb " +
+                     "FROM expenses e " +
+                     "JOIN categories c ON e.categoryId = c.id " +
+                     "WHERE e.isInvestmentTransfer = 0 " +
+                     "AND e.dateEpochDay BETWEEN :startDay AND :endDay " +
+                     "GROUP BY c.id " +
+                     "ORDER BY total DESC")
+       List<CategoryTotal> getConsumptionCategoryTotalsForRangeSync(long startDay, long endDay);
+
        /**
         * Get daily totals for a date range.
         * Used for calendar decorators.
@@ -108,6 +144,12 @@ public interface ExpenseDao {
                      "WHERE dateEpochDay BETWEEN :startDay AND :endDay " +
                      "GROUP BY dateEpochDay")
        LiveData<List<DailyTotal>> getDailyTotalsForRange(long startDay, long endDay);
+
+       @Query("SELECT dateEpochDay, SUM(amountCents) AS totalCents " +
+                     "FROM expenses " +
+                     "WHERE isInvestmentTransfer = 0 AND dateEpochDay BETWEEN :startDay AND :endDay " +
+                     "GROUP BY dateEpochDay")
+       LiveData<List<DailyTotal>> getConsumptionDailyTotalsForRange(long startDay, long endDay);
 
        /**
         * Get total spending for a specific category in a date range.
@@ -124,6 +166,16 @@ public interface ExpenseDao {
         */
        @Query("SELECT * FROM expenses WHERE categoryId = :categoryId ORDER BY dateEpochDay DESC, id DESC")
        LiveData<List<Expense>> getExpensesByCategory(long categoryId);
+
+       @Query("SELECT * FROM expenses WHERE dateEpochDay BETWEEN :startDay AND :endDay " +
+                     "AND isInvestmentTransfer = 0 " +
+                     "AND recoveryStatus != 'CONVERTED' " +
+                     "AND recoveryStatus != 'IGNORED' " +
+                     "ORDER BY dateEpochDay DESC, id DESC")
+       List<Expense> getExpenseCandidatesForInvestmentRecoverySync(long startDay, long endDay);
+
+       @Query("UPDATE expenses SET linkedInvestmentId = :targetInvestmentId WHERE linkedInvestmentId = :sourceInvestmentId")
+       void relinkRecoveredInvestment(long sourceInvestmentId, long targetInvestmentId);
 
        // ==================== Merchant-based Queries ====================
 
@@ -155,4 +207,11 @@ public interface ExpenseDao {
                      "AND amountCents = :amountCents " +
                      "AND IFNULL(description, '') = IFNULL(:description, '')")
        int countByDateAmountDescription(long dateEpochDay, long amountCents, String description);
+
+       @Query("SELECT * FROM expenses " +
+                     "WHERE dateEpochDay = :dateEpochDay " +
+                     "AND amountCents = :amountCents " +
+                     "AND IFNULL(description, '') = IFNULL(:description, '') " +
+                     "LIMIT 1")
+       Expense getByDateAmountDescription(long dateEpochDay, long amountCents, String description);
 }

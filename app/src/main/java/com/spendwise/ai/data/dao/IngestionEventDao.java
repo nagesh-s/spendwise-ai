@@ -26,4 +26,7 @@ public interface IngestionEventDao {
 
     @Query("SELECT * FROM ingestion_events WHERE domain = :domain AND status = :status ORDER BY eventTimestampMillis ASC")
     List<IngestionEvent> getByDomainAndStatus(String domain, String status);
+
+    @Query("UPDATE ingestion_events SET sourceSender = :sender, sourceBody = :body WHERE sourceKey = :sourceKey AND (sourceSender IS NULL OR sourceSender = '')")
+    int backfillSourceInfo(String sourceKey, String sender, String body);
 }

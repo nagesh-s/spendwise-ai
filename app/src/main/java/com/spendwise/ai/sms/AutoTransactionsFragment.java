@@ -183,7 +183,7 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
         }
 
         Context appContext = requireContext().getApplicationContext();
-        long lastSyncTimestamp = SmsSyncState.getLastSyncTimestamp(appContext);
+        long lastSyncTimestamp = SmsSyncState.getLastTransactionSyncTimestamp(appContext);
 
         AppDatabase.databaseWriteExecutor.execute(() -> {
             List<ParsedTransaction> transactions;
@@ -248,9 +248,9 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
             latestSeenTimestamp = Math.max(latestSeenTimestamp, transaction.getTimestampMillis());
         }
         if (usedFallbackWindow && latestSeenTimestamp == 0L) {
-            SmsSyncState.clear(appContext);
+            SmsSyncState.clearTransactionSync(appContext);
         }
-        SmsSyncState.updateLastSyncTimestamp(appContext, latestSeenTimestamp);
+        SmsSyncState.updateLastTransactionSyncTimestamp(appContext, latestSeenTimestamp);
         return transactions;
     }
 

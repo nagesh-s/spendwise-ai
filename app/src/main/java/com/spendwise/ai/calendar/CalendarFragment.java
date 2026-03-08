@@ -123,9 +123,19 @@ public class CalendarFragment extends Fragment {
         binding.recyclerExpenses.setAdapter(expenseAdapter);
         attachSwipeToDelete();
 
-        // Handle expense click for editing
-        expenseAdapter.setOnExpenseClickListener(expense -> {
-            openExpenseEditor(expense.getId());
+        // Handle expense click for editing, and info click for source traceability
+        expenseAdapter.setOnExpenseClickListener(new ExpenseAdapter.OnExpenseClickListener() {
+            @Override
+            public void onExpenseClick(Expense expense) {
+                openExpenseEditor(expense.getId());
+            }
+
+            @Override
+            public void onInfoClick(Expense expense) {
+                com.spendwise.ai.buckets.SourceDetailBottomSheet sheet = com.spendwise.ai.buckets.SourceDetailBottomSheet
+                        .newInstanceForExpense(expense.getId());
+                sheet.show(getChildFragmentManager(), "source_detail");
+            }
         });
     }
 

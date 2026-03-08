@@ -28,6 +28,8 @@ public class InvestmentAdapter extends ListAdapter<Investment, InvestmentAdapter
 
     public interface OnInvestmentClickListener {
         void onInvestmentClick(Investment investment);
+
+        void onInfoClick(Investment investment);
     }
 
     private final OnInvestmentClickListener listener;
@@ -73,6 +75,7 @@ public class InvestmentAdapter extends ListAdapter<Investment, InvestmentAdapter
         private final TextView textPnl;
         private final TextView textAssetType;
         private final TextView textUpdated;
+        private final android.widget.ImageView btnInfo;
         private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
 
         InvestmentViewHolder(@NonNull View itemView) {
@@ -85,6 +88,7 @@ public class InvestmentAdapter extends ListAdapter<Investment, InvestmentAdapter
             textPnl = itemView.findViewById(R.id.text_investment_pnl);
             textAssetType = itemView.findViewById(R.id.text_investment_asset_type);
             textUpdated = itemView.findViewById(R.id.text_investment_updated);
+            btnInfo = itemView.findViewById(R.id.btn_investment_info);
         }
 
         void bind(Investment inv, OnInvestmentClickListener listener) {
@@ -135,6 +139,10 @@ public class InvestmentAdapter extends ListAdapter<Investment, InvestmentAdapter
             itemView.setOnClickListener(v -> {
                 if (listener != null)
                     listener.onInvestmentClick(inv);
+            });
+            btnInfo.setOnClickListener(v -> {
+                if (listener != null)
+                    listener.onInfoClick(inv);
             });
         }
 

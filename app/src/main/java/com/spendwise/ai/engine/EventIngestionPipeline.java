@@ -37,7 +37,9 @@ public class EventIngestionPipeline {
             @NonNull String eventType,
             long amountCents,
             long eventTimestampMillis,
-            @Nullable String payload) {
+            @Nullable String sourceSender,
+            @Nullable String sourceBody,
+            @Nullable String payloadHashBase) {
         IngestionEvent event = new IngestionEvent(
                 domain,
                 sourceType,
@@ -46,10 +48,17 @@ public class EventIngestionPipeline {
                 eventType,
                 amountCents,
                 eventTimestampMillis,
-                payload == null ? null : hashPayload(payload));
+                sourceSender,
+                sourceBody,
+                payloadHashBase == null ? null : hashPayload(payloadHashBase));
 
         long id = db.ingestionEventDao().insertIgnore(event);
         if (id <= 0) {
+            // Duplicate event detected — backfill sender/body if missing
+            if (sourceSender != null && !sourceSender.isEmpty()) {
+                db.ingestionEventDao().backfillSourceInfo(sourceKey, sourceSender,
+                        sourceBody != null ? sourceBody : "");
+            }
             IngestionEvent existing = db.ingestionEventDao().getBySourceKey(sourceKey);
             long existingId = existing != null ? existing.getId() : -1L;
             return new IngestResult(false, true, existingId);

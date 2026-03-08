@@ -110,8 +110,8 @@ public class AnalyticsViewModel extends AndroidViewModel {
     private void refreshData() {
         long start = getStartDay();
         long end = getEndDay();
-        totalSpending = expenseRepository.getTotalForRangeLive(start, end);
-        categoryTotals = expenseRepository.getCategoryTotalsForRange(start, end);
-        dailyTotals = expenseRepository.getDailyTotalsForRange(start, end);
+        totalSpending = expenseRepository.getConsumptionTotalForRangeLive(start, end);
+        categoryTotals = expenseRepository.getConsumptionCategoryTotalsForRange(start, end);
+        dailyTotals = expenseRepository.getConsumptionDailyTotalsForRange(start, end);
     }
 }

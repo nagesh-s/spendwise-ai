@@ -91,7 +91,6 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
         int spanCount = getResources().getConfiguration().screenWidthDp >= 600 ? 3 : 2;
         recyclerView.setLayoutManager(new GridLayoutManager(requireContext(), spanCount));
         recyclerView.setAdapter(adapter);
-        recyclerView.setHasFixedSize(true);
 
         ledgerToggle.check(R.id.btn_ledger_actual);
         adapter.setLedgerMode(BucketsAdapter.LedgerMode.ACTUAL);

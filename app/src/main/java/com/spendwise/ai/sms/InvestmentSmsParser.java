@@ -38,8 +38,22 @@ public final class InvestmentSmsParser {
     private InvestmentSmsParser() {
     }
 
-    public static boolean isInvestmentSms(@Nullable String sender, @Nullable String body) {
+    public static boolean isPromotionalSms(@Nullable String body) {
         if (body == null || body.trim().isEmpty()) {
+            return false;
+        }
+        String normalized = body.toLowerCase(Locale.US);
+        return containsAny(normalized,
+                "you are eligible for", "pre-approved", "pre approved",
+                "apply now", "avail now", "limited offer", "special offer",
+                "congratulations! you", "congrats!",
+                "click here", "bit.ly/", "apply.link",
+                "call to opt", "sms stop", "unsubscribe",
+                "eligible for", "instant loan", "loan offer", "upgrade", "personal loan");
+    }
+
+    public static boolean isInvestmentSms(@Nullable String sender, @Nullable String body) {
+        if (body == null || body.trim().isEmpty() || isPromotionalSms(body)) {
             return false;
         }
         String normalized = body.toLowerCase(Locale.US);
@@ -54,7 +68,8 @@ public final class InvestmentSmsParser {
                 || FD_NUMBER_PATTERN.matcher(body).find()
                 || RD_NUMBER_PATTERN.matcher(body).find();
         boolean senderHint = sender != null
-                && sender.toLowerCase(Locale.US).matches(".*(upstox|groww|zerodha|nse|bse|amc|mf|bank|hdfc|icici|axis|kotak).*");
+                && sender.toLowerCase(Locale.US)
+                        .matches(".*(upstox|groww|zerodha|nse|bse|amc|mf|bank|hdfc|icici|axis|kotak).*");
         return hasAmount || hasRef || senderHint;
     }
 
@@ -63,7 +78,7 @@ public final class InvestmentSmsParser {
             @Nullable String sender,
             @Nullable String body,
             long timestampMillis) {
-        if (!isInvestmentSms(sender, body) || body == null) {
+        if (isPromotionalSms(body) || !isInvestmentSms(sender, body) || body == null) {
             return null;
         }
 
@@ -103,6 +118,7 @@ public final class InvestmentSmsParser {
 
         return new ParsedInvestmentSignal(
                 signalType,
+                sender,
                 platform,
                 investmentName,
                 assetType,
@@ -244,7 +260,9 @@ public final class InvestmentSmsParser {
         return containsAny(normalized,
                 "investment", "mutual fund", "mf", "sip", "folio",
                 "etf", "shares", "stock", "demat", "buy order", "allotment",
-                "units", "scheme", "amc");
+                "units", "scheme", "amc", "upstox", "groww", "zerodha",
+                "coin", "kite", "angel one", "icici direct", "paytm money",
+                "et money", "mf central", "broker", "demat");
     }
 
     private static boolean containsFdKeyword(String normalized) {

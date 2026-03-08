@@ -60,14 +60,14 @@ public class DashboardViewModel extends AndroidViewModel {
         monthlyTotal = Transformations.switchMap(currentMonth, month -> {
             long startDay = DateUtils.getMonthStartEpochDay(month);
             long endDay = DateUtils.getMonthEndEpochDay(month);
-            return expenseRepository.getTotalForRangeLive(startDay, endDay);
+            return expenseRepository.getConsumptionTotalForRangeLive(startDay, endDay);
         });
 
         // Category totals for pie chart - updates when month changes
         categoryTotals = Transformations.switchMap(currentMonth, month -> {
             long startDay = DateUtils.getMonthStartEpochDay(month);
             long endDay = DateUtils.getMonthEndEpochDay(month);
-            return expenseRepository.getCategoryTotalsForRange(startDay, endDay);
+            return expenseRepository.getConsumptionCategoryTotalsForRange(startDay, endDay);
         });
 
         // Budget progress - updates when month changes
@@ -80,14 +80,14 @@ public class DashboardViewModel extends AndroidViewModel {
 
         // Today's total
         long today = org.threeten.bp.LocalDate.now().toEpochDay();
-        todayTotal = expenseRepository.getTotalForRangeLive(today, today);
+        todayTotal = expenseRepository.getConsumptionTotalForRangeLive(today, today);
 
         // This week's total (Monday to today)
         org.threeten.bp.LocalDate now = org.threeten.bp.LocalDate.now();
         // Find Monday of current week using threeten.bp
         org.threeten.bp.LocalDate weekStart = now
                 .with(org.threeten.bp.temporal.TemporalAdjusters.previousOrSame(org.threeten.bp.DayOfWeek.MONDAY));
-        weekTotal = expenseRepository.getTotalForRangeLive(weekStart.toEpochDay(), today);
+        weekTotal = expenseRepository.getConsumptionTotalForRangeLive(weekStart.toEpochDay(), today);
 
         // Generate AI insights and predictions on background thread
         refreshInsights();

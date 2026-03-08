@@ -9,8 +9,30 @@
 | Metric | Value |
 |---|---|
 | Version | `Unreleased` |
-| Status | Automation 2.0 implemented: dual ledger, SIP schedules, idempotent event pipeline, reconciliation, reward-only investment XP, digest notifications |
-| Last Updated | 2026-03-04 (salary orchestration + recurring investments mode + expected SIP lifecycle + no-dupe pipeline wiring) |
+| Status | Automation 2.0 implemented and holdings repair shipped: dual ledger, SIP schedules, idempotent event pipeline, reconciliation, reward-only investment XP, digest notifications, SMS holdings recovery |
+| Last Updated | 2026-03-08 (holdings repair + expense-to-investment recovery + analytics separation) |
+
+---
+
+## Holdings Repair + Investment Transfer Separation Sweep (2026-03-08)
+
+- Holdings import reliability:
+  - bucket-level SMS import no longer reuses the generic expense sync path
+  - `SmsSyncState` split into transaction and investment cursors to prevent expense scans from starving holdings import
+  - bucket import action now triggers a dedicated 180-day investments-only repair worker run
+- Investment recovery from old expenses:
+  - `Expense` now stores `isInvestmentTransfer`, `linkedInvestmentId`, `recoveryStatus`, and `canonicalSourceKey`
+  - added `ExpenseInvestmentRecoveryEngine` to recover high-confidence broker/SIP/FD/RD expense rows into bucket holdings
+  - recovery uses the same `IngestionEvent` + holdings dedupe path as SMS/notification imports
+  - placeholder expense-derived holdings are intentionally weak so later real allotment/correction SMS can merge into the same logical investment
+- Analytics/accounting cleanup:
+  - budget, dashboard, insights, predictions, streaks, salary allocation heuristics, and allocation suggestions now use consumption-only queries
+  - Calendar and merchant history still show investment-transfer expenses so cash movement remains visible
+- SMS parsing:
+  - investment parser now recognizes broker-debit style messages even without explicit unit/allotment wording
+- Validation executed:
+  - `./gradlew compileStandardDebugJavaWithJavac`
+  - `./gradlew testStandardDebugUnitTest`
 
 ---
 

@@ -4,6 +4,7 @@ import android.graphics.drawable.GradientDrawable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -33,27 +34,28 @@ public class ExpenseAdapter extends ListAdapter<Expense, ExpenseAdapter.ViewHold
 
     public interface OnExpenseClickListener {
         void onExpenseClick(Expense expense);
+
+        void onInfoClick(Expense expense);
     }
 
     public ExpenseAdapter() {
         super(DIFF_CALLBACK);
     }
 
-    private static final DiffUtil.ItemCallback<Expense> DIFF_CALLBACK =
-            new DiffUtil.ItemCallback<Expense>() {
-                @Override
-                public boolean areItemsTheSame(@NonNull Expense oldItem, @NonNull Expense newItem) {
-                    return oldItem.getId() == newItem.getId();
-                }
+    private static final DiffUtil.ItemCallback<Expense> DIFF_CALLBACK = new DiffUtil.ItemCallback<Expense>() {
+        @Override
+        public boolean areItemsTheSame(@NonNull Expense oldItem, @NonNull Expense newItem) {
+            return oldItem.getId() == newItem.getId();
+        }
 
-                @Override
-                public boolean areContentsTheSame(@NonNull Expense oldItem, @NonNull Expense newItem) {
-                    return oldItem.getAmountCents() == newItem.getAmountCents() &&
-                           oldItem.getCategoryId() == newItem.getCategoryId() &&
-                           (oldItem.getDescription() == null ? newItem.getDescription() == null 
-                               : oldItem.getDescription().equals(newItem.getDescription()));
-                }
-            };
+        @Override
+        public boolean areContentsTheSame(@NonNull Expense oldItem, @NonNull Expense newItem) {
+            return oldItem.getAmountCents() == newItem.getAmountCents() &&
+                    oldItem.getCategoryId() == newItem.getCategoryId() &&
+                    (oldItem.getDescription() == null ? newItem.getDescription() == null
+                            : oldItem.getDescription().equals(newItem.getDescription()));
+        }
+    };
 
     public void setCategoryMap(Map<Long, Category> map) {
         this.categoryMap = map;
@@ -105,6 +107,7 @@ public class ExpenseAdapter extends ListAdapter<Expense, ExpenseAdapter.ViewHold
         private final TextView category;
         private final TextView merchant;
         private final TextView amount;
+        private final ImageView btnInfo;
 
         ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -113,12 +116,22 @@ public class ExpenseAdapter extends ListAdapter<Expense, ExpenseAdapter.ViewHold
             category = itemView.findViewById(R.id.text_expense_category);
             merchant = itemView.findViewById(R.id.text_expense_merchant);
             amount = itemView.findViewById(R.id.text_expense_amount);
+            btnInfo = itemView.findViewById(R.id.btn_expense_info);
 
             itemView.setOnClickListener(v -> {
                 if (clickListener != null) {
                     int pos = getAdapterPosition();
                     if (pos != RecyclerView.NO_POSITION) {
                         clickListener.onExpenseClick(getItem(pos));
+                    }
+                }
+            });
+
+            btnInfo.setOnClickListener(v -> {
+                if (clickListener != null) {
+                    int pos = getAdapterPosition();
+                    if (pos != RecyclerView.NO_POSITION) {
+                        clickListener.onInfoClick(getItem(pos));
                     }
                 }
             });
@@ -132,7 +145,7 @@ public class ExpenseAdapter extends ListAdapter<Expense, ExpenseAdapter.ViewHold
             Category cat = categoryMap.get(expense.getCategoryId());
             if (cat != null) {
                 category.setText(cat.getName());
-                
+
                 // Color indicator
                 GradientDrawable background = (GradientDrawable) colorIndicator.getBackground();
                 if (background != null) {
@@ -143,7 +156,8 @@ public class ExpenseAdapter extends ListAdapter<Expense, ExpenseAdapter.ViewHold
             }
 
             // Merchant + description presentation:
-            // Show merchant as primary title when available, and keep description as secondary note.
+            // Show merchant as primary title when available, and keep description as
+            // secondary note.
             String desc = expense.getDescription() != null ? expense.getDescription().trim() : "";
             String merchantName = null;
             Long merchantId = expense.getMerchantId();

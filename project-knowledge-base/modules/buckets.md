@@ -41,11 +41,25 @@ Turn buckets into an automatic monthly money-management system:
 4. `OccurrenceReconciliationEngine` resolves expected occurrence to confirmed/adjusted.
 5. Net worth updates only from `investments` (actual ledger).
 
+### Holdings repair flow
+1. `BucketDetailFragment` triggers a dedicated holdings repair action instead of the generic SMS auto-import path.
+2. `SmsAutoImportWorker` runs in investments-only mode with a 180-day backfill window.
+3. Investment SMS ingestion uses a separate investment sync cursor from expense transaction sync.
+4. After SMS replay, `ExpenseInvestmentRecoveryEngine` scans existing expense rows for likely broker/SIP/FD/RD transfers.
+5. High-confidence candidates are converted into holdings through the same idempotent ingestion pipeline.
+6. Medium-confidence candidates are marked for future review without polluting holdings.
+
 ## Duplicate Prevention Strategy
 - Global idempotency: unique `ingestion_events.sourceKey`.
 - Correlation matching: `correlationKey` links debit/allotment/correction paths.
 - Source precedence: first accepted event creates path; later correlated events update path.
 - Worker/restart safety: duplicate deliveries are ignored through registry checks.
+- Expense recovery idempotency: recovered rows store `canonicalSourceKey` and optional `linkedInvestmentId` so repeat repair runs do not create duplicate holdings.
+
+## Accounting Policy
+- Investment-transfer expenses remain visible in Calendar and merchant history.
+- Budget progress, dashboard totals, salary allocation heuristics, streaks, insights, and predictions use consumption-only queries that exclude `Expense.isInvestmentTransfer = 1`.
+- Net worth still comes only from confirmed `Investment` rows.
 
 ## Bucket Assignment Strategy
 - `BucketAssignmentEngine` priority:
@@ -63,6 +77,7 @@ Turn buckets into an automatic monthly money-management system:
 - `app/src/main/java/com/spendwise/ai/engine/InvestmentScheduleEngine.java`
 - `app/src/main/java/com/spendwise/ai/engine/OccurrenceReconciliationEngine.java`
 - `app/src/main/java/com/spendwise/ai/engine/InvestmentAutoIngestionEngine.java`
+- `app/src/main/java/com/spendwise/ai/engine/ExpenseInvestmentRecoveryEngine.java`
 - `app/src/main/java/com/spendwise/ai/engine/BucketAssignmentEngine.java`
 - `app/src/main/java/com/spendwise/ai/work/SalaryAutomationWorker.java`
 - `app/src/main/java/com/spendwise/ai/work/InvestmentScheduleWorker.java`

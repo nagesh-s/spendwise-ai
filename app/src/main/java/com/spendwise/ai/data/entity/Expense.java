@@ -20,9 +20,17 @@ import androidx.room.PrimaryKey;
 }, indices = {
         @Index(value = "dateEpochDay"),
         @Index(value = "categoryId"),
-        @Index(value = "merchantId")
+        @Index(value = "merchantId"),
+        @Index(value = "isInvestmentTransfer"),
+        @Index(value = "recoveryStatus"),
+        @Index(value = "canonicalSourceKey", unique = true)
 })
 public class Expense {
+
+    public static final String RECOVERY_STATUS_NONE = "NONE";
+    public static final String RECOVERY_STATUS_PENDING_REVIEW = "PENDING_REVIEW";
+    public static final String RECOVERY_STATUS_IGNORED = "IGNORED";
+    public static final String RECOVERY_STATUS_CONVERTED = "CONVERTED";
 
     @PrimaryKey(autoGenerate = true)
     private long id;
@@ -61,6 +69,31 @@ public class Expense {
     @Nullable
     private Long accountId;
 
+    /**
+     * True when this row represents an investment transfer/outflow rather than
+     * lifestyle spending. These rows stay visible in history but are excluded
+     * from budgeting and spend analytics.
+     */
+    private boolean isInvestmentTransfer;
+
+    /**
+     * Linked holding created or updated from this expense row.
+     */
+    @Nullable
+    private Long linkedInvestmentId;
+
+    /**
+     * Tracks the recovery lifecycle for expense -> investment conversion.
+     */
+    @NonNull
+    private String recoveryStatus;
+
+    /**
+     * Canonical source key used to keep expense-derived recoveries idempotent.
+     */
+    @Nullable
+    private String canonicalSourceKey;
+
     // Constructor
     public Expense(long dateEpochDay, long amountCents, @Nullable String description,
             long categoryId, @Nullable Long merchantId) {
@@ -69,6 +102,8 @@ public class Expense {
         this.description = description;
         this.categoryId = categoryId;
         this.merchantId = merchantId;
+        this.isInvestmentTransfer = false;
+        this.recoveryStatus = RECOVERY_STATUS_NONE;
     }
 
     // Getters and Setters
@@ -138,5 +173,40 @@ public class Expense {
 
     public void setAccountId(@Nullable Long accountId) {
         this.accountId = accountId;
+    }
+
+    public boolean isInvestmentTransfer() {
+        return isInvestmentTransfer;
+    }
+
+    public void setInvestmentTransfer(boolean investmentTransfer) {
+        isInvestmentTransfer = investmentTransfer;
+    }
+
+    @Nullable
+    public Long getLinkedInvestmentId() {
+        return linkedInvestmentId;
+    }
+
+    public void setLinkedInvestmentId(@Nullable Long linkedInvestmentId) {
+        this.linkedInvestmentId = linkedInvestmentId;
+    }
+
+    @NonNull
+    public String getRecoveryStatus() {
+        return recoveryStatus;
+    }
+
+    public void setRecoveryStatus(@NonNull String recoveryStatus) {
+        this.recoveryStatus = recoveryStatus;
+    }
+
+    @Nullable
+    public String getCanonicalSourceKey() {
+        return canonicalSourceKey;
+    }
+
+    public void setCanonicalSourceKey(@Nullable String canonicalSourceKey) {
+        this.canonicalSourceKey = canonicalSourceKey;
     }
 }

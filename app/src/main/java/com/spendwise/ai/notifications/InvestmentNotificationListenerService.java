@@ -32,7 +32,8 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Notification listener for parsing investment signals from broker app and email
+ * Notification listener for parsing investment signals from broker app and
+ * email
  * notifications.
  *
  * Signals are fed to the same ingestion engine as SMS import so duplicate debit
@@ -120,6 +121,8 @@ public class InvestmentNotificationListenerService extends NotificationListenerS
                         payload.investmentSignal.getSignalType().name(),
                         payload.investmentSignal.getAmountCents(),
                         payload.investmentSignal.getTimestampMillis(),
+                        payload.sender,
+                        payload.investmentSignal.getRawMessage(),
                         payload.investmentSignal.getRawMessage());
                 if (!event.duplicate) {
                     List<ParsedInvestmentSignal> oneSignal = new ArrayList<>();
@@ -163,7 +166,7 @@ public class InvestmentNotificationListenerService extends NotificationListenerS
         ParsedTransaction parsedTransaction = null;
         SalaryDetector.SalaryDetectionResult salaryDetection = null;
         if (TransactionParser.isTransactionSms(sender, message)) {
-            parsedTransaction = TransactionParser.parse(message, timestamp);
+            parsedTransaction = TransactionParser.parse(sender, message, timestamp);
             if (parsedTransaction != null) {
                 salaryDetection = new SalaryDetector().detect(parsedTransaction);
             }

@@ -85,7 +85,7 @@ public class ProfileFragment extends Fragment {
     }
 
     private void observeStreak() {
-        expenseRepository.getAllExpenses().observe(getViewLifecycleOwner(), expenses -> {
+        expenseRepository.getAllConsumptionExpenses().observe(getViewLifecycleOwner(), expenses -> {
             if (expenses != null) {
                 int streak = gamificationEngine.calculateCurrentStreak(expenses);
                 textStreak.setText(streak + " Days");

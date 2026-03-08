@@ -20,6 +20,7 @@ public class ParsedInvestmentSignal {
     }
 
     private final SignalType signalType;
+    private final String sender;
     private final String platform;
     private final String investmentName;
     private final String assetType;
@@ -32,6 +33,7 @@ public class ParsedInvestmentSignal {
 
     public ParsedInvestmentSignal(
             @NonNull SignalType signalType,
+            @Nullable String sender,
             @Nullable String platform,
             @Nullable String investmentName,
             @NonNull String assetType,
@@ -42,6 +44,7 @@ public class ParsedInvestmentSignal {
             @NonNull String rawMessage,
             boolean correction) {
         this.signalType = signalType;
+        this.sender = sender;
         this.platform = platform;
         this.investmentName = investmentName;
         this.assetType = assetType;
@@ -56,6 +59,11 @@ public class ParsedInvestmentSignal {
     @NonNull
     public SignalType getSignalType() {
         return signalType;
+    }
+
+    @Nullable
+    public String getSender() {
+        return sender;
     }
 
     @Nullable

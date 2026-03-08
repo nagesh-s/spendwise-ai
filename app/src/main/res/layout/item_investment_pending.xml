@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="10dp"
+    app:cardBackgroundColor="?attr/colorTertiaryContainer"
+    app:cardCornerRadius="14dp"
+    app:cardElevation="0dp"
+    app:strokeColor="?attr/colorOutlineVariant"
+    app:strokeWidth="1dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/text_pending_name"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textColor="?attr/colorOnTertiaryContainer"
+                android:textStyle="bold"
+                tools:text="Groww Fixed Deposit" />
+
+            <TextView
+                android:id="@+id/text_pending_asset_type"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:background="?attr/colorSurfaceVariant"
+                android:paddingHorizontal="10dp"
+                android:paddingVertical="4dp"
+                android:textAppearance="?attr/textAppearanceLabelMedium"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                tools:text="Fixed Deposit" />
+
+            <ImageView
+                android:id="@+id/btn_pending_info"
+                android:layout_width="32dp"
+                android:layout_height="32dp"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:contentDescription="View Source"
+                android:padding="6dp"
+                android:src="@drawable/ic_info_outline"
+                app:tint="?attr/colorOnSurfaceVariant" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/text_pending_platform"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="2dp"
+            android:textAppearance="?attr/textAppearanceBodySmall"
+            android:textColor="?attr/colorOnTertiaryContainer"
+            android:visibility="gone"
+            tools:text="Groww" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/text_pending_value"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:textAppearance="?attr/textAppearanceTitleMedium"
+                android:textColor="?attr/colorOnTertiaryContainer"
+                android:textStyle="bold"
+                tools:text="₹50,000" />
+
+            <TextView
+                android:id="@+id/text_pending_invested"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnTertiaryContainer"
+                tools:text="Invested ₹50,000" />
+        </LinearLayout>
+
+        <!-- Accept / Reject buttons -->
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:gravity="end"
+            android:orientation="horizontal">
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_pending_reject"
+                style="@style/Widget.Material3.Button.OutlinedButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="8dp"
+                android:minHeight="36dp"
+                android:text="@string/bucket_detail_pending_reject" />
+
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_pending_accept"
+                style="@style/Widget.Material3.Button.TonalButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:minHeight="36dp"
+                android:text="@string/bucket_detail_pending_accept" />
+        </LinearLayout>
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>

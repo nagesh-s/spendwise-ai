@@ -7,11 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
-## [Unreleased]
+## [1.8.0] - 2026-03-09
+
+### Added - Source Traceability & Refresh
+- **Expense Info Icon** - Added ℹ️ info button to expense cards for at-a-glance source identification; wired in `CalendarFragment` to open `SourceDetailBottomSheet`.
+- **Source Detail for Expenses** - `SourceDetailBottomSheet` now supports expense lookup via `canonicalSourceKey` or legacy description heuristic.
+- **Manual Entry Display** - Source detail bottom sheet shows "Manually Added" with date for manually created entries instead of "Details unavailable".
+- **Refresh Sources** - Added "Refresh Sources" button in `SourceDetailBottomSheet` (empty state + inline) that triggers a 365-day SMS re-scan to backfill sender/body on existing ingestion events.
+- **Ingestion Event Backfill** - `IngestionEventDao.backfillSourceInfo()` updates existing events with null sender/body; `EventIngestionPipeline` auto-backfills on duplicate inserts.
+- **WorkManager Completion Toast** - Refresh Sources observes work completion via `getWorkInfosForUniqueWorkLiveData` and shows success/failure toast.
+
+### Added - Investment Pipeline Improvements
+- **Expense-to-Holding Recovery Engine** - `ExpenseInvestmentRecoveryEngine` recovers likely broker/SIP/FD/RD expense rows into bucket holdings using the same idempotent ingestion pipeline as SMS/notification imports.
+- **Expense Transfer Metadata** - `Expense` rows now store `isInvestmentTransfer`, `linkedInvestmentId`, `recoveryStatus`, and `canonicalSourceKey` to support no-dupe recovery and analytics separation.
+- **Investment Auto-Ingestion Engine** - SMS-driven investment ingestion with source/correlation key dedupe to merge debit + unit-allotment phases and prevent double entries.
+- **Investment SMS Parser** - Parser for MF/ETF/stock/FD/RD confirmation flows (including correction messages) and asset-type inference.
+- **Voice Investment Entry** - Voice-based investment capture in Bucket Detail with transcript parsing and prefilled add-investment form.
+- **Notification-Based Holdings Sync** - Notification listener ingestion for broker and email app notifications, reusing duplicate-safe merge logic from SMS investment import.
+- **Import Source Menu Simplification** - Bucket Detail import menu now exposes only working routes (SMS now + notification sync), removing non-functional placeholders.
+
+### Added - Bucket Automation & Scheduling
+- **Salary Allocation Orchestrator** - Monthly idempotent orchestration with auto-run on salary detection and fallback run on expected payday.
+- **Unified Ingestion Registry** - `IngestionEvent` table + `EventIngestionPipeline` for strict cross-source idempotency (`sourceKey` uniqueness).
+- **SIP Schedule Data Model** - `InvestmentSchedule` and `InvestmentOccurrence` entities with DAOs, repositories, and migration `5 -> 6`.
+- **Expected SIP Engine** - `InvestmentScheduleEngine` generates expected occurrences (24-month detailed cap + older aggregate rollup).
+- **Reconciliation Engine** - `OccurrenceReconciliationEngine` resolves expected SIP occurrences with confirmed SMS/notification signals.
+- **Bucket Assignment Engine** - AI-primary assignment flow (learned mapping → on-device inference → rule fallback) with low-confidence map-pending behavior.
+- **Ask-Once Learn Mapping UX** - Bucket detail prompts one-time mapping for low-confidence auto-assigned holdings and stores user decision for reuse.
+- **Investment Automation Workers** - `SalaryAutomationWorker`, `InvestmentScheduleWorker`, and `InvestmentDigestWorker` with scheduler wiring.
+- **Daily Action-Based Digest** - Compact investment digest notification summarizing allocation status, reconciled/pending SIPs, and progress/execution scores.
+- **Reward-Only Investment XP** - `InvestmentGamificationEngine` and surfaced investment XP in Profile.
+
+### Added - Bucket UX
+- **Custom Bucket Creation Flow** - `Add Bucket` actions (empty state + FAB) to create custom buckets with name, timeline, target split, and auto color/sort assignment.
+- **Investment Editor Flow** - `Add Investment` and item-tap edit in Bucket Detail with asset type, amounts, platform, and goal-label inputs.
+- **Dialog Form Layouts** - Dedicated Material dialog layouts for salary, bucket, and investment forms to avoid field overlap and improve small-screen keyboard behavior.
+- **Recurring Investments UI** - Investment schedule list and editor dialog under recurring investment mode.
+- **Expected SIPs in Bucket Detail** - Statused expected SIP list with manual confirm/adjust/skip actions.
 
 ### Changed
+- **Holdings Import Repair Path** - Buckets now run a dedicated investments-only SMS repair flow with a 180-day backfill window instead of the generic shared SMS import path.
+- **Split SMS Sync Cursors** - SMS transaction sync and investment sync now maintain separate cursors so expense scans do not block later holdings recovery.
+- **Investment Transfer Accounting** - Expense rows recovered as investment transfers stay visible in Calendar and Merchants, but budget, analytics, insights, streaks, and allocation heuristics now exclude them from spend totals.
 - **Buckets UX Refresh** - Redesigned Buckets dashboard with stronger hierarchy (overview card, allocation health, dynamic allocation bar, cleaner list spacing) and modern card styling.
-- **Bucket Detail UX Refresh** - Added holdings summary panel (current value, invested, P/L, count) and improved investment card readability with updated metadata and P/L emphasis.
+- **Bucket Detail UX Refresh** - Holdings summary panel (current value, invested, P/L, count) and improved investment card readability with updated metadata and P/L emphasis.
 - **Net Worth Toggle Persistence** - Buckets screen now persists net-worth visibility preference via `BucketSalaryPrefs`.
 - **Buckets Layout Density** - Buckets list now uses a compact 2-column grid on phones (3-column on larger screens) to keep ~4 buckets visible without scrolling.
 - **Buckets Action Placement** - Salary allocation and net-worth controls moved into a compact top action row; oversized top block removed to maximize visible bucket area.
@@ -23,27 +62,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Recurring Screen Expansion** - Existing recurring route now supports two modes: recurring expenses and recurring investments (SIP schedules).
 - **Notification Intent Routing** - `MainActivity` now handles `view_buckets` and `view_recurring` actions from automation notifications.
 
-### Added
-- **Custom Bucket Creation Flow** - Wired `Add Bucket` actions (empty state + FAB) to create custom buckets with name, timeline, target split, and auto color/sort assignment.
-- **Investment Editor Flow** - Wired `Add Investment` and item-tap edit in Bucket Detail with asset type, amounts, platform, and goal-label inputs.
-- **Dialog Form Layouts** - Added dedicated Material dialog layouts for salary, bucket, and investment forms to avoid field overlap and improve small-screen keyboard behavior.
-- **Investment Auto-Ingestion Engine** - Added SMS-driven investment ingestion with source/correlation key dedupe to merge debit + unit-allotment phases and prevent double entries.
-- **Investment SMS Parser** - Added parser for MF/ETF/stock/FD/RD confirmation flows (including correction messages) and asset-type inference.
-- **Voice Investment Entry** - Added voice-based investment capture in Bucket Detail with transcript parsing and prefilled add-investment form.
-- **Notification-Based Holdings Sync** - Added notification listener ingestion for broker and email app notifications, reusing duplicate-safe merge logic from SMS investment import.
-- **Import Source Menu Simplification** - Bucket Detail import menu now exposes only working routes (SMS now + notification sync), removing non-functional AA/Broker/Email placeholders.
-- **Salary Allocation Orchestrator** - Added monthly idempotent orchestration with auto-run on salary detection and fallback run on expected payday.
-- **Unified Ingestion Registry** - Added `IngestionEvent` table + `EventIngestionPipeline` for strict cross-source idempotency (`sourceKey` uniqueness).
-- **SIP Schedule Data Model** - Added `InvestmentSchedule` and `InvestmentOccurrence` entities with DAOs, repositories, and migration `5 -> 6`.
-- **Expected SIP Engine** - Added `InvestmentScheduleEngine` to generate expected occurrences (24-month detailed cap + older aggregate rollup).
-- **Reconciliation Engine** - Added `OccurrenceReconciliationEngine` to resolve expected SIP occurrences with confirmed SMS/notification signals.
-- **Bucket Assignment Engine** - Added AI-primary assignment flow (learned mapping → on-device inference → rule fallback) with low-confidence map-pending behavior.
-- **Ask-Once Learn Mapping UX** - Bucket detail now prompts one-time mapping for low-confidence auto-assigned holdings and stores user decision for reuse.
-- **Recurring Investments UI** - Added investment schedule list and editor dialog under recurring investment mode.
-- **Expected SIPs in Bucket Detail** - Added statused expected SIP list with manual confirm/adjust/skip actions.
-- **Investment Automation Workers** - Added `SalaryAutomationWorker`, `InvestmentScheduleWorker`, and `InvestmentDigestWorker` with scheduler wiring.
-- **Daily Action-Based Digest** - Added compact investment digest notification summarizing allocation status, reconciled/pending SIPs, and progress/execution scores.
-- **Reward-Only Investment XP** - Added `InvestmentGamificationEngine` and surfaced investment XP in Profile.
+### Fixed
+- **Import Holdings from SMS** - Fixed a failure mode where historical investment SMS were skipped after Auto Transactions or the periodic SMS worker had already advanced the shared sync timestamp.
+- **Broker Debit Detection** - Investment parser now accepts broker-platform debit messages even when the text does not explicitly mention units or allotment.
+- **Bucket Initial Display** - Fixed buckets not rendering on first load by removing `setHasFixedSize(true)` from `BucketsFragment` RecyclerView inside `NestedScrollView`.
+- **Duplicate FD Prevention** - Enhanced fuzzy matching in `InvestmentAutoIngestionEngine` to prevent duplicate Fixed Deposits by extending the date window to 3650 days and amount tolerance to 40% for FD/RD asset types.
+- **Expense Source Traceability** - SMS-imported expenses now store `canonicalSourceKey` and create ingestion events with sender and message body in `SmsAutoImportWorker`.
+- **Expense Source Refresh** - Fixed expense repair path: `lastTransactionImportedTimestamp` is now bypassed during repair mode and transactions are read with `readRecentTransactions(repairLookbackDays)`.
+
+### Technical
+- Migration 6→7 adds expense-level investment transfer metadata and canonical source key indexing.
+- New entities: `IngestionEvent` (with `sourceSender`/`sourceBody`), `InvestmentSchedule`, `InvestmentOccurrence`, `InstrumentBucketMapping`.
+- New packages: `engine/` (recovery, ingestion, reconciliation, scheduling, gamification).
+- New DAOs: `IngestionEventDao` (with `backfillSourceInfo`), `InvestmentScheduleDao`, `InvestmentOccurrenceDao`.
+- New layouts: `fragment_source_detail.xml`, `item_investment_pending.xml`.
+- New drawables: `ic_info_outline.xml`, `ic_refresh.xml`.
+- `ExpenseDao` extended with `getByDateAmountDescription` for source backfill.
+- `WorkScheduler` extended with `runSourceRefreshNow` (unique work name for observation).
 
 ---
 
@@ -73,8 +108,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **Nav Graph Crash** - Fixed `XmlPullParserException: Type is long but found integer` by adding `L` suffix to `bucketId` default value in `nav_graph.xml`.
-
-### Fixed
 - **Voice Recognition Fallback** - `VoiceInputHelper` now captures partial transcripts and uses them when recognizer returns `ERROR_NO_MATCH` or speech timeout, reducing hard-fail voice sessions.
 - **Voice Error UX** - Replaced raw `"No match"` surfaced errors with actionable user-facing guidance and improved busy/network messaging.
 - **Voice Add Flow Safety** - Dashboard now pre-fills only high-confidence voice fields and defers uncertain fields to user confirmation.

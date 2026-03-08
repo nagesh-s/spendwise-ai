@@ -13,6 +13,7 @@ public class ParsedTransaction {
     }
 
     private final TransactionType type;
+    private final String sender;
     private final long amountCents;
     private final String merchant;
     private final String accountInfo;
@@ -20,9 +21,10 @@ public class ParsedTransaction {
     private final long timestampMillis;
     private boolean imported;
 
-    public ParsedTransaction(TransactionType type, long amountCents, String merchant,
+    public ParsedTransaction(TransactionType type, String sender, long amountCents, String merchant,
             String accountInfo, String originalMessage, long timestampMillis) {
         this.type = type;
+        this.sender = sender;
         this.amountCents = amountCents;
         this.merchant = merchant;
         this.accountInfo = accountInfo;
@@ -33,6 +35,10 @@ public class ParsedTransaction {
 
     public TransactionType getType() {
         return type;
+    }
+
+    public String getSender() {
+        return sender;
     }
 
     public long getAmountCents() {

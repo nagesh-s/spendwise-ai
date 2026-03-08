@@ -62,6 +62,14 @@ public class ExpenseRepository {
         return expenseDao.getAllExpensesSync();
     }
 
+    public LiveData<List<Expense>> getAllConsumptionExpenses() {
+        return expenseDao.getAllConsumptionExpenses();
+    }
+
+    public List<Expense> getAllConsumptionExpensesSync() {
+        return expenseDao.getAllConsumptionExpensesSync();
+    }
+
     public Expense getExpenseByIdSync(long expenseId) {
         return expenseDao.getById(expenseId);
     }
@@ -80,12 +88,36 @@ public class ExpenseRepository {
         return expenseDao.getTotalForRangeLive(startDay, endDay);
     }
 
+    public long getConsumptionTotalForRange(long startDay, long endDay) {
+        return expenseDao.getConsumptionTotalForRange(startDay, endDay);
+    }
+
+    public LiveData<Long> getConsumptionTotalForRangeLive(long startDay, long endDay) {
+        return expenseDao.getConsumptionTotalForRangeLive(startDay, endDay);
+    }
+
+    public LiveData<Long> getInvestmentTransferTotalForRangeLive(long startDay, long endDay) {
+        return expenseDao.getInvestmentTransferTotalForRangeLive(startDay, endDay);
+    }
+
     public LiveData<List<CategoryTotal>> getCategoryTotalsForRange(long startDay, long endDay) {
         return expenseDao.getCategoryTotalsForRange(startDay, endDay);
     }
 
+    public List<CategoryTotal> getConsumptionCategoryTotalsForRangeSync(long startDay, long endDay) {
+        return expenseDao.getConsumptionCategoryTotalsForRangeSync(startDay, endDay);
+    }
+
+    public LiveData<List<CategoryTotal>> getConsumptionCategoryTotalsForRange(long startDay, long endDay) {
+        return expenseDao.getConsumptionCategoryTotalsForRange(startDay, endDay);
+    }
+
     public LiveData<List<DailyTotal>> getDailyTotalsForRange(long startDay, long endDay) {
         return expenseDao.getDailyTotalsForRange(startDay, endDay);
+    }
+
+    public LiveData<List<DailyTotal>> getConsumptionDailyTotalsForRange(long startDay, long endDay) {
+        return expenseDao.getConsumptionDailyTotalsForRange(startDay, endDay);
     }
 
     public LiveData<List<Expense>> getExpensesByCategory(long categoryId) {
@@ -94,5 +126,9 @@ public class ExpenseRepository {
 
     public LiveData<List<Expense>> getRecentExpensesByMerchant(long merchantId, int limit) {
         return expenseDao.getRecentExpensesByMerchant(merchantId, limit);
+    }
+
+    public List<Expense> getExpenseCandidatesForInvestmentRecoverySync(long startDay, long endDay) {
+        return expenseDao.getExpenseCandidatesForInvestmentRecoverySync(startDay, endDay);
     }
 }

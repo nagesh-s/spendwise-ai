@@ -77,7 +77,8 @@ public class SmsPermissionHelper {
      * @param sinceTimestamp Only messages newer than this timestamp are considered
      * @param dayLimit       Fallback lookback window when sync timestamp is empty
      */
-    public static List<ParsedTransaction> readTransactionsSince(@NonNull Context context, long sinceTimestamp, int dayLimit) {
+    public static List<ParsedTransaction> readTransactionsSince(@NonNull Context context, long sinceTimestamp,
+            int dayLimit) {
         List<ParsedTransaction> transactions = new ArrayList<>();
 
         if (!hasReadSmsPermission(context)) {
@@ -111,7 +112,7 @@ public class SmsPermissionHelper {
                     long timestamp = cursor.getLong(dateIdx);
 
                     if (TransactionParser.isTransactionSms(sender, body)) {
-                        ParsedTransaction parsed = TransactionParser.parse(body, timestamp);
+                        ParsedTransaction parsed = TransactionParser.parse(sender, body, timestamp);
                         if (parsed != null) {
                             transactions.add(parsed);
                         }

@@ -24,6 +24,7 @@ public class IngestionEvent {
     public static final String SOURCE_NOTIFICATION = "NOTIFICATION";
     public static final String SOURCE_MANUAL = "MANUAL";
     public static final String SOURCE_SCHEDULE = "SCHEDULE";
+    public static final String SOURCE_EXPENSE_RECOVERY = "EXPENSE_RECOVERY";
 
     public static final String STATUS_RECEIVED = "RECEIVED";
     public static final String STATUS_PROCESSED = "PROCESSED";
@@ -53,6 +54,12 @@ public class IngestionEvent {
     private long eventTimestampMillis;
 
     @Nullable
+    private String sourceSender;
+
+    @Nullable
+    private String sourceBody;
+
+    @Nullable
     private String payloadHash;
 
     @Nullable
@@ -69,6 +76,8 @@ public class IngestionEvent {
             @NonNull String eventType,
             long amountCents,
             long eventTimestampMillis,
+            @Nullable String sourceSender,
+            @Nullable String sourceBody,
             @Nullable String payloadHash) {
         this.domain = domain;
         this.sourceType = sourceType;
@@ -77,6 +86,8 @@ public class IngestionEvent {
         this.eventType = eventType;
         this.amountCents = amountCents;
         this.eventTimestampMillis = eventTimestampMillis;
+        this.sourceSender = sourceSender;
+        this.sourceBody = sourceBody;
         this.payloadHash = payloadHash;
         this.status = STATUS_RECEIVED;
     }
@@ -148,6 +159,24 @@ public class IngestionEvent {
 
     public void setEventTimestampMillis(long eventTimestampMillis) {
         this.eventTimestampMillis = eventTimestampMillis;
+    }
+
+    @Nullable
+    public String getSourceSender() {
+        return sourceSender;
+    }
+
+    public void setSourceSender(@Nullable String sourceSender) {
+        this.sourceSender = sourceSender;
+    }
+
+    @Nullable
+    public String getSourceBody() {
+        return sourceBody;
+    }
+
+    public void setSourceBody(@Nullable String sourceBody) {
+        this.sourceBody = sourceBody;
     }
 
     @Nullable
