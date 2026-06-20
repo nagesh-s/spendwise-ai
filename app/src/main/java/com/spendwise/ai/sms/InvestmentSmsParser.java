@@ -265,7 +265,7 @@ public final class InvestmentSmsParser {
         return timestampMillis / (24L * 60 * 60 * 1000);
     }
 
-    private static boolean containsInvestmentKeyword(String normalized) {
+    public static boolean containsInvestmentKeyword(String normalized) {
         return containsAny(normalized,
                 "investment", "mutual fund", "mf", "sip", "folio",
                 "etf", "shares", "stock", "demat", "buy order", "allotment",

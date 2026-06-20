@@ -15,8 +15,9 @@ public interface ReviewCandidateDao {
     @Insert(onConflict = OnConflictStrategy.IGNORE)
     long insertIgnore(ReviewCandidate candidate);
 
+    @androidx.room.Transaction
     @Query("SELECT * FROM review_candidates WHERE status = 'PENDING' ORDER BY createdAtMillis DESC")
-    LiveData<List<ReviewCandidate>> getPending();
+    LiveData<List<com.spendwise.ai.data.pojo.ReviewCandidateWithEvent>> getPending();
 
     @Query("SELECT COUNT(*) FROM review_candidates WHERE status = 'PENDING'")
     int countPendingSync();

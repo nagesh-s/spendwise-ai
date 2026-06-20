@@ -234,47 +234,61 @@ public class SmsAutoImportWorker extends Worker {
         // Parse and ingest investment signals from raw SMS stream.
         List<ParsedInvestmentSignal> investmentSignals = new ArrayList<>();
         com.spendwise.ai.engine.InvestmentUnderstandingEngine understandingEngine = new com.spendwise.ai.engine.InvestmentUnderstandingEngine(db, java.util.concurrent.Executors.newSingleThreadExecutor());
-        for (int i = rawMessages.size() - 1; i >= 0; i--) {
-            RawSmsMessage message = rawMessages.get(i);
-            long timestamp = message.getTimestampMillis();
-            if (repairLookbackDays <= 0 && timestamp <= lastInvestmentImportedTimestamp) {
-                continue;
-            }
-            if (timestamp > latestInvestmentSeenTimestamp) {
-                latestInvestmentSeenTimestamp = timestamp;
-            }
-            ParsedInvestmentSignal signal = understandingEngine.understandSync(
-                    message.getSender(),
-                    message.getBody(),
-                    timestamp);
-            if (signal != null) {
-                investmentSignals.add(signal);
-            }
-        }
-
-        if (!investmentSignals.isEmpty()) {
+        if (!rawMessages.isEmpty()) {
             EventIngestionPipeline pipeline = new EventIngestionPipeline();
             List<ParsedInvestmentSignal> acceptedSignals = new ArrayList<>();
             List<Long> acceptedEventIds = new ArrayList<>();
-            for (ParsedInvestmentSignal signal : investmentSignals) {
-                String sourceKey = InvestmentSignalKeyFactory.buildIngestionSourceKey(signal);
-                EventIngestionPipeline.IngestResult event = pipeline.ingest(
-                        db,
-                        "EXPENSES",
-                        "SMS",
-                        sourceKey,
-                        null,
-                        signal.getSignalType().name(),
-                        signal.getAmountCents(),
-                        signal.getTimestampMillis(),
-                        signal.getSender(),
-                        signal.getRawMessage(),
-                        signal.getRawMessage());
-                if (event.duplicate) {
+            for (int i = rawMessages.size() - 1; i >= 0; i--) {
+                RawSmsMessage message = rawMessages.get(i);
+                long timestamp = message.getTimestampMillis();
+                if (repairLookbackDays <= 0 && timestamp <= lastInvestmentImportedTimestamp) {
                     continue;
                 }
-                acceptedSignals.add(signal);
-                acceptedEventIds.add(event.eventId);
+                
+                ParsedInvestmentSignal signal = understandingEngine.understandSync(message.getSender(), message.getBody(), timestamp);
+                
+                if (signal != null && signal.getConfidence() >= 0.80d) {
+                    String sourceKey = InvestmentSignalKeyFactory.buildIngestionSourceKey(signal);
+                    EventIngestionPipeline.IngestResult event = pipeline.ingest(
+                            db, IngestionEvent.DOMAIN_INVESTMENT, IngestionEvent.SOURCE_SMS, sourceKey, signal.getCorrelationKey(),
+                            signal.getSignalType().name(), signal.getAmountCents(), timestamp,
+                            message.getSender(), message.getBody(), message.getBody());
+                    if (!event.duplicate) {
+                        acceptedSignals.add(signal);
+                        acceptedEventIds.add(event.eventId);
+                    }
+                } else if ((signal != null && signal.getConfidence() < 0.80d) || InvestmentSmsParser.containsInvestmentKeyword(message.getBody().toLowerCase(java.util.Locale.US))) {
+                    String sourceKey = signal != null ? InvestmentSignalKeyFactory.buildIngestionSourceKey(signal) : 
+                        "src_unk_" + message.getSender() + "_" + timestamp;
+                    String eventType = signal != null ? signal.getSignalType().name() : "UNKNOWN";
+                    long amount = signal != null ? signal.getAmountCents() : 0L;
+                    String correlationKey = signal != null ? signal.getCorrelationKey() : null;
+                    
+                    EventIngestionPipeline.IngestResult event = pipeline.ingest(
+                            db, IngestionEvent.DOMAIN_INVESTMENT, IngestionEvent.SOURCE_SMS, sourceKey, correlationKey,
+                            eventType, amount, timestamp,
+                            message.getSender(), message.getBody(), message.getBody());
+                            
+                    if (!event.duplicate) {
+                        com.spendwise.ai.data.entity.ReviewCandidate candidate = new com.spendwise.ai.data.entity.ReviewCandidate(
+                            event.eventId, null, null,
+                            signal != null ? "Review suggested for: " + signal.getInvestmentName() : "Unknown investment format",
+                            signal != null ? "Low confidence parse" : "Contains investment keywords",
+                            signal != null ? signal.getConfidence() : 0.0,
+                            com.spendwise.ai.data.entity.ReviewCandidate.STATUS_PENDING,
+                            System.currentTimeMillis()
+                        );
+                        if (signal != null) {
+                            String canonicalKey = InvestmentSignalKeyFactory.buildCanonicalInstrumentKey(signal);
+                            com.spendwise.ai.data.entity.Holding h = db.investmentDao().getByCanonicalInstrumentKey(canonicalKey);
+                            if (h != null) {
+                                candidate.setProposedHoldingId(h.getId());
+                                candidate.setProposedInterpretation("Match found: " + h.getName());
+                            }
+                        }
+                        db.reviewCandidateDao().insertIgnore(candidate);
+                    }
+                }
             }
 
             if (!acceptedSignals.isEmpty()) {

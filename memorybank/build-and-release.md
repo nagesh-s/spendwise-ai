@@ -26,3 +26,9 @@ Build and release baseline (v1.6.0):
   - `offlineLlm` flavor pulls `com.google.mediapipe:tasks-genai` and auto-provisions Gemma model from bundled app assets on first use.
   - Bundle model file in flavor assets at `app/src/offlineLlm/assets/models/spendwise_gemma3_1b.task` for zero-setup user experience.
   - `OFFLINE_LLM_MODEL_PATH` can override target path (relative paths resolve under app files dir).
+
+## Git Branching & Workflow
+1. **Never commit directly to `master`**.
+2. **Staging Branch**: All active development should happen on the `staging` branch. Periodically, `staging` is merged into `master`.
+3. **Feature Branches**: For every feature, bugfix, or release, create a new branch (e.g., `feat/review-queue`) off of `staging`.
+4. **Merge and Delete**: Once the feature branch is merged into `staging`, the source branch MUST be deleted to maintain a clean repository.

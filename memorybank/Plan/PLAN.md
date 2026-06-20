@@ -311,12 +311,17 @@ TFLite is accepted only after meeting:
 - Resident memory below 50 MB
 - Measurable corpus improvement over deterministic parsing
 
-### Future Scope: Offline Assistant (Gemma)
-Gemma (or other large generative models ~1.5GB) is massive overkill for 160-character SMS extraction. However, it is reserved as a **future scope** for a "Google Assistant-like" feature inside the app without internet (e.g., "Did I spend 500 rs on petrol last month?"). 
-When implemented, Gemma will remain optional in the `offlineLlm` flavor and requires:
-- Play Asset Delivery or Sideloading (to maintain "true offline" constraint without INTERNET permission)
-- Device capability checks (>= 6GB RAM)
-- Cold-start, latency, memory and battery measurements
+### Future Scope: ML Enhancements
+1. **Offline Assistant (Gemma)**
+   Gemma (or other large generative models ~1.5GB) is massive overkill for 160-character SMS extraction. However, it is reserved for a "Google Assistant-like" feature inside the app without internet (e.g., "Did I spend 500 rs on petrol last month?"). 
+   - Requires Play Asset Delivery or Sideloading (to maintain "true offline" constraint).
+   - Requires Device capability checks (>= 6GB RAM).
+
+2. **On-Device Personalization & Peer-to-Peer Sync (Federated Learning)**
+   - The app can use the `UserCorrection` memory to fine-tune a bundled TFLite model locally, learning specific SMS formats over time.
+   - **Offline P2P Sync**: Using Android's `WifiP2pManager` (Wi-Fi Direct) or Bluetooth, two users can open a "Sync Model" screen. The devices will automatically discover each other and establish a secure, internet-free socket connection to exchange knowledge.
+   - **Federated Averaging (The "Union")**: When Device 1 imports a model from Device 2, it will not overwrite its own data. Instead, it performs **Federated Averaging**—a mathematical union of the Neural Network weights. This makes both models stronger (learning from both users' formats) without ever exchanging or exposing the underlying private SMS data.
+   - **Persistence**: The merged `.tflite` model will be included in the app's manual ZIP Export/Backup to survive uninstalls.
 
 ## Test Plan
 

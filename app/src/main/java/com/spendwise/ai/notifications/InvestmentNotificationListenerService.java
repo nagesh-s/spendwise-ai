@@ -110,7 +110,7 @@ public class InvestmentNotificationListenerService extends NotificationListenerS
                         payload.message);
             }
 
-            if (payload.investmentSignal != null) {
+            if (payload.investmentSignal != null && payload.investmentSignal.getConfidence() >= 0.80d) {
                 EventIngestionPipeline pipeline = new EventIngestionPipeline();
                 EventIngestionPipeline.IngestResult event = pipeline.ingest(
                         db,
@@ -140,6 +140,39 @@ public class InvestmentNotificationListenerService extends NotificationListenerS
                         new InvestmentGamificationEngine(appContext).awardSipReconcileXp();
                     }
                     pipeline.markProcessed(db, event.eventId, IngestionEvent.STATUS_PROCESSED);
+                }
+            } else if ((payload.investmentSignal != null && payload.investmentSignal.getConfidence() < 0.80d) || payload.hasInvestmentKeyword) {
+                EventIngestionPipeline pipeline = new EventIngestionPipeline();
+                ParsedInvestmentSignal signal = payload.investmentSignal;
+                String sourceKey = signal != null ? InvestmentSignalKeyFactory.buildIngestionSourceKey(signal) : 
+                    "src_unk_" + payload.sender + "_" + payload.timestampMillis;
+                String eventType = signal != null ? signal.getSignalType().name() : "UNKNOWN";
+                long amount = signal != null ? signal.getAmountCents() : 0L;
+                String correlationKey = signal != null ? signal.getCorrelationKey() : null;
+                
+                EventIngestionPipeline.IngestResult event = pipeline.ingest(
+                        db, IngestionEvent.DOMAIN_INVESTMENT, IngestionEvent.SOURCE_NOTIFICATION, sourceKey, correlationKey,
+                        eventType, amount, payload.timestampMillis,
+                        payload.sender, payload.message, payload.message);
+                        
+                if (!event.duplicate) {
+                    com.spendwise.ai.data.entity.ReviewCandidate candidate = new com.spendwise.ai.data.entity.ReviewCandidate(
+                        event.eventId, null, null,
+                        signal != null ? "Review suggested for: " + signal.getInvestmentName() : "Unknown investment format",
+                        signal != null ? "Low confidence parse" : "Contains investment keywords",
+                        signal != null ? signal.getConfidence() : 0.0,
+                        com.spendwise.ai.data.entity.ReviewCandidate.STATUS_PENDING,
+                        System.currentTimeMillis()
+                    );
+                    if (signal != null) {
+                        String canonicalKey = InvestmentSignalKeyFactory.buildCanonicalInstrumentKey(signal);
+                        com.spendwise.ai.data.entity.Holding h = db.investmentDao().getByCanonicalInstrumentKey(canonicalKey);
+                        if (h != null) {
+                            candidate.setProposedHoldingId(h.getId());
+                            candidate.setProposedInterpretation("Match found: " + h.getName());
+                        }
+                    }
+                    db.reviewCandidateDao().insertIgnore(candidate);
                 }
             }
         });
@@ -174,10 +207,13 @@ public class InvestmentNotificationListenerService extends NotificationListenerS
             }
         }
 
-        if (investmentSignal == null && salaryDetection == null) {
+        boolean hasInvestmentKeyword = InvestmentSmsParser.containsInvestmentKeyword(message.toLowerCase(Locale.US));
+
+        if (investmentSignal == null && salaryDetection == null && !hasInvestmentKeyword) {
             return null;
         }
         NotificationPayload payload = new NotificationPayload();
+        payload.hasInvestmentKeyword = hasInvestmentKeyword;
         payload.packageName = sourcePackage;
         payload.sender = sender;
         payload.timestampMillis = timestamp;
@@ -285,7 +321,8 @@ public class InvestmentNotificationListenerService extends NotificationListenerS
         long timestampMillis;
         String message;
         ParsedInvestmentSignal investmentSignal;
-        SalaryDetector.SalaryDetectionResult salaryDetection;
-        ParsedTransaction transaction;
+        public SalaryDetector.SalaryDetectionResult salaryDetection;
+        public ParsedTransaction transaction;
+        public boolean hasInvestmentKeyword;
     }
 }
