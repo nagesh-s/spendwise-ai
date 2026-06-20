@@ -22,6 +22,7 @@ public class WorkScheduler {
         private static final String SALARY_AUTOMATION_WORK = "salary_automation_work";
         private static final String INVESTMENT_SCHEDULE_WORK = "investment_schedule_work";
         private static final String INVESTMENT_DIGEST_WORK = "investment_digest_work";
+        private static final String INVESTMENT_MAINTENANCE_WORK = "investment_maintenance_work";
 
         /**
          * Schedule the recurring expense worker to run daily.
@@ -86,6 +87,28 @@ public class WorkScheduler {
 
                 WorkManager.getInstance(context).enqueueUniquePeriodicWork(
                                 SMS_AUTO_IMPORT_WORK,
+                                ExistingPeriodicWorkPolicy.KEEP,
+                                workRequest);
+        }
+
+        /**
+         * Schedule investment maintenance worker to run daily.
+         */
+        public static void scheduleInvestmentMaintenanceWork(Context context) {
+                Constraints constraints = new Constraints.Builder()
+                                .setRequiredNetworkType(NetworkType.NOT_REQUIRED)
+                                .setRequiresBatteryNotLow(true)
+                                .build();
+
+                PeriodicWorkRequest workRequest = new PeriodicWorkRequest.Builder(
+                                InvestmentMaintenanceWorker.class,
+                                24, TimeUnit.HOURS)
+                                .setConstraints(constraints)
+                                .setInitialDelay(2, TimeUnit.HOURS) // Run a bit later
+                                .build();
+
+                WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+                                INVESTMENT_MAINTENANCE_WORK,
                                 ExistingPeriodicWorkPolicy.KEEP,
                                 workRequest);
         }

@@ -23,4 +23,7 @@ public interface InvestmentEventLinkDao {
     @Query("SELECT COUNT(*) FROM investment_event_links l LEFT JOIN ingestion_events e "
             + "ON e.id = l.ingestionEventId WHERE e.id IS NULL")
     int countOrphanEventLinks();
+
+    @Query("DELETE FROM investment_event_links WHERE ingestionEventId NOT IN (SELECT id FROM ingestion_events)")
+    int deleteOrphanEventLinks();
 }

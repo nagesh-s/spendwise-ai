@@ -58,6 +58,10 @@ public interface InvestmentOccurrenceDao {
     @Query("SELECT COUNT(*) FROM investment_occurrences WHERE status = :status")
     int countByStatus(String status);
 
+    @Query("UPDATE investment_occurrences SET status = 'PENDING', transactionId = NULL, linkedInvestmentId = NULL " +
+            "WHERE status = 'CONFIRMED' AND transactionId IS NOT NULL AND transactionId NOT IN (SELECT id FROM investment_transactions)")
+    int repairStaleOccurrenceLinks();
+
     @Query("SELECT COUNT(*) FROM investment_occurrences WHERE status = :status AND dueEpochDay BETWEEN :startEpochDay AND :endEpochDay")
     int countByStatusInWindow(String status, long startEpochDay, long endEpochDay);
 

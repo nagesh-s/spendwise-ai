@@ -33,6 +33,7 @@ public class SpendWiseApplication extends Application {
         WorkScheduler.scheduleSalaryAutomationWork(this);
         WorkScheduler.scheduleInvestmentScheduleWork(this);
         WorkScheduler.scheduleInvestmentDigestWork(this);
+        WorkScheduler.scheduleInvestmentMaintenanceWork(this);
 
         // Run immediately to catch up on any missed work
         WorkScheduler.runRecurringExpenseWorkNow(this);

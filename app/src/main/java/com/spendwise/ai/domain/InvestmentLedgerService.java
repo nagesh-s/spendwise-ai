@@ -152,8 +152,8 @@ public class InvestmentLedgerService {
         db.investmentEventLinkDao().insertIgnore(link);
         
         // 5. Recompute
-        recomputeHoldingAggregates(holding.getId());
-        
+        // recomputeHoldingAggregates(holding.getId()); // Moved to daily maintenance worker
+
         return new LedgerResult(resultStatus, transaction.getId(), holding.getId());
     }
 
