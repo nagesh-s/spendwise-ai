@@ -162,7 +162,8 @@ public class InvestmentNotificationListenerService extends NotificationListenerS
 
         String sender = resolveSenderLabel(sourcePackage);
         long timestamp = sbn.getPostTime() > 0L ? sbn.getPostTime() : System.currentTimeMillis();
-        ParsedInvestmentSignal investmentSignal = InvestmentSmsParser.parse(sender, message, timestamp);
+        com.spendwise.ai.engine.InvestmentUnderstandingEngine understandingEngine = new com.spendwise.ai.engine.InvestmentUnderstandingEngine(null, null);
+        ParsedInvestmentSignal investmentSignal = understandingEngine.understandSync(sender, message, timestamp);
 
         ParsedTransaction parsedTransaction = null;
         SalaryDetector.SalaryDetectionResult salaryDetection = null;

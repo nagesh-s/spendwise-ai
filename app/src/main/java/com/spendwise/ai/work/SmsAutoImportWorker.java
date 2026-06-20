@@ -233,6 +233,7 @@ public class SmsAutoImportWorker extends Worker {
 
         // Parse and ingest investment signals from raw SMS stream.
         List<ParsedInvestmentSignal> investmentSignals = new ArrayList<>();
+        com.spendwise.ai.engine.InvestmentUnderstandingEngine understandingEngine = new com.spendwise.ai.engine.InvestmentUnderstandingEngine(db, java.util.concurrent.Executors.newSingleThreadExecutor());
         for (int i = rawMessages.size() - 1; i >= 0; i--) {
             RawSmsMessage message = rawMessages.get(i);
             long timestamp = message.getTimestampMillis();
@@ -242,7 +243,7 @@ public class SmsAutoImportWorker extends Worker {
             if (timestamp > latestInvestmentSeenTimestamp) {
                 latestInvestmentSeenTimestamp = timestamp;
             }
-            ParsedInvestmentSignal signal = InvestmentSmsParser.parse(
+            ParsedInvestmentSignal signal = understandingEngine.understandSync(
                     message.getSender(),
                     message.getBody(),
                     timestamp);

@@ -298,8 +298,7 @@ Use this sequence:
 ```text
 Correction memory
 → deterministic parser
-→ optional lightweight model
-→ optional Gemma
+→ lightweight ML model (TFLite or Semantic)
 → review queue
 ```
 
@@ -312,13 +311,11 @@ TFLite is accepted only after meeting:
 - Resident memory below 50 MB
 - Measurable corpus improvement over deterministic parsing
 
-Gemma remains optional in the `offlineLlm` flavor. It requires:
-
-- Bundled or provisioned model
-- Device capability checks
-- Structured SMS and investment prompts
-- Strict JSON validation
-- Timeout and deterministic fallback
+### Future Scope: Offline Assistant (Gemma)
+Gemma (or other large generative models ~1.5GB) is massive overkill for 160-character SMS extraction. However, it is reserved as a **future scope** for a "Google Assistant-like" feature inside the app without internet (e.g., "Did I spend 500 rs on petrol last month?"). 
+When implemented, Gemma will remain optional in the `offlineLlm` flavor and requires:
+- Play Asset Delivery or Sideloading (to maintain "true offline" constraint without INTERNET permission)
+- Device capability checks (>= 6GB RAM)
 - Cold-start, latency, memory and battery measurements
 
 ## Test Plan
