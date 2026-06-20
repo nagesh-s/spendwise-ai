@@ -177,9 +177,10 @@ public class BucketDetailFragment extends Fragment
         });
 
         if (bucketId >= 0) {
-            viewModel.getInvestmentsForBucket(bucketId).observe(getViewLifecycleOwner(), investments -> {
-                splitAndDisplayInvestments(investments);
-                updateSummary(investments);
+            viewModel.getPendingInvestmentsForBucket(bucketId).observe(getViewLifecycleOwner(), pending -> {
+                pendingAdapter.submitList(pending);
+                pendingSection.setVisibility(pending.isEmpty() ? View.GONE : View.VISIBLE);
+                updateVisibilityState();
             });
             viewModel.getExpectedOccurrencesForBucket(bucketId).observe(getViewLifecycleOwner(), rows -> {
                 expectedSipAdapter.submitList(rows);
@@ -187,35 +188,25 @@ public class BucketDetailFragment extends Fragment
                 textExpectedEmpty.setVisibility(empty ? View.VISIBLE : View.GONE);
                 recyclerExpectedSips.setVisibility(empty ? View.GONE : View.VISIBLE);
             });
+            viewModel.getGroupedInvestmentsForBucket(bucketId).observe(getViewLifecycleOwner(), items -> {
+                adapter.submitList(items);
+                updateVisibilityState();
+                updateSummary(items);
+            });
         }
     }
 
-    private void splitAndDisplayInvestments(@Nullable List<Holding> investments) {
-        if (investments == null || investments.isEmpty()) {
-            adapter.submitList(null);
-            pendingAdapter.submitList(null);
-            pendingSection.setVisibility(View.GONE);
+    private void updateVisibilityState() {
+        boolean pendingEmpty = pendingAdapter.getCurrentList().isEmpty();
+        boolean itemsEmpty = adapter.getCurrentList().isEmpty();
+
+        if (pendingEmpty && itemsEmpty) {
             emptyState.setVisibility(View.VISIBLE);
             recyclerInvestments.setVisibility(View.GONE);
-            return;
+        } else {
+            emptyState.setVisibility(View.GONE);
+            recyclerInvestments.setVisibility(itemsEmpty ? View.GONE : View.VISIBLE);
         }
-        List<Holding> confirmed = new ArrayList<>();
-        List<Holding> pending = new ArrayList<>();
-        for (Holding inv : investments) {
-            String notes = inv.getNotes();
-            if (notes != null && notes.contains("[auto-map-pending:true]")) {
-                pending.add(inv);
-            } else {
-                confirmed.add(inv);
-            }
-        }
-        pendingAdapter.submitList(pending);
-        pendingSection.setVisibility(pending.isEmpty() ? View.GONE : View.VISIBLE);
-
-        adapter.submitList(confirmed);
-        boolean noConfirmed = confirmed.isEmpty();
-        emptyState.setVisibility(noConfirmed && pending.isEmpty() ? View.VISIBLE : View.GONE);
-        recyclerInvestments.setVisibility(noConfirmed ? View.GONE : View.VISIBLE);
     }
 
     private void acceptPendingInvestment(@NonNull Holding investment) {
@@ -324,11 +315,12 @@ public class BucketDetailFragment extends Fragment
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
-                Holding investment = adapter.getCurrentList().get(position);
-                if (investment == null) {
+                Object item = adapter.getCurrentList().get(position);
+                if (!(item instanceof com.spendwise.ai.data.pojo.HoldingWithProvider)) {
                     adapter.notifyItemChanged(position);
                     return;
                 }
+                Holding investment = ((com.spendwise.ai.data.pojo.HoldingWithProvider) item).holding;
                 confirmDeleteInvestment(investment, position);
             }
         };
@@ -604,29 +596,34 @@ public class BucketDetailFragment extends Fragment
         Toast.makeText(requireContext(), R.string.bucket_detail_occurrence_updated, Toast.LENGTH_SHORT).show();
     }
 
-    private void updateSummary(@Nullable List<Holding> investments) {
-        long totalValueCents = 0L;
-        long totalInvestedCents = 0L;
-        int holdingCount = 0;
+    private void updateSummary(@Nullable List<Object> items) {
+        long totalValue = 0;
+        long totalInvested = 0;
+        long totalPnl = 0;
+        int count = 0;
 
-        if (investments != null) {
-            holdingCount = investments.size();
-            for (Holding investment : investments) {
-                totalValueCents += investment.getCurrentValueCents();
-                totalInvestedCents += investment.getInvestedAmountCents();
+        if (items != null) {
+            for (Object obj : items) {
+                if (obj instanceof com.spendwise.ai.data.pojo.HoldingWithProvider) {
+                    Holding inv = ((com.spendwise.ai.data.pojo.HoldingWithProvider) obj).holding;
+                    totalValue += inv.getCurrentValueCents();
+                    totalInvested += inv.getInvestedAmountCents();
+                    totalPnl += inv.getProfitLossCents();
+                    count++;
+                }
             }
         }
 
-        textTotalValue.setText(formatCurrency(totalValueCents));
-        textTotalInvested.setText(formatCurrency(totalInvestedCents));
+        textTotalValue.setText(formatCurrency(totalValue));
+        textTotalInvested.setText(formatCurrency(totalInvested));
         textHoldingsCount.setText(getResources().getQuantityString(
                 R.plurals.bucket_detail_holdings_count,
-                holdingCount,
-                holdingCount));
+                count,
+                count));
 
-        long pnlCents = totalValueCents - totalInvestedCents;
-        if (totalInvestedCents > 0) {
-            double pnlPercent = ((double) pnlCents / totalInvestedCents) * 100.0;
+        long pnlCents = totalValue - totalInvested;
+        if (totalInvested > 0) {
+            double pnlPercent = ((double) pnlCents / totalInvested) * 100.0;
             String sign = pnlCents >= 0 ? "+" : "";
             textTotalPnl.setText(String.format(Locale.getDefault(), "%s%s (%.1f%%)",
                     sign,

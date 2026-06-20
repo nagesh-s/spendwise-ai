@@ -14,6 +14,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.spendwise.ai.R;
 import com.spendwise.ai.data.entity.Holding;
+import com.spendwise.ai.data.pojo.HoldingWithProvider;
 
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.format.DateTimeFormatter;
@@ -22,13 +23,15 @@ import java.util.Locale;
 
 /**
  * RecyclerView adapter for investments inside a bucket detail screen.
- * Shows: name, job title, platform, P&L.
+ * Shows Provider headers and Holding items.
  */
-public class InvestmentAdapter extends ListAdapter<Holding, InvestmentAdapter.InvestmentViewHolder> {
+public class InvestmentAdapter extends ListAdapter<Object, RecyclerView.ViewHolder> {
+
+    private static final int VIEW_TYPE_HEADER = 0;
+    private static final int VIEW_TYPE_ITEM = 1;
 
     public interface OnInvestmentClickListener {
         void onInvestmentClick(Holding investment);
-
         void onInfoClick(Holding investment);
     }
 
@@ -39,31 +42,87 @@ public class InvestmentAdapter extends ListAdapter<Holding, InvestmentAdapter.In
         this.listener = listener;
     }
 
-    private static final DiffUtil.ItemCallback<Holding> DIFF_CALLBACK = new DiffUtil.ItemCallback<Holding>() {
+    private static final DiffUtil.ItemCallback<Object> DIFF_CALLBACK = new DiffUtil.ItemCallback<Object>() {
         @Override
-        public boolean areItemsTheSame(@NonNull Holding o, @NonNull Holding n) {
-            return o.getId() == n.getId();
+        public boolean areItemsTheSame(@NonNull Object o, @NonNull Object n) {
+            if (o instanceof BucketDetailViewModel.ProviderHeader && n instanceof BucketDetailViewModel.ProviderHeader) {
+                BucketDetailViewModel.ProviderHeader oHead = (BucketDetailViewModel.ProviderHeader) o;
+                BucketDetailViewModel.ProviderHeader nHead = (BucketDetailViewModel.ProviderHeader) n;
+                return oHead.headerTitle.equals(nHead.headerTitle);
+            }
+            if (o instanceof HoldingWithProvider && n instanceof HoldingWithProvider) {
+                HoldingWithProvider oHold = (HoldingWithProvider) o;
+                HoldingWithProvider nHold = (HoldingWithProvider) n;
+                return oHold.holding.getId() == nHold.holding.getId();
+            }
+            return false;
         }
 
         @Override
-        public boolean areContentsTheSame(@NonNull Holding o, @NonNull Holding n) {
-            return o.getName().equals(n.getName())
-                    && o.getCurrentValueCents() == n.getCurrentValueCents()
-                    && o.getInvestedAmountCents() == n.getInvestedAmountCents();
+        public boolean areContentsTheSame(@NonNull Object o, @NonNull Object n) {
+            if (o instanceof BucketDetailViewModel.ProviderHeader && n instanceof BucketDetailViewModel.ProviderHeader) {
+                BucketDetailViewModel.ProviderHeader oHead = (BucketDetailViewModel.ProviderHeader) o;
+                BucketDetailViewModel.ProviderHeader nHead = (BucketDetailViewModel.ProviderHeader) n;
+                return oHead.totalValueCents == nHead.totalValueCents;
+            }
+            if (o instanceof HoldingWithProvider && n instanceof HoldingWithProvider) {
+                Holding oHold = ((HoldingWithProvider) o).holding;
+                Holding nHold = ((HoldingWithProvider) n).holding;
+                return oHold.getName().equals(nHold.getName())
+                        && oHold.getCurrentValueCents() == nHold.getCurrentValueCents()
+                        && oHold.getInvestedAmountCents() == nHold.getInvestedAmountCents();
+            }
+            return false;
         }
     };
 
+    @Override
+    public int getItemViewType(int position) {
+        Object item = getItem(position);
+        if (item instanceof BucketDetailViewModel.ProviderHeader) {
+            return VIEW_TYPE_HEADER;
+        }
+        return VIEW_TYPE_ITEM;
+    }
+
     @NonNull
     @Override
-    public InvestmentViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
-                .inflate(R.layout.item_investment, parent, false);
-        return new InvestmentViewHolder(view);
+    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        if (viewType == VIEW_TYPE_HEADER) {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_provider_header, parent, false);
+            return new HeaderViewHolder(view);
+        } else {
+            View view = LayoutInflater.from(parent.getContext())
+                    .inflate(R.layout.item_investment, parent, false);
+            return new InvestmentViewHolder(view);
+        }
     }
 
     @Override
-    public void onBindViewHolder(@NonNull InvestmentViewHolder holder, int position) {
-        holder.bind(getItem(position), listener);
+    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
+        Object item = getItem(position);
+        if (holder instanceof HeaderViewHolder) {
+            ((HeaderViewHolder) holder).bind((BucketDetailViewModel.ProviderHeader) item);
+        } else if (holder instanceof InvestmentViewHolder) {
+            ((InvestmentViewHolder) holder).bind(((HoldingWithProvider) item).holding, listener);
+        }
+    }
+
+    static class HeaderViewHolder extends RecyclerView.ViewHolder {
+        private final TextView textProviderName;
+        private final TextView textProviderTotal;
+
+        HeaderViewHolder(@NonNull View itemView) {
+            super(itemView);
+            textProviderName = itemView.findViewById(R.id.text_provider_name);
+            textProviderTotal = itemView.findViewById(R.id.text_provider_total);
+        }
+
+        void bind(BucketDetailViewModel.ProviderHeader header) {
+            textProviderName.setText(header.headerTitle);
+            textProviderTotal.setText(String.format(Locale.getDefault(), "₹%,.0f", header.totalValueCents / 100.0));
+        }
     }
 
     static class InvestmentViewHolder extends RecyclerView.ViewHolder {
@@ -103,6 +162,9 @@ public class InvestmentAdapter extends ListAdapter<Holding, InvestmentAdapter.In
                 textJobTitle.setVisibility(View.GONE);
             }
 
+            // We can hide the individual platform text since it's grouped now, 
+            // but we'll leave it in case a user uses a generic provider like "OTHER" 
+            // and wants to see the specific platform text.
             String platform = inv.getPlatform();
             if (platform != null && !platform.isEmpty()) {
                 textPlatform.setText(platform);

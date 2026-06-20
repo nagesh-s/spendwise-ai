@@ -14,7 +14,14 @@ import com.spendwise.ai.data.repository.BucketRepository;
 import com.spendwise.ai.data.repository.InvestmentOccurrenceRepository;
 import com.spendwise.ai.data.repository.InvestmentRepository;
 
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+
+import androidx.lifecycle.Transformations;
+import com.spendwise.ai.data.pojo.HoldingWithProvider;
+import com.spendwise.ai.data.entity.Provider;
 
 /**
  * ViewModel for the Bucket Detail drill-down screen.
@@ -34,6 +41,79 @@ public class BucketDetailViewModel extends AndroidViewModel {
 
     public LiveData<List<Holding>> getInvestmentsForBucket(long bucketId) {
         return investmentRepository.getInvestmentsForBucket(bucketId);
+    }
+
+    public static class ProviderHeader {
+        public final Provider provider;
+        public final String headerTitle;
+        public final long totalValueCents;
+
+        public ProviderHeader(Provider provider, String headerTitle, long totalValueCents) {
+            this.provider = provider;
+            this.headerTitle = headerTitle;
+            this.totalValueCents = totalValueCents;
+        }
+    }
+
+    public LiveData<List<Object>> getGroupedInvestmentsForBucket(long bucketId) {
+        return Transformations.map(investmentRepository.getHoldingsWithProviderForBucket(bucketId), list -> {
+            Map<Long, List<HoldingWithProvider>> grouped = new LinkedHashMap<>();
+            List<HoldingWithProvider> unlinked = new ArrayList<>();
+
+            for (HoldingWithProvider item : list) {
+                String notes = item.holding.getNotes();
+                if (notes != null && notes.contains("[auto-map-pending:true]")) {
+                    continue; // Skip pending investments
+                }
+
+                if (item.provider != null) {
+                    long pid = item.provider.getId();
+                    if (!grouped.containsKey(pid)) {
+                        grouped.put(pid, new ArrayList<>());
+                    }
+                    grouped.get(pid).add(item);
+                } else {
+                    unlinked.add(item);
+                }
+            }
+
+            List<Object> result = new ArrayList<>();
+            for (Map.Entry<Long, List<HoldingWithProvider>> entry : grouped.entrySet()) {
+                List<HoldingWithProvider> group = entry.getValue();
+                if (!group.isEmpty()) {
+                    long totalValue = 0;
+                    for (HoldingWithProvider h : group) {
+                        totalValue += h.holding.getCurrentValueCents();
+                    }
+                    result.add(new ProviderHeader(group.get(0).provider, group.get(0).provider.getName(), totalValue));
+                    result.addAll(group);
+                }
+            }
+
+            if (!unlinked.isEmpty()) {
+                long totalValue = 0;
+                for (HoldingWithProvider h : unlinked) {
+                    totalValue += h.holding.getCurrentValueCents();
+                }
+                result.add(new ProviderHeader(null, "Unlinked / Other", totalValue));
+                result.addAll(unlinked);
+            }
+
+            return result;
+        });
+    }
+
+    public LiveData<List<Holding>> getPendingInvestmentsForBucket(long bucketId) {
+        return Transformations.map(investmentRepository.getInvestmentsForBucket(bucketId), list -> {
+            List<Holding> pending = new ArrayList<>();
+            for (Holding inv : list) {
+                String notes = inv.getNotes();
+                if (notes != null && notes.contains("[auto-map-pending:true]")) {
+                    pending.add(inv);
+                }
+            }
+            return pending;
+        });
     }
 
     public LiveData<List<BucketCategory>> getCategoriesForBucket(long bucketId) {
