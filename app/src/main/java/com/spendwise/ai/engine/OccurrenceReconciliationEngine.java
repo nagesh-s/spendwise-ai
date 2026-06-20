@@ -32,6 +32,7 @@ public class OccurrenceReconciliationEngine {
             @NonNull AppDatabase db,
             @NonNull List<ParsedInvestmentSignal> signals,
             @Nullable Map<String, Long> linkedInvestmentBySourceKey,
+            @Nullable Map<String, Long> linkedTransactionBySourceKey,
             @NonNull String sourceType) {
         ReconcileResult result = new ReconcileResult();
         for (ParsedInvestmentSignal signal : signals) {
@@ -40,7 +41,12 @@ public class OccurrenceReconciliationEngine {
                 Long linkedId = linkedInvestmentBySourceKey.get(signal.getSourceKey());
                 investmentId = linkedId == null ? -1L : linkedId;
             }
-            if (reconcileSingle(db, signal, investmentId, sourceType)) {
+            long transactionId = -1L;
+            if (linkedTransactionBySourceKey != null && linkedTransactionBySourceKey.containsKey(signal.getSourceKey())) {
+                Long linkedId = linkedTransactionBySourceKey.get(signal.getSourceKey());
+                transactionId = linkedId == null ? -1L : linkedId;
+            }
+            if (reconcileSingle(db, signal, investmentId, transactionId, sourceType)) {
                 if (signal.isCorrection()) {
                     result.adjusted++;
                 } else {
@@ -57,10 +63,11 @@ public class OccurrenceReconciliationEngine {
             @NonNull AppDatabase db,
             @NonNull ParsedInvestmentSignal signal,
             long linkedInvestmentId,
+            long linkedTransactionId,
             @NonNull String sourceType) {
         InvestmentOccurrence byCorrelation = findByCorrelation(db, signal.getCorrelationKey());
         if (byCorrelation != null) {
-            applyResolution(db, byCorrelation, signal, linkedInvestmentId, sourceType);
+            applyResolution(db, byCorrelation, signal, linkedInvestmentId, linkedTransactionId, sourceType);
             return true;
         }
 
@@ -93,7 +100,7 @@ public class OccurrenceReconciliationEngine {
             return false;
         }
 
-        applyResolution(db, best, signal, linkedInvestmentId, sourceType);
+        applyResolution(db, best, signal, linkedInvestmentId, linkedTransactionId, sourceType);
         return true;
     }
 
@@ -114,6 +121,7 @@ public class OccurrenceReconciliationEngine {
             @NonNull InvestmentOccurrence occurrence,
             @NonNull ParsedInvestmentSignal signal,
             long linkedInvestmentId,
+            long linkedTransactionId,
             @NonNull String sourceType) {
         String status = signal.isCorrection() ? InvestmentOccurrence.STATUS_ADJUSTED : InvestmentOccurrence.STATUS_CONFIRMED;
         long resolvedAmount = signal.getAmountCents() > 0 ? signal.getAmountCents() : occurrence.getExpectedAmountCents();
@@ -123,7 +131,7 @@ public class OccurrenceReconciliationEngine {
                 resolvedAmount,
                 signal.getTimestampMillis(),
                 linkedInvestmentId > 0 ? linkedInvestmentId : null,
-                null,
+                linkedTransactionId > 0 ? linkedTransactionId : null,
                 signal.getCorrelationKey(),
                 sourceType);
     }

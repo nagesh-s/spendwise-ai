@@ -134,6 +134,7 @@ public class InvestmentNotificationListenerService extends NotificationListenerS
                                     db,
                                     oneSignal,
                                     ingestResult.investmentIdBySourceKey,
+                                    ingestResult.transactionIdBySourceKey,
                                     IngestionEvent.SOURCE_NOTIFICATION);
                     if (reconcileResult.confirmed + reconcileResult.adjusted > 0) {
                         new InvestmentGamificationEngine(appContext).awardSipReconcileXp();

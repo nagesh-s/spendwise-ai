@@ -284,6 +284,7 @@ public class SmsAutoImportWorker extends Worker {
                         db,
                         acceptedSignals,
                         ingestionResult.investmentIdBySourceKey,
+                        ingestionResult.transactionIdBySourceKey,
                         IngestionEvent.SOURCE_SMS);
                 if (reconcileResult.confirmed + reconcileResult.adjusted > 0) {
                     new InvestmentGamificationEngine(context).awardSipReconcileXp();

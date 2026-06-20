@@ -25,6 +25,7 @@ public class InvestmentAutoIngestionEngine {
         public int updated;
         public int skipped;
         public final Map<String, Long> investmentIdBySourceKey = new HashMap<>();
+        public final Map<String, Long> transactionIdBySourceKey = new HashMap<>();
     }
 
     @NonNull
@@ -97,6 +98,10 @@ public class InvestmentAutoIngestionEngine {
             if (ledgerResult.holdingId != null) {
                 result.investmentIdBySourceKey.put(sourceKey, ledgerResult.holdingId);
                 result.investmentIdBySourceKey.put(signal.getSourceKey(), ledgerResult.holdingId);
+            }
+            if (ledgerResult.transactionId != null) {
+                result.transactionIdBySourceKey.put(sourceKey, ledgerResult.transactionId);
+                result.transactionIdBySourceKey.put(signal.getSourceKey(), ledgerResult.transactionId);
             }
         }
         return result;

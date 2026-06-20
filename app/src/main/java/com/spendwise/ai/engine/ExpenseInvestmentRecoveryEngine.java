@@ -100,6 +100,7 @@ public class ExpenseInvestmentRecoveryEngine {
                         db,
                         signals,
                         ingestResult.investmentIdBySourceKey,
+                        ingestResult.transactionIdBySourceKey,
                         IngestionEvent.SOURCE_EXPENSE_RECOVERY);
                 pipeline.markProcessed(db, event.eventId, IngestionEvent.STATUS_PROCESSED);
                 String sourceKey = InvestmentSignalKeyFactory.buildIngestionSourceKey(signal);
