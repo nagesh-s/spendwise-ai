@@ -1,0 +1,47 @@
+[
+  {
+    "rawMessage": "Rs.5000.00 debited from A/c XX1234 on 14-06-26. UPI: groww@okhdfcbank",
+    "sender": "HDFCBK",
+    "isFinancial": true,
+    "isInvestment": true,
+    "direction": "DEBIT",
+    "amountCents": 500000,
+    "merchant": "Groww",
+    "category": "Investment",
+    "assetType": "MUTUAL_FUND",
+    "platform": "Groww",
+    "instrumentName": null,
+    "referenceId": null,
+    "expectedDedupGroup": "group_A"
+  },
+  {
+    "rawMessage": "Your SIP of Rs. 5000 in Parag Parikh Flexi Cap Fund is successful.",
+    "sender": "GROWW",
+    "isFinancial": true,
+    "isInvestment": true,
+    "direction": "CREDIT",
+    "amountCents": 500000,
+    "merchant": null,
+    "category": "Investment",
+    "assetType": "MUTUAL_FUND",
+    "platform": "Groww",
+    "instrumentName": "Parag Parikh Flexi Cap Fund",
+    "referenceId": null,
+    "expectedDedupGroup": "group_A"
+  },
+  {
+    "rawMessage": "Rs.1000.00 spent on Amazon.",
+    "sender": "ICICIB",
+    "isFinancial": true,
+    "isInvestment": false,
+    "direction": "DEBIT",
+    "amountCents": 100000,
+    "merchant": "Amazon",
+    "category": "Shopping",
+    "assetType": null,
+    "platform": null,
+    "instrumentName": null,
+    "referenceId": null,
+    "expectedDedupGroup": null
+  }
+]
