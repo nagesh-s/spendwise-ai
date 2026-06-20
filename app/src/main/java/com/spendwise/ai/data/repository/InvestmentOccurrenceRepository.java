@@ -36,6 +36,7 @@ public class InvestmentOccurrenceRepository {
                 amountCents,
                 confirmedAtMillis,
                 linkedInvestmentId,
+                null,
                 correlationKey,
                 sourceType));
     }

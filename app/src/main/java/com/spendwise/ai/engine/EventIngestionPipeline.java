@@ -14,6 +14,7 @@ import java.security.NoSuchAlgorithmException;
  * Canonical event ingestion with strict idempotency via sourceKey.
  */
 public class EventIngestionPipeline {
+    private static final long EXACT_PAYLOAD_WINDOW_MILLIS = 5L * 60L * 1000L;
 
     public static class IngestResult {
         public final boolean inserted;
@@ -40,6 +41,21 @@ public class EventIngestionPipeline {
             @Nullable String sourceSender,
             @Nullable String sourceBody,
             @Nullable String payloadHashBase) {
+        String fingerprint = payloadHashBase == null ? null : normalizedFingerprint(payloadHashBase);
+        IngestionEvent existingBySource = db.ingestionEventDao().getBySourceKey(sourceKey);
+        if (existingBySource != null) {
+            return new IngestResult(false, true, existingBySource.getId());
+        }
+        if (fingerprint != null) {
+            IngestionEvent existingByPayload = db.ingestionEventDao().getByFingerprintInWindow(
+                    fingerprint,
+                    eventTimestampMillis - EXACT_PAYLOAD_WINDOW_MILLIS,
+                    eventTimestampMillis + EXACT_PAYLOAD_WINDOW_MILLIS);
+            if (existingByPayload != null) {
+                return new IngestResult(false, true, existingByPayload.getId());
+            }
+        }
+
         IngestionEvent event = new IngestionEvent(
                 domain,
                 sourceType,
@@ -51,6 +67,7 @@ public class EventIngestionPipeline {
                 sourceSender,
                 sourceBody,
                 payloadHashBase == null ? null : hashPayload(payloadHashBase));
+        event.setNormalizedPayloadFingerprint(fingerprint);
 
         long id = db.ingestionEventDao().insertIgnore(event);
         if (id <= 0) {
@@ -86,5 +103,13 @@ public class EventIngestionPipeline {
         } catch (NoSuchAlgorithmException e) {
             return Integer.toHexString(payload.hashCode());
         }
+    }
+
+    @NonNull
+    private String normalizedFingerprint(@NonNull String payload) {
+        String normalized = payload.toLowerCase(java.util.Locale.US)
+                .replaceAll("\\s+", " ")
+                .trim();
+        return hashPayload(normalized);
     }
 }

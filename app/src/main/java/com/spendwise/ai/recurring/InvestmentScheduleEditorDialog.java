@@ -19,7 +19,7 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.spendwise.ai.R;
 import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.entity.Bucket;
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
 import com.spendwise.ai.data.entity.InvestmentSchedule;
 
 import org.threeten.bp.LocalDate;
@@ -59,16 +59,16 @@ public class InvestmentScheduleEditorDialog extends DialogFragment {
     };
 
     private static final String[] ASSET_TYPE_VALUES = new String[] {
-            Investment.ASSET_STOCK,
-            Investment.ASSET_MF,
-            Investment.ASSET_ETF,
-            Investment.ASSET_FD,
-            Investment.ASSET_RD,
-            Investment.ASSET_PPF,
-            Investment.ASSET_NPS,
-            Investment.ASSET_GOLD,
-            Investment.ASSET_SAVINGS,
-            Investment.ASSET_OTHER
+            Holding.ASSET_STOCK,
+            Holding.ASSET_MF,
+            Holding.ASSET_ETF,
+            Holding.ASSET_FD,
+            Holding.ASSET_RD,
+            Holding.ASSET_PPF,
+            Holding.ASSET_NPS,
+            Holding.ASSET_GOLD,
+            Holding.ASSET_SAVINGS,
+            Holding.ASSET_OTHER
     };
 
     private RecurringExpensesViewModel viewModel;

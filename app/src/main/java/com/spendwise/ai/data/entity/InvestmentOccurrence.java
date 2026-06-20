@@ -12,12 +12,14 @@ import androidx.room.PrimaryKey;
  */
 @Entity(tableName = "investment_occurrences", foreignKeys = {
         @ForeignKey(entity = InvestmentSchedule.class, parentColumns = "id", childColumns = "scheduleId", onDelete = ForeignKey.CASCADE),
-        @ForeignKey(entity = Investment.class, parentColumns = "id", childColumns = "linkedInvestmentId", onDelete = ForeignKey.SET_NULL)
+        @ForeignKey(entity = Holding.class, parentColumns = "id", childColumns = "linkedInvestmentId", onDelete = ForeignKey.SET_NULL),
+        @ForeignKey(entity = InvestmentTransaction.class, parentColumns = "id", childColumns = "transactionId", onDelete = ForeignKey.SET_NULL)
 }, indices = {
         @Index(value = { "scheduleId", "dueEpochDay" }, unique = true),
         @Index("status"),
         @Index("correlationKey"),
-        @Index("linkedInvestmentId")
+        @Index("linkedInvestmentId"),
+        @Index("transactionId")
 })
 public class InvestmentOccurrence {
 
@@ -46,6 +48,9 @@ public class InvestmentOccurrence {
 
     @Nullable
     private Long linkedInvestmentId;
+
+    @Nullable
+    private Long transactionId;
 
     @Nullable
     private String correlationKey;
@@ -126,6 +131,15 @@ public class InvestmentOccurrence {
 
     public void setLinkedInvestmentId(@Nullable Long linkedInvestmentId) {
         this.linkedInvestmentId = linkedInvestmentId;
+    }
+
+    @Nullable
+    public Long getTransactionId() {
+        return transactionId;
+    }
+
+    public void setTransactionId(@Nullable Long transactionId) {
+        this.transactionId = transactionId;
     }
 
     @Nullable

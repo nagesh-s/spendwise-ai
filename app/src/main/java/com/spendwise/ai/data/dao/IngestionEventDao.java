@@ -18,6 +18,11 @@ public interface IngestionEventDao {
     @Query("SELECT * FROM ingestion_events WHERE sourceKey = :sourceKey LIMIT 1")
     IngestionEvent getBySourceKey(String sourceKey);
 
+    @Query("SELECT * FROM ingestion_events WHERE normalizedPayloadFingerprint = :fingerprint "
+            + "AND eventTimestampMillis BETWEEN :startMillis AND :endMillis "
+            + "ORDER BY eventTimestampMillis DESC LIMIT 1")
+    IngestionEvent getByFingerprintInWindow(String fingerprint, long startMillis, long endMillis);
+
     @Query("SELECT * FROM ingestion_events WHERE correlationKey = :correlationKey ORDER BY eventTimestampMillis DESC")
     List<IngestionEvent> getByCorrelationKey(String correlationKey);
 

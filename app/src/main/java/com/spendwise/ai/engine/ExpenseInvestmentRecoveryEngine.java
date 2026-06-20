@@ -6,8 +6,9 @@ import androidx.annotation.Nullable;
 import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.entity.Expense;
 import com.spendwise.ai.data.entity.IngestionEvent;
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
 import com.spendwise.ai.data.entity.Merchant;
+import com.spendwise.ai.sms.InvestmentSignalKeyFactory;
 import com.spendwise.ai.sms.ParsedInvestmentSignal;
 
 import org.threeten.bp.LocalDate;
@@ -71,9 +72,9 @@ public class ExpenseInvestmentRecoveryEngine {
             ParsedInvestmentSignal signal = buildSignal(expense, candidate);
             EventIngestionPipeline.IngestResult event = pipeline.ingest(
                     db,
-                    "INVESTMENTS",
-                    "EXPENSE_RECOVERY",
-                    signal.getSourceKey(),
+                    IngestionEvent.DOMAIN_INVESTMENT,
+                    IngestionEvent.SOURCE_EXPENSE_RECOVERY,
+                    InvestmentSignalKeyFactory.buildIngestionSourceKey(signal),
                     signal.getCorrelationKey(),
                     signal.getSignalType().name(),
                     signal.getAmountCents(),
@@ -91,15 +92,19 @@ public class ExpenseInvestmentRecoveryEngine {
             } else {
                 List<ParsedInvestmentSignal> signals = new ArrayList<>();
                 signals.add(signal);
-                InvestmentAutoIngestionEngine.IngestResult ingestResult = ingestionEngine.ingest(db, signals);
+                InvestmentAutoIngestionEngine.IngestResult ingestResult = ingestionEngine.ingest(
+                        db,
+                        signals,
+                        IngestionEvent.SOURCE_EXPENSE_RECOVERY);
                 reconciliationEngine.reconcileSignals(
                         db,
                         signals,
                         ingestResult.investmentIdBySourceKey,
                         IngestionEvent.SOURCE_EXPENSE_RECOVERY);
                 pipeline.markProcessed(db, event.eventId, IngestionEvent.STATUS_PROCESSED);
-                linkedInvestmentId = ingestResult.investmentIdBySourceKey.containsKey(signal.getSourceKey())
-                        ? ingestResult.investmentIdBySourceKey.get(signal.getSourceKey())
+                String sourceKey = InvestmentSignalKeyFactory.buildIngestionSourceKey(signal);
+                linkedInvestmentId = ingestResult.investmentIdBySourceKey.containsKey(sourceKey)
+                        ? ingestResult.investmentIdBySourceKey.get(sourceKey)
                         : resolveLinkedInvestmentId(db, signal);
             }
 
@@ -107,7 +112,7 @@ public class ExpenseInvestmentRecoveryEngine {
                 expense.setInvestmentTransfer(true);
                 expense.setLinkedInvestmentId(linkedInvestmentId);
                 expense.setRecoveryStatus(Expense.RECOVERY_STATUS_CONVERTED);
-                expense.setCanonicalSourceKey(signal.getSourceKey());
+                expense.setCanonicalSourceKey(InvestmentSignalKeyFactory.buildIngestionSourceKey(signal));
                 db.expenseDao().update(expense);
                 result.converted++;
             } else {
@@ -122,11 +127,12 @@ public class ExpenseInvestmentRecoveryEngine {
     private long resolveLinkedInvestmentId(
             @NonNull AppDatabase db,
             @NonNull ParsedInvestmentSignal signal) {
-        Investment bySource = db.investmentDao().getByLastSourceKey(signal.getSourceKey());
+        String sourceKey = InvestmentSignalKeyFactory.buildIngestionSourceKey(signal);
+        Holding bySource = db.investmentDao().getByLastSourceKey(sourceKey);
         if (bySource != null) {
             return bySource.getId();
         }
-        Investment byCorrelation = db.investmentDao().getByPrimaryCorrelationKey(signal.getCorrelationKey());
+        Holding byCorrelation = db.investmentDao().getByPrimaryCorrelationKey(signal.getCorrelationKey());
         return byCorrelation != null ? byCorrelation.getId() : -1L;
     }
 
@@ -139,16 +145,16 @@ public class ExpenseInvestmentRecoveryEngine {
                 .toEpochMilli();
         String platform = candidate.platform;
         String investmentName = candidate.investmentName;
-        String assetType = candidate.assetType;
         String sourceKey = "expense_recovery_" + expense.getId();
         String correlationKey = buildCorrelationKey(candidate, expense);
-        String payload = String.format(
-                Locale.US,
-                "Expense recovery Rs %.2f to %s for %s",
-                expense.getAmountCents() / 100.0,
-                platform == null ? "investment" : platform,
-                investmentName);
-        ParsedInvestmentSignal.SignalType signalType = candidate.signalType;
+        String payload = expense.getDescription() != null && !expense.getDescription().trim().isEmpty()
+                ? expense.getDescription()
+                : String.format(
+                        Locale.US,
+                        "Expense recovery Rs %.2f to %s for %s",
+                        expense.getAmountCents() / 100.0,
+                        platform == null ? "investment" : platform,
+                        investmentName);
         return new ParsedInvestmentSignal(
                 candidate.signalType,
                 null, // sender not available
@@ -156,13 +162,10 @@ public class ExpenseInvestmentRecoveryEngine {
                 candidate.investmentName,
                 candidate.assetType,
                 expense.getAmountCents(),
-                org.threeten.bp.LocalDate.ofEpochDay(expense.getDateEpochDay())
-                        .atStartOfDay(org.threeten.bp.ZoneId.systemDefault())
-                        .toInstant().toEpochMilli(),
-                expense.getCanonicalSourceKey(),
-                buildCorrelationKey(candidate, expense),
-                expense.getDescription() != null ? expense.getDescription()
-                        : (expense.getDescription() != null ? expense.getDescription() : ""),
+                timestampMillis,
+                sourceKey,
+                correlationKey,
+                payload,
                 false);
     }
 
@@ -213,7 +216,7 @@ public class ExpenseInvestmentRecoveryEngine {
         if (containsAny(normalize(description), "shopping", "food", "transport", "utility", "rent")) {
             candidate.score -= 0.25d;
         }
-        if (candidate.platform == null && Investment.ASSET_OTHER.equals(candidate.assetType)) {
+        if (candidate.platform == null && Holding.ASSET_OTHER.equals(candidate.assetType)) {
             candidate.score -= 0.25d;
         }
         return candidate;
@@ -248,38 +251,38 @@ public class ExpenseInvestmentRecoveryEngine {
     @NonNull
     private String resolveAssetType(@NonNull String context, @Nullable String platform) {
         if (containsAny(context, "fixed deposit", " fd ", "fd")) {
-            return Investment.ASSET_FD;
+            return Holding.ASSET_FD;
         }
         if (containsAny(context, "recurring deposit", " rd ", "rd")) {
-            return Investment.ASSET_RD;
+            return Holding.ASSET_RD;
         }
         if (containsAny(context, "ppf")) {
-            return Investment.ASSET_PPF;
+            return Holding.ASSET_PPF;
         }
         if (containsAny(context, "nps", "pension")) {
-            return Investment.ASSET_NPS;
+            return Holding.ASSET_NPS;
         }
         if (containsAny(context, "etf")) {
-            return Investment.ASSET_ETF;
+            return Holding.ASSET_ETF;
         }
         if (containsAny(context, "mutual fund", "sip", "folio", "amc")) {
-            return Investment.ASSET_MF;
+            return Holding.ASSET_MF;
         }
         if (containsAny(context, "stock", "share", "equity", "demat")) {
-            return Investment.ASSET_STOCK;
+            return Holding.ASSET_STOCK;
         }
         if (containsAny(context, "gold")) {
-            return Investment.ASSET_GOLD;
+            return Holding.ASSET_GOLD;
         }
-        return Investment.ASSET_OTHER;
+        return Holding.ASSET_OTHER;
     }
 
     @NonNull
     private ParsedInvestmentSignal.SignalType resolveSignalType(@NonNull String assetType) {
-        if (Investment.ASSET_FD.equals(assetType)) {
+        if (Holding.ASSET_FD.equals(assetType)) {
             return ParsedInvestmentSignal.SignalType.FD_BOOKED;
         }
-        if (Investment.ASSET_RD.equals(assetType)) {
+        if (Holding.ASSET_RD.equals(assetType)) {
             return ParsedInvestmentSignal.SignalType.RD_BOOKED;
         }
         return ParsedInvestmentSignal.SignalType.INVESTMENT_DEBIT;
@@ -290,22 +293,22 @@ public class ExpenseInvestmentRecoveryEngine {
             @Nullable String platform,
             @NonNull String assetType,
             @NonNull String merchantName) {
-        if (Investment.ASSET_FD.equals(assetType)) {
+        if (Holding.ASSET_FD.equals(assetType)) {
             return platform == null ? "Fixed Deposit" : platform + " Fixed Deposit";
         }
-        if (Investment.ASSET_RD.equals(assetType)) {
+        if (Holding.ASSET_RD.equals(assetType)) {
             return platform == null ? "Recurring Deposit" : platform + " Recurring Deposit";
         }
-        if (Investment.ASSET_OTHER.equals(assetType)) {
-            return "Investment Allocation";
+        if (Holding.ASSET_OTHER.equals(assetType)) {
+            return "Holding Allocation";
         }
         if (platform != null) {
-            return platform + " Investment";
+            return platform + " Holding";
         }
         if (!merchantName.trim().isEmpty()) {
-            return merchantName.trim() + " Investment";
+            return merchantName.trim() + " Holding";
         }
-        return "Investment Allocation";
+        return "Holding Allocation";
     }
 
     private boolean containsAny(@NonNull String text, String... tokens) {

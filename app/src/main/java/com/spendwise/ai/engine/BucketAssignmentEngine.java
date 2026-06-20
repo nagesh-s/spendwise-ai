@@ -6,7 +6,7 @@ import androidx.annotation.Nullable;
 import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.entity.Bucket;
 import com.spendwise.ai.data.entity.InstrumentBucketMapping;
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
 import com.spendwise.ai.sms.ParsedInvestmentSignal;
 
 import java.util.List;
@@ -132,13 +132,13 @@ public class BucketAssignmentEngine {
 
     @NonNull
     private String resolveByRules(@NonNull String assetType) {
-        if (Investment.ASSET_FD.equals(assetType) || Investment.ASSET_RD.equals(assetType)) {
+        if (Holding.ASSET_FD.equals(assetType) || Holding.ASSET_RD.equals(assetType)) {
             return Bucket.TYPE_MEDIUM_TERM;
         }
-        if (Investment.ASSET_PPF.equals(assetType) || Investment.ASSET_NPS.equals(assetType)) {
+        if (Holding.ASSET_PPF.equals(assetType) || Holding.ASSET_NPS.equals(assetType)) {
             return Bucket.TYPE_RETIREMENT;
         }
-        if (Investment.ASSET_SAVINGS.equals(assetType)) {
+        if (Holding.ASSET_SAVINGS.equals(assetType)) {
             return Bucket.TYPE_EMERGENCY;
         }
         return Bucket.TYPE_LONG_TERM;
@@ -164,21 +164,21 @@ public class BucketAssignmentEngine {
         if (label.contains("retire") || label.contains("nps") || label.contains("pension")) {
             return new OnDeviceInference(Bucket.TYPE_RETIREMENT, 0.9d);
         }
-        if (label.contains("emergency") || label.contains("liquid") || Investment.ASSET_SAVINGS.equals(assetType)) {
+        if (label.contains("emergency") || label.contains("liquid") || Holding.ASSET_SAVINGS.equals(assetType)) {
             return new OnDeviceInference(Bucket.TYPE_EMERGENCY, 0.85d);
         }
         if (label.contains("car") || label.contains("wedding") || label.contains("education")
-                || Investment.ASSET_FD.equals(assetType) || Investment.ASSET_RD.equals(assetType)) {
+                || Holding.ASSET_FD.equals(assetType) || Holding.ASSET_RD.equals(assetType)) {
             return new OnDeviceInference(Bucket.TYPE_MEDIUM_TERM, 0.8d);
         }
         if (label.contains("travel") || label.contains("vacation")) {
             return new OnDeviceInference(Bucket.TYPE_SHORT_TERM, 0.75d);
         }
-        if (Investment.ASSET_PPF.equals(assetType) || Investment.ASSET_NPS.equals(assetType)) {
+        if (Holding.ASSET_PPF.equals(assetType) || Holding.ASSET_NPS.equals(assetType)) {
             return new OnDeviceInference(Bucket.TYPE_RETIREMENT, 0.8d);
         }
-        if (Investment.ASSET_MF.equals(assetType) || Investment.ASSET_ETF.equals(assetType)
-                || Investment.ASSET_STOCK.equals(assetType)) {
+        if (Holding.ASSET_MF.equals(assetType) || Holding.ASSET_ETF.equals(assetType)
+                || Holding.ASSET_STOCK.equals(assetType)) {
             return new OnDeviceInference(Bucket.TYPE_LONG_TERM, 0.6d);
         }
         return new OnDeviceInference(Bucket.TYPE_LONG_TERM, 0.45d);

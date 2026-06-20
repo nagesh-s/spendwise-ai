@@ -49,8 +49,8 @@ public interface BucketDao {
      */
     @Query("SELECT b.*, " +
             "COALESCE(SUM(i.currentValueCents), 0) AS totalValueCents, " +
-            "COALESCE(SUM(i.investedAmountCents), 0) AS totalInvestedCents " +
-            "FROM buckets b LEFT JOIN investments i ON i.bucketId = b.id " +
+            "COALESCE(SUM(i.netCashInvestedCents), 0) AS totalInvestedCents " +
+            "FROM buckets b LEFT JOIN holdings i ON i.bucketId = b.id " +
             "GROUP BY b.id ORDER BY b.sortOrder ASC")
     LiveData<List<BucketWithTotal>> getAllBucketsWithTotals();
 

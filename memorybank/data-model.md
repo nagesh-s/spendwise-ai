@@ -11,7 +11,8 @@ Entities
 - FinancialGoal(id, name, type, targetAmountCents, currentAmountCents, startDateEpochDay, endDateEpochDay, status, colorArgb, iconKey, linkedCategoryId) -- types: SAVINGS, LIMIT, DEBT
 - Bucket(id, name, type, targetPercent, currentBalanceCents, colorArgb, iconKey, sortOrder, isDefault, description, timelineLabel, investmentAdvice) -- types: EMERGENCY, SHORT_TERM, MEDIUM_TERM, LONG_TERM, RETIREMENT, CUSTOM
 - BucketCategory(id, bucketId, categoryId) -- links buckets to expense categories
-- Investment(id, bucketId, name, jobTitle, platform, assetType, investedAmountCents, currentValueCents, returnPercent, maturityDateEpochDay, interestRate, lastUpdatedEpochDay, notes, isAutoFetched, isSip, sipAmountCents, primaryCorrelationKey, lastSourceType, lastSourceKey)
+- Investment(id, bucketId, name, jobTitle, platform, assetType, investedAmountCents, currentValueCents, returnPercent, maturityDateEpochDay, interestRate, lastUpdatedEpochDay, notes, isAutoFetched, isSip, sipAmountCents, primaryCorrelationKey, lastSourceType, lastSourceKey, canonicalInstrumentKey)
+- InvestmentSource(id, investmentId, sourceType, sourceKey, correlationKey, canonicalInstrumentKey, eventType, amountCents, eventTimestampMillis)
 - InvestmentSchedule(id, name, bucketId, assetType, platform, amountCents, frequency, dayOfPeriod, startEpochDay, endEpochDay, isActive, source, notes)
 - InvestmentOccurrence(id, scheduleId, dueEpochDay, expectedAmountCents, status, confirmedAmountCents, confirmedAtMillis, linkedInvestmentId, correlationKey, sourceType) -- status: EXPECTED, CONFIRMED, ADJUSTED, SKIPPED
 - IngestionEvent(id, domain, sourceType, sourceKey, correlationKey, eventType, amountCents, eventTimestampMillis, payloadHash, processedAtMillis, status, sourceSender, sourceBody) -- domain: SALARY, INVESTMENT, EXPENSE; sourceType: SMS, NOTIFICATION, MANUAL, SCHEDULE, EXPENSE_RECOVERY
@@ -35,3 +36,4 @@ Database version
 - Version: 7
 - Migration 5→6 introduces schedule/occurrence/event/mapping tables and reconciliation metadata columns on investments
 - Migration 6→7 adds expense-level investment transfer metadata so old expense imports can be recovered into holdings without corrupting spend analytics
+- Migration 8→9 adds canonical investment identity and source links to prevent duplicate holdings across multiple SMS/notification/recovery messages

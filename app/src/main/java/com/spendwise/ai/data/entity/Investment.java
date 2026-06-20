@@ -18,7 +18,8 @@ import androidx.room.PrimaryKey;
 @Entity(tableName = "investments", foreignKeys = {
         @ForeignKey(entity = Bucket.class, parentColumns = "id", childColumns = "bucketId", onDelete = ForeignKey.CASCADE)
 }, indices = {
-        @Index("bucketId")
+        @Index("bucketId"),
+        @Index("canonicalInstrumentKey")
 })
 public class Investment {
 
@@ -131,6 +132,13 @@ public class Investment {
      */
     @Nullable
     private String lastSourceKey;
+
+    /**
+     * Stable holding identity used to merge multiple source messages describing
+     * the same investment.
+     */
+    @Nullable
+    private String canonicalInstrumentKey;
 
     public Investment(long bucketId, @NonNull String name, @NonNull String assetType,
             long investedAmountCents, long currentValueCents, long lastUpdatedEpochDay) {
@@ -308,6 +316,15 @@ public class Investment {
 
     public void setLastSourceKey(@Nullable String lastSourceKey) {
         this.lastSourceKey = lastSourceKey;
+    }
+
+    @Nullable
+    public String getCanonicalInstrumentKey() {
+        return canonicalInstrumentKey;
+    }
+
+    public void setCanonicalInstrumentKey(@Nullable String canonicalInstrumentKey) {
+        this.canonicalInstrumentKey = canonicalInstrumentKey;
     }
 
     /**

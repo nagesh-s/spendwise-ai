@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.ListAdapter;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.spendwise.ai.R;
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
 
 import org.threeten.bp.LocalDate;
 import org.threeten.bp.format.DateTimeFormatter;
@@ -24,12 +24,12 @@ import java.util.Locale;
  * RecyclerView adapter for investments inside a bucket detail screen.
  * Shows: name, job title, platform, P&L.
  */
-public class InvestmentAdapter extends ListAdapter<Investment, InvestmentAdapter.InvestmentViewHolder> {
+public class InvestmentAdapter extends ListAdapter<Holding, InvestmentAdapter.InvestmentViewHolder> {
 
     public interface OnInvestmentClickListener {
-        void onInvestmentClick(Investment investment);
+        void onInvestmentClick(Holding investment);
 
-        void onInfoClick(Investment investment);
+        void onInfoClick(Holding investment);
     }
 
     private final OnInvestmentClickListener listener;
@@ -39,14 +39,14 @@ public class InvestmentAdapter extends ListAdapter<Investment, InvestmentAdapter
         this.listener = listener;
     }
 
-    private static final DiffUtil.ItemCallback<Investment> DIFF_CALLBACK = new DiffUtil.ItemCallback<Investment>() {
+    private static final DiffUtil.ItemCallback<Holding> DIFF_CALLBACK = new DiffUtil.ItemCallback<Holding>() {
         @Override
-        public boolean areItemsTheSame(@NonNull Investment o, @NonNull Investment n) {
+        public boolean areItemsTheSame(@NonNull Holding o, @NonNull Holding n) {
             return o.getId() == n.getId();
         }
 
         @Override
-        public boolean areContentsTheSame(@NonNull Investment o, @NonNull Investment n) {
+        public boolean areContentsTheSame(@NonNull Holding o, @NonNull Holding n) {
             return o.getName().equals(n.getName())
                     && o.getCurrentValueCents() == n.getCurrentValueCents()
                     && o.getInvestedAmountCents() == n.getInvestedAmountCents();
@@ -91,7 +91,7 @@ public class InvestmentAdapter extends ListAdapter<Investment, InvestmentAdapter
             btnInfo = itemView.findViewById(R.id.btn_investment_info);
         }
 
-        void bind(Investment inv, OnInvestmentClickListener listener) {
+        void bind(Holding inv, OnInvestmentClickListener listener) {
             Context context = itemView.getContext();
             textName.setText(inv.getName());
 
@@ -152,23 +152,23 @@ public class InvestmentAdapter extends ListAdapter<Investment, InvestmentAdapter
 
         private String formatAssetType(String type) {
             switch (type) {
-                case Investment.ASSET_STOCK:
+                case Holding.ASSET_STOCK:
                     return "Stock";
-                case Investment.ASSET_MF:
+                case Holding.ASSET_MF:
                     return "Mutual Fund";
-                case Investment.ASSET_ETF:
+                case Holding.ASSET_ETF:
                     return "ETF";
-                case Investment.ASSET_FD:
+                case Holding.ASSET_FD:
                     return "Fixed Deposit";
-                case Investment.ASSET_RD:
+                case Holding.ASSET_RD:
                     return "Recurring Deposit";
-                case Investment.ASSET_PPF:
+                case Holding.ASSET_PPF:
                     return "PPF";
-                case Investment.ASSET_NPS:
+                case Holding.ASSET_NPS:
                     return "NPS";
-                case Investment.ASSET_GOLD:
+                case Holding.ASSET_GOLD:
                     return "Gold";
-                case Investment.ASSET_SAVINGS:
+                case Holding.ASSET_SAVINGS:
                     return "Savings";
                 default:
                     return "Other";

@@ -14,6 +14,7 @@ Document entity and index changes with clear rationale and upgrade steps per ver
 | 4→5 | `buckets`, `bucket_categories`, `investments` | — | Bucket feature: default goal buckets seeded. |
 | 5→6 | `investment_schedules`, `investment_occurrences`, `ingestion_events`, `instrument_bucket_mappings` | `primaryCorrelationKey`, `lastSourceType`, `lastSourceKey` on `investments` | Salary-to-Buckets automation: dual ledger support, SIP lifecycle, idempotent ingestion, learned assignment mapping. |
 | 6→7 | — | `isInvestmentTransfer`, `linkedInvestmentId`, `recoveryStatus`, `canonicalSourceKey` on `expenses` | Holdings repair: recover investment-like expense rows into Buckets while keeping analytics/budget totals clean. |
+| 8→9 | `investment_sources` | `canonicalInstrumentKey` on `investments` | Canonical holding identity and source links for duplicate-safe investment ingestion. |
 
 ### Migration 5→6 Details
 
@@ -56,3 +57,19 @@ Operational notes:
 - Existing expense rows are preserved and remain visible in Calendar and merchant history.
 - Recovered investment transfers are excluded from budget/analytics queries through DAO-level filtered aggregates.
 - `canonicalSourceKey` keeps expense-derived holding recovery idempotent across retries and later SMS repair runs.
+
+### Migration 8→9 Details
+
+Located in `AppDatabase.java` as `MIGRATION_8_9`.
+
+Key DDL:
+- `ALTER TABLE investments ADD COLUMN canonicalInstrumentKey TEXT`
+- create index on `investments.canonicalInstrumentKey`
+- create `investment_sources` with:
+  - `investmentId` FK to `investments`
+  - unique `sourceKey`
+  - indexes on `investmentId`, `correlationKey`, and `canonicalInstrumentKey`
+
+Operational notes:
+- One holding can now have many source messages without creating duplicate bucket rows.
+- Weak FD/RD messages without reference numbers merge through canonical asset/platform/amount/date-window identity.

@@ -78,7 +78,8 @@ public class TransactionParser {
                 "congratulations! you", "congrats!",
                 "click here", "bit.ly/", "apply.link",
                 "call to opt", "sms stop", "unsubscribe",
-                "eligible for", "instant loan", "loan offer", "upgrade", "personal loan"
+                "eligible for", "instant loan", "loan offer", "upgrade", "personal loan",
+                "will be converted", "expires", "caution"
         };
         for (String token : promoTokens) {
             if (normalized.contains(token)) {

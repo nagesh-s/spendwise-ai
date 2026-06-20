@@ -26,7 +26,7 @@ import com.spendwise.ai.R;
 import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.entity.Bucket;
 import com.spendwise.ai.data.entity.IngestionEvent;
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
 import com.spendwise.ai.data.entity.InvestmentOccurrence;
 import com.spendwise.ai.data.pojo.InvestmentOccurrenceWithSchedule;
 import com.spendwise.ai.engine.BucketAssignmentEngine;
@@ -51,16 +51,16 @@ public class BucketDetailFragment extends Fragment
     private static final int REQUEST_RECORD_AUDIO = 2101;
 
     private static final String[] ASSET_TYPE_VALUES = new String[] {
-            Investment.ASSET_STOCK,
-            Investment.ASSET_MF,
-            Investment.ASSET_ETF,
-            Investment.ASSET_FD,
-            Investment.ASSET_RD,
-            Investment.ASSET_PPF,
-            Investment.ASSET_NPS,
-            Investment.ASSET_GOLD,
-            Investment.ASSET_SAVINGS,
-            Investment.ASSET_OTHER
+            Holding.ASSET_STOCK,
+            Holding.ASSET_MF,
+            Holding.ASSET_ETF,
+            Holding.ASSET_FD,
+            Holding.ASSET_RD,
+            Holding.ASSET_PPF,
+            Holding.ASSET_NPS,
+            Holding.ASSET_GOLD,
+            Holding.ASSET_SAVINGS,
+            Holding.ASSET_OTHER
     };
 
     private static final String[] ASSET_TYPE_LABELS = new String[] {
@@ -151,17 +151,17 @@ public class BucketDetailFragment extends Fragment
 
         pendingAdapter = new PendingInvestmentAdapter(new PendingInvestmentAdapter.PendingActionListener() {
             @Override
-            public void onAccept(Investment investment) {
+            public void onAccept(Holding investment) {
                 acceptPendingInvestment(investment);
             }
 
             @Override
-            public void onReject(Investment investment) {
+            public void onReject(Holding investment) {
                 rejectPendingInvestment(investment);
             }
 
             @Override
-            public void onInfoClick(Investment investment) {
+            public void onInfoClick(Holding investment) {
                 showSourceDetailSheet(investment);
             }
         });
@@ -190,7 +190,7 @@ public class BucketDetailFragment extends Fragment
         }
     }
 
-    private void splitAndDisplayInvestments(@Nullable List<Investment> investments) {
+    private void splitAndDisplayInvestments(@Nullable List<Holding> investments) {
         if (investments == null || investments.isEmpty()) {
             adapter.submitList(null);
             pendingAdapter.submitList(null);
@@ -199,9 +199,9 @@ public class BucketDetailFragment extends Fragment
             recyclerInvestments.setVisibility(View.GONE);
             return;
         }
-        List<Investment> confirmed = new ArrayList<>();
-        List<Investment> pending = new ArrayList<>();
-        for (Investment inv : investments) {
+        List<Holding> confirmed = new ArrayList<>();
+        List<Holding> pending = new ArrayList<>();
+        for (Holding inv : investments) {
             String notes = inv.getNotes();
             if (notes != null && notes.contains("[auto-map-pending:true]")) {
                 pending.add(inv);
@@ -218,11 +218,11 @@ public class BucketDetailFragment extends Fragment
         recyclerInvestments.setVisibility(noConfirmed ? View.GONE : View.VISIBLE);
     }
 
-    private void acceptPendingInvestment(@NonNull Investment investment) {
+    private void acceptPendingInvestment(@NonNull Holding investment) {
         final android.content.Context appContext = requireContext().getApplicationContext();
         AppDatabase.databaseWriteExecutor.execute(() -> {
             AppDatabase db = AppDatabase.getInstance(appContext);
-            Investment current = db.investmentDao().getById(investment.getId());
+            Holding current = db.investmentDao().getById(investment.getId());
             if (current == null)
                 return;
             // Clear the pending token
@@ -257,7 +257,7 @@ public class BucketDetailFragment extends Fragment
         });
     }
 
-    private void rejectPendingInvestment(@NonNull Investment investment) {
+    private void rejectPendingInvestment(@NonNull Holding investment) {
         viewModel.deleteInvestment(investment);
         Toast.makeText(requireContext(),
                 getString(R.string.bucket_detail_pending_rejected, investment.getName()),
@@ -265,16 +265,16 @@ public class BucketDetailFragment extends Fragment
     }
 
     @Override
-    public void onInvestmentClick(Investment investment) {
+    public void onInvestmentClick(Holding investment) {
         showInvestmentEditorDialog(investment);
     }
 
     @Override
-    public void onInfoClick(Investment investment) {
+    public void onInfoClick(Holding investment) {
         showSourceDetailSheet(investment);
     }
 
-    private void showSourceDetailSheet(Investment investment) {
+    private void showSourceDetailSheet(Holding investment) {
         SourceDetailBottomSheet sheet = SourceDetailBottomSheet.newInstance(investment.getId());
         sheet.show(getChildFragmentManager(), "SourceDetailSheet");
     }
@@ -324,7 +324,7 @@ public class BucketDetailFragment extends Fragment
             @Override
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
-                Investment investment = adapter.getCurrentList().get(position);
+                Holding investment = adapter.getCurrentList().get(position);
                 if (investment == null) {
                     adapter.notifyItemChanged(position);
                     return;
@@ -335,7 +335,7 @@ public class BucketDetailFragment extends Fragment
         new ItemTouchHelper(callback).attachToRecyclerView(recyclerInvestments);
     }
 
-    private void confirmDeleteInvestment(@NonNull Investment investment, int adapterPosition) {
+    private void confirmDeleteInvestment(@NonNull Holding investment, int adapterPosition) {
         new com.google.android.material.dialog.MaterialAlertDialogBuilder(requireContext())
                 .setTitle(getString(R.string.bucket_detail_delete_title))
                 .setMessage(getString(R.string.bucket_detail_delete_message, investment.getName()))
@@ -449,11 +449,11 @@ public class BucketDetailFragment extends Fragment
         Toast.makeText(context, R.string.bucket_import_notifications_started, Toast.LENGTH_SHORT).show();
     }
 
-    private void showInvestmentEditorDialog(@Nullable Investment existingInvestment) {
+    private void showInvestmentEditorDialog(@Nullable Holding existingInvestment) {
         showInvestmentEditorDialog(existingInvestment, null);
     }
 
-    private void showInvestmentEditorDialog(@Nullable Investment existingInvestment,
+    private void showInvestmentEditorDialog(@Nullable Holding existingInvestment,
             @Nullable VoiceInvestmentParser.ParsedInvestment voicePrefill) {
         AlertDialog.Builder builder = new AlertDialog.Builder(requireContext());
         builder.setTitle(existingInvestment == null
@@ -534,7 +534,7 @@ public class BucketDetailFragment extends Fragment
             long epochDayToday = LocalDate.now().toEpochDay();
 
             if (existingInvestment == null) {
-                Investment newInvestment = new Investment(
+                Holding newInvestment = new Holding(
                         bucketId,
                         name,
                         assetType,
@@ -604,14 +604,14 @@ public class BucketDetailFragment extends Fragment
         Toast.makeText(requireContext(), R.string.bucket_detail_occurrence_updated, Toast.LENGTH_SHORT).show();
     }
 
-    private void updateSummary(@Nullable List<Investment> investments) {
+    private void updateSummary(@Nullable List<Holding> investments) {
         long totalValueCents = 0L;
         long totalInvestedCents = 0L;
         int holdingCount = 0;
 
         if (investments != null) {
             holdingCount = investments.size();
-            for (Investment investment : investments) {
+            for (Holding investment : investments) {
                 totalValueCents += investment.getCurrentValueCents();
                 totalInvestedCents += investment.getInvestedAmountCents();
             }

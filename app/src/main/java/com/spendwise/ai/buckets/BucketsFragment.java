@@ -21,10 +21,12 @@ import androidx.navigation.Navigation;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.button.MaterialButtonToggleGroup;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 import com.spendwise.ai.R;
+import com.spendwise.ai.engine.InvestmentDeduplicationEngine;
 import com.spendwise.ai.engine.SalaryAllocationOrchestrator;
 import com.spendwise.ai.util.DateUtils;
 
@@ -58,6 +60,8 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
     private LinearLayout allocationBarContainer;
     private TextView textBucketsOverview;
     private TextView textMonthStatus;
+    private TextView textHoldingsHealthSubtitle;
+    private MaterialButton buttonCleanHoldings;
     private TextView textNetWorth;
     private ImageButton buttonToggleNetWorth;
     private MaterialButtonToggleGroup ledgerToggle;
@@ -83,6 +87,8 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
         allocationBarContainer = view.findViewById(R.id.layout_allocation_bar);
         textBucketsOverview = view.findViewById(R.id.text_buckets_overview);
         textMonthStatus = view.findViewById(R.id.text_month_status);
+        textHoldingsHealthSubtitle = view.findViewById(R.id.text_holdings_health_subtitle);
+        buttonCleanHoldings = view.findViewById(R.id.btn_clean_holdings);
         textNetWorth = view.findViewById(R.id.text_net_worth);
         buttonToggleNetWorth = view.findViewById(R.id.btn_toggle_net_worth);
         ledgerToggle = view.findViewById(R.id.toggle_ledger_mode);
@@ -115,6 +121,12 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
             updateNetWorthText();
         });
 
+        buttonCleanHoldings.setOnClickListener(v -> {
+            buttonCleanHoldings.setEnabled(false);
+            textHoldingsHealthSubtitle.setText(R.string.buckets_holdings_health_checking);
+            viewModel.repairHoldings();
+        });
+
         view.findViewById(R.id.btn_allocate_salary).setOnClickListener(v -> showRunAllocationDialog());
 
         View.OnClickListener addBucketListener = v -> showAddBucketDialog();
@@ -141,6 +153,8 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
             latestNetWorthCents = total == null ? 0L : total;
             updateNetWorthText();
         });
+
+        viewModel.getRepairResult().observe(getViewLifecycleOwner(), this::updateHoldingsHealth);
     }
 
     @Override
@@ -343,6 +357,28 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
         textMonthStatus.setText(getString(messageId));
         textMonthStatus.setBackgroundColor(ContextCompat.getColor(requireContext(), bgColor));
         textMonthStatus.setTextColor(ContextCompat.getColor(requireContext(), textColor));
+    }
+
+    private void updateHoldingsHealth(@Nullable InvestmentDeduplicationEngine.RepairResult result) {
+        buttonCleanHoldings.setEnabled(true);
+        if (result == null) {
+            textHoldingsHealthSubtitle.setText(R.string.buckets_holdings_health_checking);
+            return;
+        }
+        if (result.scanned <= 0) {
+            textHoldingsHealthSubtitle.setText(R.string.buckets_holdings_health_empty);
+        } else if (result.merged > 0) {
+            textHoldingsHealthSubtitle.setText(getString(
+                    R.string.buckets_holdings_health_repaired,
+                    result.merged,
+                    result.backfilledKeys));
+        } else if (result.backfilledKeys > 0) {
+            textHoldingsHealthSubtitle.setText(getString(
+                    R.string.buckets_holdings_health_keyed,
+                    result.backfilledKeys));
+        } else {
+            textHoldingsHealthSubtitle.setText(R.string.buckets_holdings_health_clean);
+        }
     }
 
     private void updateNetWorthText() {

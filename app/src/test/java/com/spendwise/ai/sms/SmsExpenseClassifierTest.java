@@ -101,6 +101,7 @@ public class SmsExpenseClassifierTest {
     private static ParsedTransaction transaction(String merchant, String message) {
         return new ParsedTransaction(
                 ParsedTransaction.TransactionType.DEBIT,
+                "Bank",
                 1000L,
                 merchant,
                 null,

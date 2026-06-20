@@ -67,7 +67,7 @@ public class InvestmentDigestWorker extends Worker {
             int progressRounded = (int) Math.min(100d, Math.round(weightedProgress));
             int executionRounded = (int) Math.min(100d, Math.round(executionScore));
 
-            String title = "Investment automation digest";
+            String title = "Holding automation digest";
             String body = "Status: " + allocationStatus + " • Confirmed SIPs: " + confirmedCount
                     + " • Pending: " + pendingCount
                     + " • Goal: " + progressRounded + "%"

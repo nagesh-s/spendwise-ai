@@ -30,6 +30,10 @@ public class ParsedInvestmentSignal {
     private final String correlationKey;
     private final String rawMessage;
     private final boolean correction;
+    private final String referenceId;
+    private final String normalizedPayloadFingerprint;
+    private final double confidence;
+    private final String confidenceReason;
 
     public ParsedInvestmentSignal(
             @NonNull SignalType signalType,
@@ -43,6 +47,27 @@ public class ParsedInvestmentSignal {
             @NonNull String correlationKey,
             @NonNull String rawMessage,
             boolean correction) {
+        this(signalType, sender, platform, investmentName, assetType, amountCents,
+                timestampMillis, sourceKey, correlationKey, rawMessage, correction,
+                null, null, 0.75d, "deterministic_parser");
+    }
+
+    public ParsedInvestmentSignal(
+            @NonNull SignalType signalType,
+            @Nullable String sender,
+            @Nullable String platform,
+            @Nullable String investmentName,
+            @NonNull String assetType,
+            long amountCents,
+            long timestampMillis,
+            @NonNull String sourceKey,
+            @NonNull String correlationKey,
+            @NonNull String rawMessage,
+            boolean correction,
+            @Nullable String referenceId,
+            @Nullable String normalizedPayloadFingerprint,
+            double confidence,
+            @NonNull String confidenceReason) {
         this.signalType = signalType;
         this.sender = sender;
         this.platform = platform;
@@ -54,6 +79,10 @@ public class ParsedInvestmentSignal {
         this.correlationKey = correlationKey;
         this.rawMessage = rawMessage;
         this.correction = correction;
+        this.referenceId = referenceId;
+        this.normalizedPayloadFingerprint = normalizedPayloadFingerprint;
+        this.confidence = confidence;
+        this.confidenceReason = confidenceReason;
     }
 
     @NonNull
@@ -106,5 +135,24 @@ public class ParsedInvestmentSignal {
 
     public boolean isCorrection() {
         return correction;
+    }
+
+    @Nullable
+    public String getReferenceId() {
+        return referenceId;
+    }
+
+    @Nullable
+    public String getNormalizedPayloadFingerprint() {
+        return normalizedPayloadFingerprint;
+    }
+
+    public double getConfidence() {
+        return confidence;
+    }
+
+    @NonNull
+    public String getConfidenceReason() {
+        return confidenceReason;
     }
 }

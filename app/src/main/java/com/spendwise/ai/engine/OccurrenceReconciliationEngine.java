@@ -123,6 +123,7 @@ public class OccurrenceReconciliationEngine {
                 resolvedAmount,
                 signal.getTimestampMillis(),
                 linkedInvestmentId > 0 ? linkedInvestmentId : null,
+                null,
                 signal.getCorrelationKey(),
                 sourceType);
     }

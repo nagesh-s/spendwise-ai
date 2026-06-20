@@ -19,7 +19,7 @@ import com.spendwise.ai.R;
 import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.entity.Expense;
 import com.spendwise.ai.data.entity.IngestionEvent;
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
 
 import org.threeten.bp.Instant;
 import org.threeten.bp.LocalDate;
@@ -141,12 +141,12 @@ public class SourceDetailBottomSheet extends BottomSheetDialogFragment {
         }
     }
 
-    // ── Investment lookup ──────────────────────────────────────────────
+    // ── Holding lookup ──────────────────────────────────────────────
     private void loadInvestmentSource(long investmentId) {
         showLoadingState();
         AppDatabase.databaseWriteExecutor.execute(() -> {
             AppDatabase db = AppDatabase.getInstance(requireContext());
-            Investment investment = db.investmentDao().getById(investmentId);
+            Holding investment = db.investmentDao().getById(investmentId);
             if (investment == null) {
                 post(this::showEmptyState);
                 return;
@@ -173,7 +173,7 @@ public class SourceDetailBottomSheet extends BottomSheetDialogFragment {
 
     @Nullable
     private IngestionEvent findEventForInvestment(@NonNull AppDatabase db,
-            @NonNull Investment investment) {
+            @NonNull Holding investment) {
         // Try by last source key first
         if (investment.getLastSourceKey() != null && !investment.getLastSourceKey().isEmpty()) {
             IngestionEvent event = db.ingestionEventDao()

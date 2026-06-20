@@ -11,6 +11,7 @@ public class TransactionParserTest {
     @Test
     public void parse_extractsPayeeFromToClause() {
         ParsedTransaction transaction = TransactionParser.parse(
+                "Bank",
                 "Rs.550.00 debited from A/c XX1234 to Airtel Payments Bank on 15-02-26. Ref 9988",
                 System.currentTimeMillis());
 
@@ -23,6 +24,7 @@ public class TransactionParserTest {
     @Test
     public void parse_extractsAliasFromUpiHandle() {
         ParsedTransaction transaction = TransactionParser.parse(
+                "Bank",
                 "INR 120.00 paid via UPI to milk.store-001@okaxis from account XX6789",
                 System.currentTimeMillis());
 

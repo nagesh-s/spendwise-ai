@@ -50,9 +50,10 @@ public interface InvestmentOccurrenceDao {
     LiveData<List<InvestmentOccurrenceWithSchedule>> getOccurrencesForBucket(long bucketId);
 
     @Query("UPDATE investment_occurrences SET status = :status, confirmedAmountCents = :amountCents, confirmedAtMillis = :confirmedAtMillis, " +
-            "linkedInvestmentId = :linkedInvestmentId, correlationKey = :correlationKey, sourceType = :sourceType WHERE id = :id")
+            "linkedInvestmentId = :linkedInvestmentId, transactionId = :transactionId, "
+            + "correlationKey = :correlationKey, sourceType = :sourceType WHERE id = :id")
     void markResolved(long id, String status, long amountCents, long confirmedAtMillis,
-            Long linkedInvestmentId, String correlationKey, String sourceType);
+            Long linkedInvestmentId, Long transactionId, String correlationKey, String sourceType);
 
     @Query("SELECT COUNT(*) FROM investment_occurrences WHERE status = :status")
     int countByStatus(String status);

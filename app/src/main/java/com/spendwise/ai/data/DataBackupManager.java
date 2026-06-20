@@ -7,7 +7,7 @@ import com.spendwise.ai.data.entity.Bucket;
 import com.spendwise.ai.data.entity.Budget;
 import com.spendwise.ai.data.entity.Category;
 import com.spendwise.ai.data.entity.Expense;
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
 import com.spendwise.ai.data.entity.Merchant;
 
 import org.json.JSONArray;
@@ -146,9 +146,9 @@ public class DataBackupManager {
                 backup.put(KEY_BUCKETS, bucketsArray);
 
                 // Export investments
-                List<Investment> investmentsList = database.investmentDao().getAllInvestmentsSync();
+                List<Holding> investmentsList = database.investmentDao().getAllInvestmentsSync();
                 JSONArray investmentsArray = new JSONArray();
-                for (Investment inv : investmentsList) {
+                for (Holding inv : investmentsList) {
                     JSONObject obj = new JSONObject();
                     obj.put("id", inv.getId());
                     obj.put("bucketId", inv.getBucketId());

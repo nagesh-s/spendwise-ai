@@ -31,6 +31,23 @@ public class InvestmentSmsParserTest {
     }
 
     @Test
+    public void canonicalKey_forSameFdBookingWithoutReference_shouldMatch() {
+        String created = "Dear customer your FD of Rs. 100000 is created";
+        String successful = "Dear customer your FD booking is successful of Rs. 100000";
+
+        ParsedInvestmentSignal createdSignal = InvestmentSmsParser.parse("VK-HDFCBK", created, 1700000000000L);
+        ParsedInvestmentSignal successfulSignal = InvestmentSmsParser.parse("VK-HDFCBK", successful, 1700003600000L);
+
+        Assert.assertNotNull(createdSignal);
+        Assert.assertNotNull(successfulSignal);
+        Assert.assertEquals(Investment.ASSET_FD, createdSignal.getAssetType());
+        Assert.assertEquals(Investment.ASSET_FD, successfulSignal.getAssetType());
+        Assert.assertEquals(
+                InvestmentSignalKeyFactory.buildCanonicalInstrumentKey(createdSignal),
+                InvestmentSignalKeyFactory.buildCanonicalInstrumentKey(successfulSignal));
+    }
+
+    @Test
     public void parse_correctionMessage_shouldFlagCorrection() {
         String correctionMessage = "Updated allotment: Ref AB12CD34 corrected amount Rs 4985 for SIP.";
         ParsedInvestmentSignal signal = InvestmentSmsParser.parse("AD-UPSTOX", correctionMessage, 1700000000000L);

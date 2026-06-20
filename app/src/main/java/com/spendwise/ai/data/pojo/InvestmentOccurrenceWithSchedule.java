@@ -17,6 +17,7 @@ public class InvestmentOccurrenceWithSchedule {
     public Long confirmedAmountCents;
     public Long confirmedAtMillis;
     public Long linkedInvestmentId;
+    public Long transactionId;
     public String correlationKey;
     public String sourceType;
 

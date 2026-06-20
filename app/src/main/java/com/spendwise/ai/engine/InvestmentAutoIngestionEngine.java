@@ -6,7 +6,9 @@ import androidx.annotation.Nullable;
 import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.entity.Bucket;
 import com.spendwise.ai.data.entity.IngestionEvent;
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
+import com.spendwise.ai.data.entity.InvestmentSource;
+import com.spendwise.ai.sms.InvestmentSignalKeyFactory;
 import com.spendwise.ai.sms.ParsedInvestmentSignal;
 
 import org.threeten.bp.Instant;
@@ -43,6 +45,14 @@ public class InvestmentAutoIngestionEngine {
     public IngestResult ingest(
             @NonNull AppDatabase db,
             @NonNull List<ParsedInvestmentSignal> signals) {
+        return ingest(db, signals, IngestionEvent.SOURCE_SMS);
+    }
+
+    @NonNull
+    public IngestResult ingest(
+            @NonNull AppDatabase db,
+            @NonNull List<ParsedInvestmentSignal> signals,
+            @NonNull String sourceType) {
         IngestResult result = new IngestResult();
         if (signals.isEmpty()) {
             return result;
@@ -56,6 +66,7 @@ public class InvestmentAutoIngestionEngine {
             result.skipped += orderedSignals.size();
             return result;
         }
+        new InvestmentDeduplicationEngine().repair(db);
 
         Map<String, Long> bucketIdByType = new HashMap<>();
         long fallbackBucketId = buckets.get(0).getId();
@@ -64,10 +75,11 @@ public class InvestmentAutoIngestionEngine {
         }
         BucketAssignmentEngine assignmentEngine = new BucketAssignmentEngine();
 
-        List<Investment> allInvestments = db.investmentDao().getAllInvestmentsSync();
-        Map<String, Investment> bySource = new HashMap<>();
-        Map<String, Investment> byCorrelation = new HashMap<>();
-        indexExistingInvestments(allInvestments, bySource, byCorrelation);
+        List<Holding> allInvestments = db.investmentDao().getAllInvestmentsSync();
+        Map<String, Holding> bySource = new HashMap<>();
+        Map<String, Holding> byCorrelation = new HashMap<>();
+        Map<String, Holding> byCanonicalKey = new HashMap<>();
+        indexExistingInvestments(allInvestments, bySource, byCorrelation, byCanonicalKey);
 
         EventIngestionPipeline pipeline = new EventIngestionPipeline();
 
@@ -78,24 +90,46 @@ public class InvestmentAutoIngestionEngine {
                 continue;
             }
 
-            Investment matched = bySource.get(signal.getSourceKey());
+            String sourceKey = InvestmentSignalKeyFactory.buildIngestionSourceKey(signal);
+            String canonicalInstrumentKey = InvestmentSignalKeyFactory.buildCanonicalInstrumentKey(signal);
+            EventIngestionPipeline.IngestResult event = pipeline.ingest(
+                    db,
+                    IngestionEvent.DOMAIN_INVESTMENT,
+                    sourceType,
+                    sourceKey,
+                    signal.getCorrelationKey(),
+                    signal.getSignalType().name(),
+                    signal.getAmountCents(),
+                    signal.getTimestampMillis(),
+                    signal.getSender(),
+                    signal.getRawMessage(), // payloadHashBase
+                    signal.getRawMessage()); // rawMessage
+
+            Holding matched = findByLinkedSource(db, sourceKey);
+            if (matched == null) {
+                matched = bySource.get(sourceKey);
+            }
             if (matched == null) {
                 matched = byCorrelation.get(signal.getCorrelationKey());
+            }
+            if (matched == null) {
+                matched = byCanonicalKey.get(canonicalInstrumentKey);
             }
             if (matched == null) {
                 matched = findFuzzyMatch(allInvestments, signal);
             }
 
             if (matched != null) {
-                if (applyUpdate(matched, signal)) {
+                if (applyUpdate(matched, signal, sourceKey, canonicalInstrumentKey)) {
                     db.investmentDao().update(matched);
                     result.updated++;
                 } else {
                     result.skipped++;
                 }
-                matched.setNotes(mergeAutoTokens(matched.getNotes(), signal));
-                indexInvestment(matched, bySource, byCorrelation);
-                result.investmentIdBySourceKey.put(signal.getSourceKey(), matched.getId());
+                linkSource(db, matched.getId(), sourceType, sourceKey, canonicalInstrumentKey, signal);
+                pipeline.markProcessed(db, event.eventId, IngestionEvent.STATUS_PROCESSED);
+                indexInvestment(matched, bySource, byCorrelation, byCanonicalKey);
+                rememberLinkedInvestment(result, signal, sourceKey, matched.getId());
                 continue;
             }
 
@@ -108,21 +142,8 @@ public class InvestmentAutoIngestionEngine {
                     .toLocalDate()
                     .toEpochDay();
 
-            String sourceKey = signal.getSourceKey();
-            EventIngestionPipeline.IngestResult event = pipeline.ingest(
-                    db,
-                    IngestionEvent.DOMAIN_INVESTMENT,
-                    IngestionEvent.SOURCE_SMS,
-                    sourceKey,
-                    signal.getCorrelationKey(),
-                    signal.getSignalType().name(),
-                    signal.getAmountCents(),
-                    signal.getTimestampMillis(),
-                    signal.getSender(),
-                    signal.getRawMessage(), // payloadHashBase
-                    signal.getRawMessage()); // rawMessage
             long baseAmount = Math.max(0L, signal.getAmountCents());
-            Investment investment = new Investment(
+            Holding investment = new Holding(
                     targetBucketId,
                     chooseInvestmentName(signal),
                     signal.getAssetType(),
@@ -134,7 +155,8 @@ public class InvestmentAutoIngestionEngine {
             investment.setNotes(mergeAutoTokens(investment.getNotes(), signal));
             investment.setPrimaryCorrelationKey(signal.getCorrelationKey());
             investment.setLastSourceType("AUTO_INGEST");
-            investment.setLastSourceKey(signal.getSourceKey());
+            investment.setLastSourceKey(sourceKey);
+            investment.setCanonicalInstrumentKey(canonicalInstrumentKey);
             if (signal.getSignalType() == ParsedInvestmentSignal.SignalType.FD_BOOKED) {
                 investment.setJobTitle("FD Allocation");
             } else if (signal.getSignalType() == ParsedInvestmentSignal.SignalType.RD_BOOKED) {
@@ -146,27 +168,49 @@ public class InvestmentAutoIngestionEngine {
 
             long insertedId = db.investmentDao().insert(investment);
             investment.setId(insertedId);
+            linkSource(db, insertedId, sourceType, sourceKey, canonicalInstrumentKey, signal);
+            pipeline.markProcessed(db, event.eventId, IngestionEvent.STATUS_PROCESSED);
             allInvestments.add(investment);
-            indexInvestment(investment, bySource, byCorrelation);
+            indexInvestment(investment, bySource, byCorrelation, byCanonicalKey);
             result.inserted++;
-            result.investmentIdBySourceKey.put(signal.getSourceKey(), insertedId);
+            rememberLinkedInvestment(result, signal, sourceKey, insertedId);
         }
         return result;
     }
 
+    private void rememberLinkedInvestment(
+            @NonNull IngestResult result,
+            @NonNull ParsedInvestmentSignal signal,
+            @NonNull String sourceKey,
+            long investmentId) {
+        result.investmentIdBySourceKey.put(sourceKey, investmentId);
+        result.investmentIdBySourceKey.put(signal.getSourceKey(), investmentId);
+    }
+
     private void indexExistingInvestments(
-            @NonNull List<Investment> investments,
-            @NonNull Map<String, Investment> bySource,
-            @NonNull Map<String, Investment> byCorrelation) {
-        for (Investment investment : investments) {
-            indexInvestment(investment, bySource, byCorrelation);
+            @NonNull List<Holding> investments,
+            @NonNull Map<String, Holding> bySource,
+            @NonNull Map<String, Holding> byCorrelation,
+            @NonNull Map<String, Holding> byCanonicalKey) {
+        for (Holding investment : investments) {
+            indexInvestment(investment, bySource, byCorrelation, byCanonicalKey);
         }
     }
 
     private void indexInvestment(
-            @NonNull Investment investment,
-            @NonNull Map<String, Investment> bySource,
-            @NonNull Map<String, Investment> byCorrelation) {
+            @NonNull Holding investment,
+            @NonNull Map<String, Holding> bySource,
+            @NonNull Map<String, Holding> byCorrelation,
+            @NonNull Map<String, Holding> byCanonicalKey) {
+        if (investment.getCanonicalInstrumentKey() != null && !investment.getCanonicalInstrumentKey().isEmpty()) {
+            byCanonicalKey.put(investment.getCanonicalInstrumentKey(), investment);
+        }
+        if (investment.getLastSourceKey() != null && !investment.getLastSourceKey().isEmpty()) {
+            bySource.put(investment.getLastSourceKey(), investment);
+        }
+        if (investment.getPrimaryCorrelationKey() != null && !investment.getPrimaryCorrelationKey().isEmpty()) {
+            byCorrelation.put(investment.getPrimaryCorrelationKey(), investment);
+        }
         String notes = investment.getNotes();
         if (notes == null || notes.isEmpty()) {
             return;
@@ -182,17 +226,17 @@ public class InvestmentAutoIngestionEngine {
     }
 
     @Nullable
-    private Investment findFuzzyMatch(
-            @NonNull List<Investment> allInvestments,
+    private Holding findFuzzyMatch(
+            @NonNull List<Holding> allInvestments,
             @NonNull ParsedInvestmentSignal signal) {
         long signalDay = epochDay(signal.getTimestampMillis());
         String normalizedSignalName = normalize(signal.getInvestmentName());
         String normalizedPlatform = normalize(signal.getPlatform());
 
-        for (Investment candidate : allInvestments) {
+        for (Holding candidate : allInvestments) {
             boolean assetMatches = normalize(candidate.getAssetType()).equals(normalize(signal.getAssetType()))
-                    || Investment.ASSET_OTHER.equals(candidate.getAssetType())
-                    || Investment.ASSET_OTHER.equals(signal.getAssetType());
+                    || Holding.ASSET_OTHER.equals(candidate.getAssetType())
+                    || Holding.ASSET_OTHER.equals(signal.getAssetType());
             if (!assetMatches) {
                 continue;
             }
@@ -206,8 +250,8 @@ public class InvestmentAutoIngestionEngine {
                     && !normalize(candidate.getPlatform()).equals(normalizedPlatform)) {
                 continue;
             }
-            boolean isFixedDeposit = Investment.ASSET_FD.equals(candidate.getAssetType())
-                    || Investment.ASSET_RD.equals(candidate.getAssetType());
+            boolean isFixedDeposit = Holding.ASSET_FD.equals(candidate.getAssetType())
+                    || Holding.ASSET_RD.equals(candidate.getAssetType());
             long dayDifference = Math.abs(candidate.getLastUpdatedEpochDay() - signalDay);
 
             if (dayDifference > FUZZY_DAY_WINDOW) {
@@ -233,7 +277,11 @@ public class InvestmentAutoIngestionEngine {
         return null;
     }
 
-    private boolean applyUpdate(@NonNull Investment existing, @NonNull ParsedInvestmentSignal signal) {
+    private boolean applyUpdate(
+            @NonNull Holding existing,
+            @NonNull ParsedInvestmentSignal signal,
+            @NonNull String sourceKey,
+            @NonNull String canonicalInstrumentKey) {
         boolean changed = false;
         long amountCents = Math.max(0L, signal.getAmountCents());
 
@@ -245,8 +293,12 @@ public class InvestmentAutoIngestionEngine {
             existing.setPrimaryCorrelationKey(signal.getCorrelationKey());
             changed = true;
         }
-        if (!equalsSafe(existing.getLastSourceKey(), signal.getSourceKey())) {
-            existing.setLastSourceKey(signal.getSourceKey());
+        if (!equalsSafe(existing.getLastSourceKey(), sourceKey)) {
+            existing.setLastSourceKey(sourceKey);
+            changed = true;
+        }
+        if (!equalsSafe(existing.getCanonicalInstrumentKey(), canonicalInstrumentKey)) {
+            existing.setCanonicalInstrumentKey(canonicalInstrumentKey);
             changed = true;
         }
         if (!equalsSafe(existing.getLastSourceType(), "AUTO_INGEST")) {
@@ -257,8 +309,8 @@ public class InvestmentAutoIngestionEngine {
             existing.setName(signal.getInvestmentName());
             changed = true;
         }
-        if (Investment.ASSET_OTHER.equals(existing.getAssetType())
-                && !Investment.ASSET_OTHER.equals(signal.getAssetType())) {
+        if (Holding.ASSET_OTHER.equals(existing.getAssetType())
+                && !Holding.ASSET_OTHER.equals(signal.getAssetType())) {
             existing.setAssetType(signal.getAssetType());
             changed = true;
         }
@@ -300,6 +352,23 @@ public class InvestmentAutoIngestionEngine {
         return changed;
     }
 
+    @Nullable
+    private Holding findByLinkedSource(@NonNull AppDatabase db, @NonNull String sourceKey) {
+        return null;
+    }
+
+    private void linkSource(
+            @NonNull AppDatabase db,
+            long investmentId,
+            @NonNull String sourceType,
+            @NonNull String sourceKey,
+            @NonNull String canonicalInstrumentKey,
+            @NonNull ParsedInvestmentSignal signal) {
+        if (investmentId <= 0) {
+            return;
+        }
+    }
+
     @NonNull
     private String mergeAutoTokens(@Nullable String currentNotes, @NonNull ParsedInvestmentSignal signal) {
         String notes = currentNotes == null ? "" : currentNotes.trim();
@@ -327,13 +396,13 @@ public class InvestmentAutoIngestionEngine {
             @NonNull Map<String, Long> bucketIdByType,
             long fallbackBucketId,
             @NonNull String assetType) {
-        if (Investment.ASSET_FD.equals(assetType) || Investment.ASSET_RD.equals(assetType)) {
+        if (Holding.ASSET_FD.equals(assetType) || Holding.ASSET_RD.equals(assetType)) {
             return getBucketId(bucketIdByType, Bucket.TYPE_MEDIUM_TERM, fallbackBucketId);
         }
-        if (Investment.ASSET_PPF.equals(assetType) || Investment.ASSET_NPS.equals(assetType)) {
+        if (Holding.ASSET_PPF.equals(assetType) || Holding.ASSET_NPS.equals(assetType)) {
             return getBucketId(bucketIdByType, Bucket.TYPE_RETIREMENT, fallbackBucketId);
         }
-        if (Investment.ASSET_SAVINGS.equals(assetType)) {
+        if (Holding.ASSET_SAVINGS.equals(assetType)) {
             return getBucketId(bucketIdByType, Bucket.TYPE_EMERGENCY, fallbackBucketId);
         }
         return getBucketId(bucketIdByType, Bucket.TYPE_LONG_TERM, fallbackBucketId);
@@ -350,9 +419,9 @@ public class InvestmentAutoIngestionEngine {
             return signal.getInvestmentName().trim();
         }
         if (signal.getPlatform() != null && !signal.getPlatform().trim().isEmpty()) {
-            return signal.getPlatform().trim() + " Investment";
+            return signal.getPlatform().trim() + " Holding";
         }
-        return "Investment";
+        return "Holding";
     }
 
     private boolean isWeakName(@Nullable String value) {

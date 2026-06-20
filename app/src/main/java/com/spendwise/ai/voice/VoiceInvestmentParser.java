@@ -3,7 +3,7 @@ package com.spendwise.ai.voice;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
 
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -23,7 +23,7 @@ public class VoiceInvestmentParser {
         @Nullable
         public String platform;
         @NonNull
-        public String assetType = Investment.ASSET_OTHER;
+        public String assetType = Holding.ASSET_OTHER;
 
         public boolean isValid() {
             return amountCents > 0;
@@ -130,30 +130,30 @@ public class VoiceInvestmentParser {
     private String inferAssetType(String text) {
         String normalized = text.toLowerCase(Locale.US);
         if (normalized.contains("etf")) {
-            return Investment.ASSET_ETF;
+            return Holding.ASSET_ETF;
         }
         if (normalized.contains("mutual fund") || normalized.contains("sip") || normalized.contains("mf")) {
-            return Investment.ASSET_MF;
+            return Holding.ASSET_MF;
         }
         if (normalized.contains("stock") || normalized.contains("share") || normalized.contains("equity")) {
-            return Investment.ASSET_STOCK;
+            return Holding.ASSET_STOCK;
         }
         if (normalized.contains("fixed deposit") || normalized.contains("fd")) {
-            return Investment.ASSET_FD;
+            return Holding.ASSET_FD;
         }
         if (normalized.contains("recurring deposit") || normalized.contains("rd")) {
-            return Investment.ASSET_RD;
+            return Holding.ASSET_RD;
         }
         if (normalized.contains("gold")) {
-            return Investment.ASSET_GOLD;
+            return Holding.ASSET_GOLD;
         }
         if (normalized.contains("ppf")) {
-            return Investment.ASSET_PPF;
+            return Holding.ASSET_PPF;
         }
         if (normalized.contains("nps")) {
-            return Investment.ASSET_NPS;
+            return Holding.ASSET_NPS;
         }
-        return Investment.ASSET_OTHER;
+        return Holding.ASSET_OTHER;
     }
 
     @NonNull

@@ -6,12 +6,12 @@ import androidx.lifecycle.LiveData;
 
 import com.spendwise.ai.data.AppDatabase;
 import com.spendwise.ai.data.dao.InvestmentDao;
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
 
 import java.util.List;
 
 /**
- * Repository for Investment operations.
+ * Repository for Holding operations.
  */
 public class InvestmentRepository {
 
@@ -22,23 +22,23 @@ public class InvestmentRepository {
         investmentDao = db.investmentDao();
     }
 
-    public void insert(Investment investment) {
+    public void insert(Holding investment) {
         AppDatabase.databaseWriteExecutor.execute(() -> investmentDao.insert(investment));
     }
 
-    public void update(Investment investment) {
+    public void update(Holding investment) {
         AppDatabase.databaseWriteExecutor.execute(() -> investmentDao.update(investment));
     }
 
-    public void delete(Investment investment) {
+    public void delete(Holding investment) {
         AppDatabase.databaseWriteExecutor.execute(() -> investmentDao.delete(investment));
     }
 
-    public LiveData<List<Investment>> getInvestmentsForBucket(long bucketId) {
+    public LiveData<List<Holding>> getInvestmentsForBucket(long bucketId) {
         return investmentDao.getInvestmentsForBucket(bucketId);
     }
 
-    public LiveData<List<Investment>> getAllInvestments() {
+    public LiveData<List<Holding>> getAllInvestments() {
         return investmentDao.getAllInvestments();
     }
 
@@ -50,7 +50,7 @@ public class InvestmentRepository {
         return investmentDao.getTotalInvestedAmount();
     }
 
-    public LiveData<List<Investment>> getByPlatform(String platform) {
+    public LiveData<List<Holding>> getByPlatform(String platform) {
         return investmentDao.getByPlatform(platform);
     }
 }

@@ -31,6 +31,7 @@ public class SalaryDetectorTest {
     private ParsedTransaction createCredit(long amountCents, String message) {
         return new ParsedTransaction(
                 ParsedTransaction.TransactionType.CREDIT,
+                "Bank",
                 amountCents,
                 null, // merchant
                 "XX1234", // accountInfo
@@ -41,6 +42,7 @@ public class SalaryDetectorTest {
     private ParsedTransaction createDebit(long amountCents, String message) {
         return new ParsedTransaction(
                 ParsedTransaction.TransactionType.DEBIT,
+                "Bank",
                 amountCents,
                 null,
                 "XX1234",

@@ -3,7 +3,7 @@ package com.spendwise.ai.sms;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
 
 import java.util.Locale;
 import java.util.regex.Matcher;
@@ -49,7 +49,8 @@ public final class InvestmentSmsParser {
                 "congratulations! you", "congrats!",
                 "click here", "bit.ly/", "apply.link",
                 "call to opt", "sms stop", "unsubscribe",
-                "eligible for", "instant loan", "loan offer", "upgrade", "personal loan");
+                "eligible for", "instant loan", "loan offer", "upgrade", "personal loan",
+                "will be converted", "expires", "caution");
     }
 
     public static boolean isInvestmentSms(@Nullable String sender, @Nullable String body) {
@@ -115,6 +116,9 @@ public final class InvestmentSmsParser {
                 roundToDay(timestampMillis));
         String sourceKey = "src_" + sanitizeKey(sourceSeed);
         String correlationKey = "corr_" + sanitizeKey(correlationSeed);
+        String fingerprint = normalizedFingerprint(body);
+        double confidence = reference != null ? 0.95d
+                : (platform != null && investmentName != null && amountCents > 0 ? 0.85d : 0.65d);
 
         return new ParsedInvestmentSignal(
                 signalType,
@@ -127,7 +131,12 @@ public final class InvestmentSmsParser {
                 sourceKey,
                 correlationKey,
                 body,
-                correction);
+                correction,
+                reference,
+                fingerprint,
+                confidence,
+                reference != null ? "strong_reference"
+                        : confidence >= 0.8d ? "provider_instrument_amount" : "partial_extraction");
     }
 
     @NonNull
@@ -155,30 +164,30 @@ public final class InvestmentSmsParser {
     @NonNull
     private static String resolveAssetType(String normalized, ParsedInvestmentSignal.SignalType signalType) {
         if (containsFdKeyword(normalized) || signalType == ParsedInvestmentSignal.SignalType.FD_BOOKED) {
-            return Investment.ASSET_FD;
+            return Holding.ASSET_FD;
         }
         if (containsRdKeyword(normalized) || signalType == ParsedInvestmentSignal.SignalType.RD_BOOKED) {
-            return Investment.ASSET_RD;
+            return Holding.ASSET_RD;
         }
         if (containsAny(normalized, "etf")) {
-            return Investment.ASSET_ETF;
+            return Holding.ASSET_ETF;
         }
         if (containsAny(normalized, "mutual fund", "mf", "sip", "folio", "amc")) {
-            return Investment.ASSET_MF;
+            return Holding.ASSET_MF;
         }
         if (containsAny(normalized, "share", "stock", "equity", "demat", "cdsl", "nsdl")) {
-            return Investment.ASSET_STOCK;
+            return Holding.ASSET_STOCK;
         }
         if (containsAny(normalized, "ppf")) {
-            return Investment.ASSET_PPF;
+            return Holding.ASSET_PPF;
         }
         if (containsAny(normalized, "nps")) {
-            return Investment.ASSET_NPS;
+            return Holding.ASSET_NPS;
         }
         if (containsAny(normalized, "gold")) {
-            return Investment.ASSET_GOLD;
+            return Holding.ASSET_GOLD;
         }
-        return Investment.ASSET_OTHER;
+        return Holding.ASSET_OTHER;
     }
 
     @Nullable
@@ -231,16 +240,16 @@ public final class InvestmentSmsParser {
             }
         }
 
-        if (Investment.ASSET_FD.equals(assetType)) {
+        if (Holding.ASSET_FD.equals(assetType)) {
             return platform == null ? "Fixed Deposit" : platform + " Fixed Deposit";
         }
-        if (Investment.ASSET_RD.equals(assetType)) {
+        if (Holding.ASSET_RD.equals(assetType)) {
             return platform == null ? "Recurring Deposit" : platform + " Recurring Deposit";
         }
         if (signalType == ParsedInvestmentSignal.SignalType.UNIT_ALLOTTED) {
-            return platform == null ? "Investment Units" : platform + " Investment Units";
+            return platform == null ? "Holding Units" : platform + " Holding Units";
         }
-        return platform == null ? "Investment Allocation" : platform + " Investment";
+        return platform == null ? "Holding Allocation" : platform + " Holding";
     }
 
     @Nullable
@@ -288,6 +297,11 @@ public final class InvestmentSmsParser {
                 .replaceAll("[^a-z0-9]+", "_")
                 .replaceAll("^_+|_+$", "");
         return cleaned.isEmpty() ? "unknown" : cleaned;
+    }
+
+    @NonNull
+    private static String normalizedFingerprint(@NonNull String value) {
+        return sanitizeKey(value.replaceAll("\\b\\d{10,}\\b", " timestamp "));
     }
 
     @Nullable

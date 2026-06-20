@@ -8,7 +8,7 @@ import androidx.lifecycle.LiveData;
 
 import com.spendwise.ai.data.entity.BucketCategory;
 import com.spendwise.ai.data.entity.InvestmentOccurrence;
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
 import com.spendwise.ai.data.pojo.InvestmentOccurrenceWithSchedule;
 import com.spendwise.ai.data.repository.BucketRepository;
 import com.spendwise.ai.data.repository.InvestmentOccurrenceRepository;
@@ -32,7 +32,7 @@ public class BucketDetailViewModel extends AndroidViewModel {
         investmentOccurrenceRepository = new InvestmentOccurrenceRepository(application);
     }
 
-    public LiveData<List<Investment>> getInvestmentsForBucket(long bucketId) {
+    public LiveData<List<Holding>> getInvestmentsForBucket(long bucketId) {
         return investmentRepository.getInvestmentsForBucket(bucketId);
     }
 
@@ -44,15 +44,15 @@ public class BucketDetailViewModel extends AndroidViewModel {
         return investmentOccurrenceRepository.getOccurrencesForBucket(bucketId);
     }
 
-    public void addInvestment(Investment investment) {
+    public void addInvestment(Holding investment) {
         investmentRepository.insert(investment);
     }
 
-    public void updateInvestment(Investment investment) {
+    public void updateInvestment(Holding investment) {
         investmentRepository.update(investment);
     }
 
-    public void deleteInvestment(Investment investment) {
+    public void deleteInvestment(Holding investment) {
         investmentRepository.delete(investment);
     }
 

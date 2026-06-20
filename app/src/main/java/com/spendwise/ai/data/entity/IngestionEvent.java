@@ -11,6 +11,7 @@ import androidx.room.PrimaryKey;
  */
 @Entity(tableName = "ingestion_events", indices = {
         @Index(value = { "sourceKey" }, unique = true),
+        @Index("normalizedPayloadFingerprint"),
         @Index("correlationKey"),
         @Index("eventTimestampMillis"),
         @Index("status")
@@ -61,6 +62,9 @@ public class IngestionEvent {
 
     @Nullable
     private String payloadHash;
+
+    @Nullable
+    private String normalizedPayloadFingerprint;
 
     @Nullable
     private Long processedAtMillis;
@@ -186,6 +190,15 @@ public class IngestionEvent {
 
     public void setPayloadHash(@Nullable String payloadHash) {
         this.payloadHash = payloadHash;
+    }
+
+    @Nullable
+    public String getNormalizedPayloadFingerprint() {
+        return normalizedPayloadFingerprint;
+    }
+
+    public void setNormalizedPayloadFingerprint(@Nullable String normalizedPayloadFingerprint) {
+        this.normalizedPayloadFingerprint = normalizedPayloadFingerprint;
     }
 
     @Nullable

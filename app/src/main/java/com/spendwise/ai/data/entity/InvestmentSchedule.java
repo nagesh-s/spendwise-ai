@@ -11,9 +11,11 @@ import androidx.room.PrimaryKey;
  * Recurring investment schedule (SIP or similar).
  */
 @Entity(tableName = "investment_schedules", foreignKeys = {
-        @ForeignKey(entity = Bucket.class, parentColumns = "id", childColumns = "bucketId", onDelete = ForeignKey.CASCADE)
+        @ForeignKey(entity = Bucket.class, parentColumns = "id", childColumns = "bucketId", onDelete = ForeignKey.CASCADE),
+        @ForeignKey(entity = Holding.class, parentColumns = "id", childColumns = "holdingId", onDelete = ForeignKey.SET_NULL)
 }, indices = {
         @Index("bucketId"),
+        @Index("holdingId"),
         @Index("isActive")
 })
 public class InvestmentSchedule {
@@ -35,6 +37,9 @@ public class InvestmentSchedule {
     private String name;
 
     private long bucketId;
+
+    @Nullable
+    private Long holdingId;
 
     @NonNull
     private String assetType;
@@ -106,6 +111,15 @@ public class InvestmentSchedule {
 
     public void setBucketId(long bucketId) {
         this.bucketId = bucketId;
+    }
+
+    @Nullable
+    public Long getHoldingId() {
+        return holdingId;
+    }
+
+    public void setHoldingId(@Nullable Long holdingId) {
+        this.holdingId = holdingId;
     }
 
     @NonNull

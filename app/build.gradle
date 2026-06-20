@@ -25,11 +25,20 @@ android {
         versionName "1.8.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments += ["room.schemaLocation": "$projectDir/schemas".toString()]
+            }
+        }
     }
 
     buildTypes {
+        debug {
+            buildConfigField "boolean", "ALLOW_DESTRUCTIVE_DATABASE_MIGRATION", "true"
+        }
         release {
             minifyEnabled true
+            buildConfigField "boolean", "ALLOW_DESTRUCTIVE_DATABASE_MIGRATION", "false"
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }

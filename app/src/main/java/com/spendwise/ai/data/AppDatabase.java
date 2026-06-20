@@ -17,13 +17,19 @@ import com.spendwise.ai.data.dao.ExpenseDao;
 import com.spendwise.ai.data.dao.FinancialGoalDao;
 import com.spendwise.ai.data.dao.IngestionEventDao;
 import com.spendwise.ai.data.dao.InvestmentDao;
+import com.spendwise.ai.data.dao.InvestmentEventLinkDao;
 import com.spendwise.ai.data.dao.InvestmentOccurrenceDao;
 import com.spendwise.ai.data.dao.InvestmentScheduleDao;
+import com.spendwise.ai.data.dao.InvestmentTransactionDao;
 import com.spendwise.ai.data.dao.InstrumentBucketMappingDao;
 import com.spendwise.ai.data.dao.MerchantDao;
 import com.spendwise.ai.data.dao.QuickTileDao;
 import com.spendwise.ai.data.dao.RecurringExpenseDao;
 import com.spendwise.ai.data.dao.TagDao;
+import com.spendwise.ai.data.dao.ProviderDao;
+import com.spendwise.ai.data.dao.ReviewCandidateDao;
+import com.spendwise.ai.data.dao.UserCorrectionDao;
+import com.spendwise.ai.data.dao.ValuationSnapshotDao;
 import com.spendwise.ai.data.entity.Account;
 import com.spendwise.ai.data.entity.Bucket;
 import com.spendwise.ai.data.entity.BucketCategory;
@@ -33,14 +39,21 @@ import com.spendwise.ai.data.entity.Expense;
 import com.spendwise.ai.data.entity.FinancialGoal;
 import com.spendwise.ai.data.entity.IngestionEvent;
 import com.spendwise.ai.data.entity.InstrumentBucketMapping;
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
+import com.spendwise.ai.data.entity.InvestmentEventLink;
 import com.spendwise.ai.data.entity.InvestmentOccurrence;
 import com.spendwise.ai.data.entity.InvestmentSchedule;
+import com.spendwise.ai.data.entity.InvestmentTransaction;
 import com.spendwise.ai.data.entity.Merchant;
 import com.spendwise.ai.data.entity.QuickTile;
 import com.spendwise.ai.data.entity.RecurringExpense;
 import com.spendwise.ai.data.entity.ExpenseTag;
 import com.spendwise.ai.data.entity.Tag;
+import com.spendwise.ai.data.entity.Provider;
+import com.spendwise.ai.data.entity.ReviewCandidate;
+import com.spendwise.ai.data.entity.UserCorrection;
+import com.spendwise.ai.data.entity.ValuationSnapshot;
+import com.spendwise.ai.BuildConfig;
 
 import androidx.room.migration.Migration;
 
@@ -71,12 +84,18 @@ import java.util.concurrent.Executors;
                 FinancialGoal.class,
                 Bucket.class,
                 BucketCategory.class,
-                Investment.class,
+                Provider.class,
+                Holding.class,
+                InvestmentTransaction.class,
+                InvestmentEventLink.class,
+                ValuationSnapshot.class,
+                UserCorrection.class,
+                ReviewCandidate.class,
                 InvestmentSchedule.class,
                 InvestmentOccurrence.class,
                 IngestionEvent.class,
                 InstrumentBucketMapping.class
-}, version = 8, exportSchema = false)
+}, version = 10, exportSchema = true)
 public abstract class AppDatabase extends RoomDatabase {
 
         private static final String DATABASE_NAME = "spendwise_db";
@@ -111,6 +130,18 @@ public abstract class AppDatabase extends RoomDatabase {
 
         public abstract InvestmentDao investmentDao();
 
+        public abstract ProviderDao providerDao();
+
+        public abstract InvestmentTransactionDao investmentTransactionDao();
+
+        public abstract InvestmentEventLinkDao investmentEventLinkDao();
+
+        public abstract ValuationSnapshotDao valuationSnapshotDao();
+
+        public abstract UserCorrectionDao userCorrectionDao();
+
+        public abstract ReviewCandidateDao reviewCandidateDao();
+
         public abstract InvestmentScheduleDao investmentScheduleDao();
 
         public abstract InvestmentOccurrenceDao investmentOccurrenceDao();
@@ -127,15 +158,17 @@ public abstract class AppDatabase extends RoomDatabase {
                 if (INSTANCE == null) {
                         synchronized (AppDatabase.class) {
                                 if (INSTANCE == null) {
-                                        INSTANCE = Room.databaseBuilder(
+                        RoomDatabase.Builder<AppDatabase> builder = Room.databaseBuilder(
                                                         context.getApplicationContext(),
                                                         AppDatabase.class,
                                                         DATABASE_NAME)
                                                         .addMigrations(MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6,
-                                                                        MIGRATION_6_7, MIGRATION_7_8)
-                                                        .addCallback(prepopulateCallback)
-                                                        .fallbackToDestructiveMigration() // For development only
-                                                        .build();
+                                                                        MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
+                                                        .addCallback(prepopulateCallback);
+                        if (BuildConfig.ALLOW_DESTRUCTIVE_DATABASE_MIGRATION) {
+                                builder.fallbackToDestructiveMigration();
+                        }
+                        INSTANCE = builder.build();
                                 }
                         }
                 }
@@ -517,6 +550,41 @@ public abstract class AppDatabase extends RoomDatabase {
                 public void migrate(@NonNull SupportSQLiteDatabase database) {
                         database.execSQL("ALTER TABLE `ingestion_events` ADD COLUMN `sourceSender` TEXT");
                         database.execSQL("ALTER TABLE `ingestion_events` ADD COLUMN `sourceBody` TEXT");
+                }
+        };
+
+        /**
+         * Migration from version 8 to 9:
+         * - Adds canonical investment identity for duplicate-safe holding merges
+         * - Adds source links so multiple SMS/notification/repair events can point
+         * to one holding
+         */
+        static final Migration MIGRATION_8_9 = new Migration(8, 9) {
+                @Override
+                public void migrate(@NonNull SupportSQLiteDatabase database) {
+                        database.execSQL("ALTER TABLE `investments` ADD COLUMN `canonicalInstrumentKey` TEXT");
+                        database.execSQL(
+                                        "CREATE INDEX IF NOT EXISTS `index_investments_canonicalInstrumentKey` ON `investments` (`canonicalInstrumentKey`)");
+
+                        database.execSQL("CREATE TABLE IF NOT EXISTS `investment_sources` (" +
+                                        "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                                        "`investmentId` INTEGER NOT NULL, " +
+                                        "`sourceType` TEXT NOT NULL, " +
+                                        "`sourceKey` TEXT NOT NULL, " +
+                                        "`correlationKey` TEXT, " +
+                                        "`canonicalInstrumentKey` TEXT, " +
+                                        "`eventType` TEXT NOT NULL, " +
+                                        "`amountCents` INTEGER NOT NULL, " +
+                                        "`eventTimestampMillis` INTEGER NOT NULL, " +
+                                        "FOREIGN KEY(`investmentId`) REFERENCES `investments`(`id`) ON DELETE CASCADE)");
+                        database.execSQL(
+                                        "CREATE INDEX IF NOT EXISTS `index_investment_sources_investmentId` ON `investment_sources` (`investmentId`)");
+                        database.execSQL(
+                                        "CREATE UNIQUE INDEX IF NOT EXISTS `index_investment_sources_sourceKey` ON `investment_sources` (`sourceKey`)");
+                        database.execSQL(
+                                        "CREATE INDEX IF NOT EXISTS `index_investment_sources_correlationKey` ON `investment_sources` (`correlationKey`)");
+                        database.execSQL(
+                                        "CREATE INDEX IF NOT EXISTS `index_investment_sources_canonicalInstrumentKey` ON `investment_sources` (`canonicalInstrumentKey`)");
                 }
         };
 

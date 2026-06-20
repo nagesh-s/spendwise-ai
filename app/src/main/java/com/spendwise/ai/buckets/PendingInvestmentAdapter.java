@@ -13,7 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.spendwise.ai.R;
-import com.spendwise.ai.data.entity.Investment;
+import com.spendwise.ai.data.entity.Holding;
 
 import java.util.Locale;
 
@@ -22,14 +22,14 @@ import java.util.Locale;
  * Shows investment details with Accept / Reject actions.
  */
 public class PendingInvestmentAdapter
-        extends ListAdapter<Investment, PendingInvestmentAdapter.PendingViewHolder> {
+        extends ListAdapter<Holding, PendingInvestmentAdapter.PendingViewHolder> {
 
     public interface PendingActionListener {
-        void onAccept(Investment investment);
+        void onAccept(Holding investment);
 
-        void onReject(Investment investment);
+        void onReject(Holding investment);
 
-        void onInfoClick(Investment investment);
+        void onInfoClick(Holding investment);
     }
 
     private final PendingActionListener listener;
@@ -39,14 +39,14 @@ public class PendingInvestmentAdapter
         this.listener = listener;
     }
 
-    private static final DiffUtil.ItemCallback<Investment> DIFF_CALLBACK = new DiffUtil.ItemCallback<Investment>() {
+    private static final DiffUtil.ItemCallback<Holding> DIFF_CALLBACK = new DiffUtil.ItemCallback<Holding>() {
         @Override
-        public boolean areItemsTheSame(@NonNull Investment o, @NonNull Investment n) {
+        public boolean areItemsTheSame(@NonNull Holding o, @NonNull Holding n) {
             return o.getId() == n.getId();
         }
 
         @Override
-        public boolean areContentsTheSame(@NonNull Investment o, @NonNull Investment n) {
+        public boolean areContentsTheSame(@NonNull Holding o, @NonNull Holding n) {
             return o.getName().equals(n.getName())
                     && o.getCurrentValueCents() == n.getCurrentValueCents()
                     && o.getInvestedAmountCents() == n.getInvestedAmountCents();
@@ -88,7 +88,7 @@ public class PendingInvestmentAdapter
             btnInfo = itemView.findViewById(R.id.btn_pending_info);
         }
 
-        void bind(Investment inv, PendingActionListener listener) {
+        void bind(Holding inv, PendingActionListener listener) {
             Context context = itemView.getContext();
             textName.setText(inv.getName());
             textAssetType.setText(formatAssetType(inv.getAssetType()));
@@ -125,23 +125,23 @@ public class PendingInvestmentAdapter
 
         private String formatAssetType(String type) {
             switch (type) {
-                case Investment.ASSET_STOCK:
+                case Holding.ASSET_STOCK:
                     return "Stock";
-                case Investment.ASSET_MF:
+                case Holding.ASSET_MF:
                     return "Mutual Fund";
-                case Investment.ASSET_ETF:
+                case Holding.ASSET_ETF:
                     return "ETF";
-                case Investment.ASSET_FD:
+                case Holding.ASSET_FD:
                     return "Fixed Deposit";
-                case Investment.ASSET_RD:
+                case Holding.ASSET_RD:
                     return "Recurring Deposit";
-                case Investment.ASSET_PPF:
+                case Holding.ASSET_PPF:
                     return "PPF";
-                case Investment.ASSET_NPS:
+                case Holding.ASSET_NPS:
                     return "NPS";
-                case Investment.ASSET_GOLD:
+                case Holding.ASSET_GOLD:
                     return "Gold";
-                case Investment.ASSET_SAVINGS:
+                case Holding.ASSET_SAVINGS:
                     return "Savings";
                 default:
                     return "Other";

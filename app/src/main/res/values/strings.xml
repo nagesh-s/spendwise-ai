@@ -193,6 +193,13 @@
     <string name="buckets_allocation_already_run">Allocation already completed this month.</string>
     <string name="buckets_allocation_ran">Salary allocation completed.</string>
     <string name="buckets_allocation_failed">Unable to allocate salary right now.</string>
+    <string name="buckets_holdings_health_title">Holdings health</string>
+    <string name="buckets_holdings_health_checking">Checking imported holdings…</string>
+    <string name="buckets_holdings_health_empty">No holdings imported yet.</string>
+    <string name="buckets_holdings_health_clean">Holdings clean. No duplicate FDs/RDs found.</string>
+    <string name="buckets_holdings_health_repaired">Merged %1$d duplicate holdings and repaired %2$d identities.</string>
+    <string name="buckets_holdings_health_keyed">Repaired identity for %1$d holdings. No duplicates found.</string>
+    <string name="buckets_clean_holdings">Clean Up</string>
 
     <!-- Bucket Detail -->
     <string name="bucket_detail_subtitle">Track holdings and update values manually, from SMS, or from notifications.</string>
