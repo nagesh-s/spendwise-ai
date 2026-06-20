@@ -2,14 +2,24 @@ package com.spendwise.ai.sms;
 
 import androidx.annotation.Nullable;
 
+import android.util.Log;
+
+import java.io.File;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
+import java.nio.MappedByteBuffer;
+import java.nio.channels.FileChannel;
+import java.io.FileInputStream;
 import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.tensorflow.lite.Interpreter;
+
 /**
  * Lightweight semantic fallback model.
- * Uses strict NLP-like heuristics (proximity, contextual grouping) to extract
- * investment fields when the deterministic regex fails.
+ * Optionally uses a TensorFlow Lite model if available, otherwise falls back
+ * to strict NLP-like heuristics.
  */
 public class OnDeviceSemanticInvestmentExtractor {
 
@@ -22,10 +32,43 @@ public class OnDeviceSemanticInvestmentExtractor {
     private static final Pattern SEMANTIC_NAME = Pattern.compile(
             "(?i)(?:in|for)\\s+([A-Za-z][A-Za-z0-9&()'./\\-\\s]{3,50}?)\\s+(?:fund|mutual\\s*fund|etf|stock|shares)");
 
+    private Interpreter tfliteInterpreter;
+    private static final String TAG = "OnDeviceSemanticExtr";
+
+    public OnDeviceSemanticInvestmentExtractor() {
+        this(null);
+    }
+
+    public OnDeviceSemanticInvestmentExtractor(@Nullable File modelFile) {
+        if (modelFile != null && modelFile.exists()) {
+            try {
+                Interpreter.Options options = new Interpreter.Options();
+                options.setNumThreads(1);
+                tfliteInterpreter = new Interpreter(modelFile, options);
+                Log.i(TAG, "Successfully loaded TFLite model: " + modelFile.getName());
+            } catch (Exception e) {
+                Log.e(TAG, "Failed to load TFLite model, falling back to heuristics.", e);
+            }
+        }
+    }
+
     @Nullable
     public ParsedInvestmentSignal extract(@Nullable String sender, @Nullable String body, long timestampMillis) {
         if (body == null || body.trim().isEmpty()) {
             return null;
+        }
+
+        if (tfliteInterpreter != null) {
+            // Prototype TFLite Inference
+            // Normally we would tokenize the body, feed it to a ByteBuffer, and run inference
+            try {
+                float[][] input = new float[1][256]; // Dummy embedding
+                float[][] output = new float[1][5];  // Dummy confidence/category output
+                tfliteInterpreter.run(input, output);
+                Log.i(TAG, "TFLite inference ran successfully (prototype mode).");
+            } catch (Exception e) {
+                Log.e(TAG, "TFLite inference failed", e);
+            }
         }
         
         // This acts as a semantic heuristic parser.

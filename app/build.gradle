@@ -21,8 +21,8 @@ android {
         applicationId "com.spendwise.ai"
         minSdk 24
         targetSdk 34
-        versionCode 180
-        versionName "1.8.0"
+        versionCode 190
+        versionName "1.9.0"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         javaCompileOptions {
@@ -85,6 +85,7 @@ dependencies {
     implementation 'com.jakewharton.threetenabp:threetenabp:1.4.4'
     implementation 'androidx.work:work-runtime:2.9.0'
     implementation 'androidx.biometric:biometric:1.1.0'
+    implementation 'org.tensorflow:tensorflow-lite:2.16.1'
     offlineLlmImplementation 'com.google.mediapipe:tasks-genai:0.10.27'
     testImplementation 'junit:junit:4.13.2'
     androidTestImplementation 'androidx.test.ext:junit:1.1.5'

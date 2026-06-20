@@ -290,4 +290,14 @@ public class WorkScheduler {
                                 .build();
                 WorkManager.getInstance(context).enqueue(oneTimeRequest);
         }
+
+        /**
+         * Run investment maintenance immediately (one-time).
+         */
+        public static void runInvestmentMaintenanceWorkNow(Context context) {
+                OneTimeWorkRequest oneTimeRequest = new OneTimeWorkRequest.Builder(
+                                InvestmentMaintenanceWorker.class)
+                                .build();
+                WorkManager.getInstance(context).enqueue(oneTimeRequest);
+        }
 }

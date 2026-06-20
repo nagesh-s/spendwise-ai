@@ -43,5 +43,6 @@ public class SpendWiseApplication extends Application {
         }
         WorkScheduler.runSalaryAutomationNow(this);
         WorkScheduler.runInvestmentScheduleNow(this);
+        WorkScheduler.runInvestmentMaintenanceWorkNow(this);
     }
 }

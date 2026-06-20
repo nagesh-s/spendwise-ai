@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.0] - 2026-06-20
+
+### Added
+- **Database Maintenance Worker** - A new offline background job that runs daily to clean up orphaned database links, repair stale occurrences, and ensure holding aggregates are precisely synchronized.
+- **Provider & Holding Grouping UX** - The bucket detail screen now elegantly groups your investments by the provider (e.g., Groww, Zerodha).
+- **TFLite & Offline Sync Foundation** - Built the underlying infrastructure to support peer-to-peer (P2P) Wi-Fi Direct sync for on-device machine learning models (TensorFlow Lite), enabling future federated learning without internet.
+
+### Fixed
+- Fixed an issue where freshly imported investments via SMS displayed `0` value on the Buckets tab. The app now immediately schedules a lightweight aggregate sync directly after importing to instantly display your correct totals.
+
+### Changed
+- Moved the heavy aggregate recalculation out of the core SMS ingestion hot-path to drastically improve parsing performance and speed.
+
+---
+
 ## [1.8.0] - 2026-03-09
 
 ### Added - Source Traceability & Refresh

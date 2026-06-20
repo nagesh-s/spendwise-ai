@@ -322,6 +322,10 @@ public class SmsAutoImportWorker extends Worker {
         if (importInvestments) {
             SmsSyncState.updateLastInvestmentSyncTimestamp(context, latestInvestmentSeenTimestamp);
         }
+        if (importExpenses || importInvestments) {
+            WorkScheduler.runInvestmentMaintenanceWorkNow(context);
+        }
+
         return Result.success();
     }
 
