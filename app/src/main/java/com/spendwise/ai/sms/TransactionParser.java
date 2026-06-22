@@ -22,7 +22,7 @@ public class TransactionParser {
 
     // Amount patterns - matches Rs/INR/₹ followed by amount with optional commas
     private static final Pattern AMOUNT_PATTERN = Pattern.compile(
-            "(?:Rs\\.?|INR|₹)\\s*([\\d,]+\\.?\\d*)",
+            "(?:\\bRs\\.?|\\bINR\\b|₹)\\s*([\\d,]+\\.?\\d*)",
             Pattern.CASE_INSENSITIVE);
 
     // Debit keywords
@@ -148,8 +148,9 @@ public class TransactionParser {
             return null;
         }
 
-        if (amountCents <= 0)
+        if (amountCents <= 0) {
             return null;
+        }
 
         // Determine transaction type
         ParsedTransaction.TransactionType type;

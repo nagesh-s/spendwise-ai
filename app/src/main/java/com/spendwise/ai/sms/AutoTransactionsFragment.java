@@ -52,6 +52,7 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
     private TransactionAdapter adapter;
     private boolean isLoadingTransactions;
     private boolean suppressAutoImportToggleCallback;
+    private boolean pendingAutoImportEnable;
 
     @Nullable
     @Override
@@ -81,6 +82,20 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
             if (suppressAutoImportToggleCallback) {
                 return;
             }
+
+            if (isChecked && !SmsPermissionHelper.hasReadSmsPermission(requireContext())) {
+                // Revert switch to off visually
+                suppressAutoImportToggleCallback = true;
+                autoImportSwitch.setChecked(false);
+                suppressAutoImportToggleCallback = false;
+
+                // Request permission and remember that user wanted to turn it on
+                pendingAutoImportEnable = true;
+                markSmsPermissionRequested();
+                SmsPermissionHelper.requestSmsPermission(requireActivity());
+                return;
+            }
+
             SmsAutoImportPrefs.setEnabled(requireContext(), isChecked);
             WorkScheduler.setSmsAutoImportEnabled(requireContext(), isChecked);
             Toast.makeText(requireContext(),
@@ -104,6 +119,22 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
     @Override
     public void onResume() {
         super.onResume();
+        
+        boolean hasPermission = SmsPermissionHelper.hasReadSmsPermission(requireContext());
+        if (hasPermission && pendingAutoImportEnable) {
+            // Permission was just granted after toggling the switch
+            pendingAutoImportEnable = false;
+            SmsAutoImportPrefs.setEnabled(requireContext(), true);
+            WorkScheduler.setSmsAutoImportEnabled(requireContext(), true);
+            Toast.makeText(requireContext(), getString(R.string.sms_auto_import_enabled), Toast.LENGTH_SHORT).show();
+        } else if (!hasPermission) {
+            // If permission was revoked, ensure the feature is turned off
+            if (SmsAutoImportPrefs.isEnabled(requireContext())) {
+                SmsAutoImportPrefs.setEnabled(requireContext(), false);
+                WorkScheduler.setSmsAutoImportEnabled(requireContext(), false);
+            }
+        }
+        
         boolean enabled = SmsAutoImportPrefs.isEnabled(requireContext());
         if (autoImportSwitch != null && autoImportSwitch.isChecked() != enabled) {
             suppressAutoImportToggleCallback = true;
@@ -386,6 +417,7 @@ public class AutoTransactionsFragment extends Fragment implements TransactionAda
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 updateUiState();
                 scanSms();
+                com.spendwise.ai.work.WorkScheduler.runSmsAutoImportNow(requireContext());
             } else {
                 if (!SmsPermissionHelper.shouldShowRationale(requireActivity()) && hasRequestedSmsPermission()) {
                     Toast.makeText(requireContext(),

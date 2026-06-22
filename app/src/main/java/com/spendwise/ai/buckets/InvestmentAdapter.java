@@ -25,14 +25,11 @@ import java.util.Locale;
  * RecyclerView adapter for investments inside a bucket detail screen.
  * Shows Provider headers and Holding items.
  */
-public class InvestmentAdapter extends ListAdapter<Object, RecyclerView.ViewHolder> {
-
-    private static final int VIEW_TYPE_HEADER = 0;
-    private static final int VIEW_TYPE_ITEM = 1;
+public class InvestmentAdapter extends ListAdapter<BucketDetailViewModel.ProviderGroup, InvestmentAdapter.GroupViewHolder> {
 
     public interface OnInvestmentClickListener {
         void onInvestmentClick(Holding investment);
-        void onInfoClick(Holding investment);
+        void onInfoClick(long transactionId);
     }
 
     private final OnInvestmentClickListener listener;
@@ -42,90 +39,89 @@ public class InvestmentAdapter extends ListAdapter<Object, RecyclerView.ViewHold
         this.listener = listener;
     }
 
-    private static final DiffUtil.ItemCallback<Object> DIFF_CALLBACK = new DiffUtil.ItemCallback<Object>() {
+    private static final DiffUtil.ItemCallback<BucketDetailViewModel.ProviderGroup> DIFF_CALLBACK = new DiffUtil.ItemCallback<BucketDetailViewModel.ProviderGroup>() {
         @Override
-        public boolean areItemsTheSame(@NonNull Object o, @NonNull Object n) {
-            if (o instanceof BucketDetailViewModel.ProviderHeader && n instanceof BucketDetailViewModel.ProviderHeader) {
-                BucketDetailViewModel.ProviderHeader oHead = (BucketDetailViewModel.ProviderHeader) o;
-                BucketDetailViewModel.ProviderHeader nHead = (BucketDetailViewModel.ProviderHeader) n;
-                return oHead.headerTitle.equals(nHead.headerTitle);
-            }
-            if (o instanceof HoldingWithProvider && n instanceof HoldingWithProvider) {
-                HoldingWithProvider oHold = (HoldingWithProvider) o;
-                HoldingWithProvider nHold = (HoldingWithProvider) n;
-                return oHold.holding.getId() == nHold.holding.getId();
-            }
-            return false;
+        public boolean areItemsTheSame(@NonNull BucketDetailViewModel.ProviderGroup o, @NonNull BucketDetailViewModel.ProviderGroup n) {
+            return o.headerTitle.equals(n.headerTitle);
         }
 
         @Override
-        public boolean areContentsTheSame(@NonNull Object o, @NonNull Object n) {
-            if (o instanceof BucketDetailViewModel.ProviderHeader && n instanceof BucketDetailViewModel.ProviderHeader) {
-                BucketDetailViewModel.ProviderHeader oHead = (BucketDetailViewModel.ProviderHeader) o;
-                BucketDetailViewModel.ProviderHeader nHead = (BucketDetailViewModel.ProviderHeader) n;
-                return oHead.totalValueCents == nHead.totalValueCents;
+        public boolean areContentsTheSame(@NonNull BucketDetailViewModel.ProviderGroup oldItem, @NonNull BucketDetailViewModel.ProviderGroup newItem) {
+            if (oldItem.provider != null && newItem.provider != null) {
+                if (oldItem.provider.getId() != newItem.provider.getId()) return false;
+            } else if (oldItem.provider != newItem.provider) {
+                return false;
             }
-            if (o instanceof HoldingWithProvider && n instanceof HoldingWithProvider) {
-                Holding oHold = ((HoldingWithProvider) o).holding;
-                Holding nHold = ((HoldingWithProvider) n).holding;
-                return oHold.getName().equals(nHold.getName())
-                        && oHold.getCurrentValueCents() == nHold.getCurrentValueCents()
-                        && oHold.getInvestedAmountCents() == nHold.getInvestedAmountCents();
+            if (oldItem.holdings.size() != newItem.holdings.size()) return false;
+            for (int i = 0; i < oldItem.holdings.size(); i++) {
+                if (oldItem.holdings.get(i).holding.getId() != newItem.holdings.get(i).holding.getId()) {
+                    return false;
+                }
             }
-            return false;
+            return true;
         }
     };
 
-    @Override
-    public int getItemViewType(int position) {
-        Object item = getItem(position);
-        if (item instanceof BucketDetailViewModel.ProviderHeader) {
-            return VIEW_TYPE_HEADER;
-        }
-        return VIEW_TYPE_ITEM;
-    }
-
     @NonNull
     @Override
-    public RecyclerView.ViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        if (viewType == VIEW_TYPE_HEADER) {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_provider_header, parent, false);
-            return new HeaderViewHolder(view);
-        } else {
-            View view = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_investment, parent, false);
-            return new InvestmentViewHolder(view);
-        }
+    public GroupViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
+        View view = LayoutInflater.from(parent.getContext())
+                .inflate(R.layout.item_provider_group_card, parent, false);
+        return new GroupViewHolder(view);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull RecyclerView.ViewHolder holder, int position) {
-        Object item = getItem(position);
-        if (holder instanceof HeaderViewHolder) {
-            ((HeaderViewHolder) holder).bind((BucketDetailViewModel.ProviderHeader) item);
-        } else if (holder instanceof InvestmentViewHolder) {
-            ((InvestmentViewHolder) holder).bind(((HoldingWithProvider) item).holding, listener);
-        }
+    public void onBindViewHolder(@NonNull GroupViewHolder holder, int position) {
+        holder.bind(getItem(position), listener);
     }
 
-    static class HeaderViewHolder extends RecyclerView.ViewHolder {
+    static class GroupViewHolder extends RecyclerView.ViewHolder {
         private final TextView textProviderName;
         private final TextView textProviderTotal;
+        private final android.widget.LinearLayout containerHoldings;
 
-        HeaderViewHolder(@NonNull View itemView) {
+        GroupViewHolder(@NonNull View itemView) {
             super(itemView);
             textProviderName = itemView.findViewById(R.id.text_provider_name);
             textProviderTotal = itemView.findViewById(R.id.text_provider_total);
+            containerHoldings = itemView.findViewById(R.id.container_holdings);
         }
 
-        void bind(BucketDetailViewModel.ProviderHeader header) {
-            textProviderName.setText(header.headerTitle);
-            textProviderTotal.setText(String.format(Locale.getDefault(), "₹%,.0f", header.totalValueCents / 100.0));
+        void bind(BucketDetailViewModel.ProviderGroup group, OnInvestmentClickListener listener) {
+            textProviderName.setText(group.headerTitle);
+            textProviderTotal.setText(String.format(Locale.getDefault(), "₹%,.0f", group.totalValueCents / 100.0));
+
+            containerHoldings.removeAllViews();
+            LayoutInflater inflater = LayoutInflater.from(itemView.getContext());
+            
+            for (int i = 0; i < group.holdings.size(); i++) {
+                com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider hp = group.holdings.get(i);
+                View holdView = inflater.inflate(R.layout.item_investment, containerHoldings, false);
+                
+                // Add bottom margin to inner items except the last one (if we wanted to, but LinearLayout handles padding inside the item)
+                
+                InvestmentViewHolder holdHolder = new InvestmentViewHolder(holdView);
+                holdHolder.bind(hp.holding, hp.transactions, listener);
+                
+                containerHoldings.addView(holdView);
+                
+                // Optional divider
+                if (i < group.holdings.size() - 1) {
+                    View divider = new View(itemView.getContext());
+                    android.widget.LinearLayout.LayoutParams lp = new android.widget.LinearLayout.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT, 1);
+                    lp.setMargins(0, 0, 0, 0); // Remove vertical margins if item_investment handles its own padding
+                    divider.setLayoutParams(lp);
+                    // Use a slightly softer divider color than the main outline
+                    divider.setBackgroundColor(ContextCompat.getColor(itemView.getContext(), R.color.md_theme_surfaceVariant));
+                    containerHoldings.addView(divider);
+                }
+            }
         }
     }
 
-    static class InvestmentViewHolder extends RecyclerView.ViewHolder {
+    static class InvestmentViewHolder {
+        private final View itemView;
         private final TextView textName;
         private final TextView textJobTitle;
         private final TextView textPlatform;
@@ -134,11 +130,11 @@ public class InvestmentAdapter extends ListAdapter<Object, RecyclerView.ViewHold
         private final TextView textPnl;
         private final TextView textAssetType;
         private final TextView textUpdated;
-        private final android.widget.ImageView btnInfo;
+        private final android.widget.LinearLayout containerTransactions;
         private final DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("dd MMM yyyy");
 
         InvestmentViewHolder(@NonNull View itemView) {
-            super(itemView);
+            this.itemView = itemView;
             textName = itemView.findViewById(R.id.text_investment_name);
             textJobTitle = itemView.findViewById(R.id.text_investment_job_title);
             textPlatform = itemView.findViewById(R.id.text_investment_platform);
@@ -147,10 +143,10 @@ public class InvestmentAdapter extends ListAdapter<Object, RecyclerView.ViewHold
             textPnl = itemView.findViewById(R.id.text_investment_pnl);
             textAssetType = itemView.findViewById(R.id.text_investment_asset_type);
             textUpdated = itemView.findViewById(R.id.text_investment_updated);
-            btnInfo = itemView.findViewById(R.id.btn_investment_info);
+            containerTransactions = itemView.findViewById(R.id.container_transactions);
         }
 
-        void bind(Holding inv, OnInvestmentClickListener listener) {
+        void bind(Holding inv, java.util.List<com.spendwise.ai.data.entity.InvestmentTransaction> transactions, OnInvestmentClickListener listener) {
             Context context = itemView.getContext();
             textName.setText(inv.getName());
 
@@ -202,10 +198,44 @@ public class InvestmentAdapter extends ListAdapter<Object, RecyclerView.ViewHold
                 if (listener != null)
                     listener.onInvestmentClick(inv);
             });
-            btnInfo.setOnClickListener(v -> {
-                if (listener != null)
-                    listener.onInfoClick(inv);
-            });
+
+            containerTransactions.removeAllViews();
+            if (transactions != null && !transactions.isEmpty()) {
+                containerTransactions.setVisibility(View.VISIBLE);
+                android.view.LayoutInflater inflater = android.view.LayoutInflater.from(context);
+                for (com.spendwise.ai.data.entity.InvestmentTransaction t : transactions) {
+                    View tView = inflater.inflate(R.layout.item_investment_transaction, containerTransactions, false);
+                    TextView tAmount = tView.findViewById(R.id.text_transaction_amount);
+                    TextView tDate = tView.findViewById(R.id.text_transaction_date);
+                    TextView tStatus = tView.findViewById(R.id.text_transaction_status);
+                    android.widget.ImageView tInfo = tView.findViewById(R.id.btn_transaction_info);
+
+                    tAmount.setText(formatCurrency(t.getAmountCents()));
+                    tDate.setText(org.threeten.bp.Instant.ofEpochMilli(t.getEventTimestampMillis())
+                            .atZone(org.threeten.bp.ZoneId.systemDefault())
+                            .toLocalDate()
+                            .format(dateFormatter));
+                    
+                    tStatus.setText(t.getStatus());
+                    
+                    // Simple styling based on status
+                    if ("CONFIRMED".equals(t.getStatus())) {
+                        tStatus.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.sw_income));
+                    } else if ("CANCELLED".equals(t.getStatus())) {
+                        tStatus.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.sw_error));
+                    } else {
+                        tStatus.setTextColor(androidx.core.content.ContextCompat.getColor(context, R.color.md_theme_primary));
+                    }
+
+                    tInfo.setOnClickListener(v -> {
+                        if (listener != null) listener.onInfoClick(t.getId());
+                    });
+
+                    containerTransactions.addView(tView);
+                }
+            } else {
+                containerTransactions.setVisibility(View.GONE);
+            }
         }
 
         private String formatCurrency(long amountCents) {

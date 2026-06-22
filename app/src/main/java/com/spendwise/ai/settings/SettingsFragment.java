@@ -34,6 +34,7 @@ public class SettingsFragment extends Fragment {
     private SettingsViewModel viewModel;
     private DataBackupManager backupManager;
     private boolean suppressAutoTransactionToggleCallback;
+    private boolean pendingAutoImportEnable;
 
     // SAF launchers for file operations
     private ActivityResultLauncher<Intent> jsonBackupLauncher;
@@ -165,6 +166,21 @@ public class SettingsFragment extends Fragment {
             if (suppressAutoTransactionToggleCallback) {
                 return;
             }
+
+            if (isChecked && !com.spendwise.ai.sms.SmsPermissionHelper.hasReadSmsPermission(requireContext())) {
+                // Revert switch visually
+                suppressAutoTransactionToggleCallback = true;
+                binding.switchAutoTransactions.setChecked(false);
+                suppressAutoTransactionToggleCallback = false;
+
+                // Request permission
+                pendingAutoImportEnable = true;
+                requireContext().getSharedPreferences("sms_permission_prefs", android.content.Context.MODE_PRIVATE)
+                        .edit().putBoolean("sms_permission_requested", true).apply();
+                com.spendwise.ai.sms.SmsPermissionHelper.requestSmsPermission(requireActivity());
+                return;
+            }
+
             SmsAutoImportPrefs.setEnabled(requireContext(), isChecked);
             WorkScheduler.setSmsAutoImportEnabled(requireContext(), isChecked);
             Toast.makeText(requireContext(),
@@ -350,6 +366,20 @@ public class SettingsFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
+        
+        boolean hasPermission = com.spendwise.ai.sms.SmsPermissionHelper.hasReadSmsPermission(requireContext());
+        if (hasPermission && pendingAutoImportEnable) {
+            pendingAutoImportEnable = false;
+            SmsAutoImportPrefs.setEnabled(requireContext(), true);
+            WorkScheduler.setSmsAutoImportEnabled(requireContext(), true);
+            Toast.makeText(requireContext(), getString(com.spendwise.ai.R.string.sms_auto_import_enabled), Toast.LENGTH_SHORT).show();
+        } else if (!hasPermission) {
+            if (SmsAutoImportPrefs.isEnabled(requireContext())) {
+                SmsAutoImportPrefs.setEnabled(requireContext(), false);
+                WorkScheduler.setSmsAutoImportEnabled(requireContext(), false);
+            }
+        }
+        
         if (binding != null) {
             boolean enabled = SmsAutoImportPrefs.isEnabled(requireContext());
             if (binding.switchAutoTransactions.isChecked() != enabled) {

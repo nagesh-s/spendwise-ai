@@ -43,24 +43,26 @@ public class BucketDetailViewModel extends AndroidViewModel {
         return investmentRepository.getInvestmentsForBucket(bucketId);
     }
 
-    public static class ProviderHeader {
+    public static class ProviderGroup {
         public final Provider provider;
         public final String headerTitle;
         public final long totalValueCents;
+        public final List<com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider> holdings;
 
-        public ProviderHeader(Provider provider, String headerTitle, long totalValueCents) {
+        public ProviderGroup(Provider provider, String headerTitle, long totalValueCents, List<com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider> holdings) {
             this.provider = provider;
             this.headerTitle = headerTitle;
             this.totalValueCents = totalValueCents;
+            this.holdings = holdings;
         }
     }
 
-    public LiveData<List<Object>> getGroupedInvestmentsForBucket(long bucketId) {
-        return Transformations.map(investmentRepository.getHoldingsWithProviderForBucket(bucketId), list -> {
-            Map<Long, List<HoldingWithProvider>> grouped = new LinkedHashMap<>();
-            List<HoldingWithProvider> unlinked = new ArrayList<>();
+    public LiveData<List<ProviderGroup>> getGroupedInvestmentsForBucket(long bucketId) {
+        return Transformations.map(investmentRepository.getHoldingsWithTransactionsAndProviderForBucket(bucketId), list -> {
+            Map<Long, List<com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider>> grouped = new LinkedHashMap<>();
+            List<com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider> unlinked = new ArrayList<>();
 
-            for (HoldingWithProvider item : list) {
+            for (com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider item : list) {
                 String notes = item.holding.getNotes();
                 if (notes != null && notes.contains("[auto-map-pending:true]")) {
                     continue; // Skip pending investments
@@ -77,26 +79,24 @@ public class BucketDetailViewModel extends AndroidViewModel {
                 }
             }
 
-            List<Object> result = new ArrayList<>();
-            for (Map.Entry<Long, List<HoldingWithProvider>> entry : grouped.entrySet()) {
-                List<HoldingWithProvider> group = entry.getValue();
+            List<ProviderGroup> result = new ArrayList<>();
+            for (Map.Entry<Long, List<com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider>> entry : grouped.entrySet()) {
+                List<com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider> group = entry.getValue();
                 if (!group.isEmpty()) {
                     long totalValue = 0;
-                    for (HoldingWithProvider h : group) {
+                    for (com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider h : group) {
                         totalValue += h.holding.getCurrentValueCents();
                     }
-                    result.add(new ProviderHeader(group.get(0).provider, group.get(0).provider.getName(), totalValue));
-                    result.addAll(group);
+                    result.add(new ProviderGroup(group.get(0).provider, group.get(0).provider.getName(), totalValue, group));
                 }
             }
 
             if (!unlinked.isEmpty()) {
                 long totalValue = 0;
-                for (HoldingWithProvider h : unlinked) {
+                for (com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider h : unlinked) {
                     totalValue += h.holding.getCurrentValueCents();
                 }
-                result.add(new ProviderHeader(null, "Unlinked / Other", totalValue));
-                result.addAll(unlinked);
+                result.add(new ProviderGroup(null, "Unlinked / Other", totalValue, unlinked));
             }
 
             return result;

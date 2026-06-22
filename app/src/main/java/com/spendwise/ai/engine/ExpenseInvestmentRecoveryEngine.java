@@ -38,6 +38,7 @@ public class ExpenseInvestmentRecoveryEngine {
 
     @NonNull
     public RecoveryResult recover(
+            @NonNull android.content.Context context,
             @NonNull AppDatabase db,
             long startEpochDay,
             long endEpochDay) {
@@ -85,7 +86,7 @@ public class ExpenseInvestmentRecoveryEngine {
 
             long linkedInvestmentId;
             if (event.duplicate) {
-                linkedInvestmentId = resolveLinkedInvestmentId(db, signal);
+                linkedInvestmentId = resolveLinkedInvestmentId(db, signal, expense);
                 if (linkedInvestmentId > 0) {
                     result.linkedExisting++;
                 }
@@ -93,6 +94,7 @@ public class ExpenseInvestmentRecoveryEngine {
                 List<ParsedInvestmentSignal> signals = new ArrayList<>();
                 signals.add(signal);
                 InvestmentAutoIngestionEngine.IngestResult ingestResult = ingestionEngine.ingest(
+                        context,
                         db,
                         signals,
                         IngestionEvent.SOURCE_EXPENSE_RECOVERY);
@@ -106,7 +108,7 @@ public class ExpenseInvestmentRecoveryEngine {
                 String sourceKey = InvestmentSignalKeyFactory.buildIngestionSourceKey(signal);
                 linkedInvestmentId = ingestResult.investmentIdBySourceKey.containsKey(sourceKey)
                         ? ingestResult.investmentIdBySourceKey.get(sourceKey)
-                        : resolveLinkedInvestmentId(db, signal);
+                        : resolveLinkedInvestmentId(db, signal, expense);
             }
 
             if (linkedInvestmentId > 0) {
@@ -115,6 +117,38 @@ public class ExpenseInvestmentRecoveryEngine {
                 expense.setRecoveryStatus(Expense.RECOVERY_STATUS_CONVERTED);
                 expense.setCanonicalSourceKey(InvestmentSignalKeyFactory.buildIngestionSourceKey(signal));
                 db.expenseDao().update(expense);
+                
+                // If we recovered a broker expense, overwrite the existing holding's platform 
+                // (which is likely the AMC) with the broker name so it groups correctly.
+                if (candidate.platform != null) {
+                    Holding holding = db.investmentDao().getById(linkedInvestmentId);
+                    if (holding != null && !candidate.platform.equals(holding.getPlatform())) {
+                        holding.setPlatform(candidate.platform);
+                        
+                        String normalizedBroker = normalize(candidate.platform);
+                        com.spendwise.ai.data.entity.Provider provider = db.providerDao().getByNormalizedName(normalizedBroker);
+                        if (provider == null) {
+                            provider = new com.spendwise.ai.data.entity.Provider(
+                                    normalizedBroker, 
+                                    candidate.platform, 
+                                    com.spendwise.ai.data.entity.Provider.TYPE_BROKER, 
+                                    null, 
+                                    System.currentTimeMillis()
+                            );
+                            long pid = db.providerDao().insertIgnore(provider);
+                            if (pid > 0) {
+                                holding.setProviderId(pid);
+                            } else {
+                                provider = db.providerDao().getByNormalizedName(normalizedBroker);
+                                if (provider != null) holding.setProviderId(provider.getId());
+                            }
+                        } else {
+                            holding.setProviderId(provider.getId());
+                        }
+                        db.investmentDao().update(holding);
+                    }
+                }
+                
                 result.converted++;
             } else {
                 expense.setRecoveryStatus(Expense.RECOVERY_STATUS_PENDING_REVIEW);
@@ -127,14 +161,31 @@ public class ExpenseInvestmentRecoveryEngine {
 
     private long resolveLinkedInvestmentId(
             @NonNull AppDatabase db,
-            @NonNull ParsedInvestmentSignal signal) {
+            @NonNull ParsedInvestmentSignal signal,
+            @NonNull Expense expense) {
         String sourceKey = InvestmentSignalKeyFactory.buildIngestionSourceKey(signal);
         Holding bySource = db.investmentDao().getByLastSourceKey(sourceKey);
         if (bySource != null) {
             return bySource.getId();
         }
         Holding byCorrelation = db.investmentDao().getByPrimaryCorrelationKey(signal.getCorrelationKey());
-        return byCorrelation != null ? byCorrelation.getId() : -1L;
+        if (byCorrelation != null) {
+            return byCorrelation.getId();
+        }
+
+        // Fuzzy match: same amount, within -3 to +7 days
+        long dayMillis = expense.getDateEpochDay() * 86400000L;
+        List<com.spendwise.ai.data.entity.InvestmentTransaction> recentTxs = 
+            db.investmentTransactionDao().findGlobalCandidates(
+                expense.getAmountCents(),
+                dayMillis - 3L * 86400000L, 
+                dayMillis + 7L * 86400000L
+            );
+        if (recentTxs != null && !recentTxs.isEmpty()) {
+            return recentTxs.get(0).getHoldingId();
+        }
+        
+        return -1L;
     }
 
     @NonNull
@@ -202,7 +253,7 @@ public class ExpenseInvestmentRecoveryEngine {
         candidate.investmentName = resolveInvestmentName(candidate.platform, candidate.assetType, merchantName);
 
         if (candidate.platform != null) {
-            candidate.score += 0.55d;
+            candidate.score += 0.70d; // Boosted from 0.55 to ensure known brokers meet auto-convert threshold
         }
         if (containsAny(context, "sip", "mutual fund", "fund", "folio", "stock", "share", "equity",
                 "etf", "demat", "investment", "fixed deposit", "fd", "recurring deposit", "rd", "ppf", "nps")) {

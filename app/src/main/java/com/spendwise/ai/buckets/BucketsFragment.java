@@ -133,7 +133,14 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
         view.findViewById(R.id.btn_add_bucket_empty).setOnClickListener(addBucketListener);
 
         viewModel.getBucketsWithTotals().observe(getViewLifecycleOwner(), buckets -> {
-            latestBuckets = buckets == null ? new ArrayList<>() : new ArrayList<>(buckets);
+            latestBuckets = new ArrayList<>();
+            if (buckets != null) {
+                for (com.spendwise.ai.data.pojo.BucketWithTotal b : buckets) {
+                    if (!Bucket.TYPE_UNASSIGNED.equals(b.bucket.getType())) {
+                        latestBuckets.add(b);
+                    }
+                }
+            }
             adapter.submitList(latestBuckets);
             updateBucketOverview(latestBuckets);
             updateAllocationBar(latestBuckets);
@@ -146,6 +153,24 @@ public class BucketsFragment extends Fragment implements BucketsAdapter.OnBucket
                 emptyStateView.setVisibility(View.GONE);
                 recyclerView.setVisibility(View.VISIBLE);
             }
+        });
+
+        View cardUnassigned = view.findViewById(R.id.card_unassigned_banner);
+        TextView textUnassignedCount = view.findViewById(R.id.text_unassigned_count);
+        MaterialButton btnSortUnassigned = view.findViewById(R.id.btn_sort_unassigned);
+
+        viewModel.getUnassignedHoldings().observe(getViewLifecycleOwner(), holdings -> {
+            if (holdings == null || holdings.isEmpty()) {
+                cardUnassigned.setVisibility(View.GONE);
+            } else {
+                cardUnassigned.setVisibility(View.VISIBLE);
+                textUnassignedCount.setText(holdings.size() + " items need sorting!");
+            }
+        });
+
+        btnSortUnassigned.setOnClickListener(v -> {
+            SortInvestmentsBottomSheet sheet = new SortInvestmentsBottomSheet();
+            sheet.show(getChildFragmentManager(), "SortInvestmentsBottomSheet");
         });
 
         viewModel.getTotalPortfolioValue().observe(getViewLifecycleOwner(), total -> {

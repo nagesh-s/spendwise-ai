@@ -44,8 +44,11 @@ public class DataBackupManager {
     private static final String KEY_BUDGETS = "budgets";
     private static final String KEY_BUCKETS = "buckets";
     private static final String KEY_INVESTMENTS = "investments";
+    private static final String KEY_BUCKET_MAPPINGS = "bucketMappings";
 
-    private static final int BACKUP_VERSION = 2;
+    // Version 2 introduced Categories and Merchants
+    // Version 3 introduced Bucket Mappings
+    private static final int BACKUP_VERSION = 3;
 
     public interface BackupCallback {
         void onSuccess(String message);
@@ -164,6 +167,22 @@ public class DataBackupManager {
                     investmentsArray.put(obj);
                 }
                 backup.put(KEY_INVESTMENTS, investmentsArray);
+
+                // --- 6. Export Bucket Mappings ---
+                List<com.spendwise.ai.data.entity.InstrumentBucketMapping> mappingsList = database.instrumentBucketMappingDao().getAllSync();
+                JSONArray mappingsArray = new JSONArray();
+                for (com.spendwise.ai.data.entity.InstrumentBucketMapping mapping : mappingsList) {
+                    JSONObject obj = new JSONObject();
+                    obj.put("instrumentPattern", mapping.getInstrumentPattern());
+                    obj.put("platformPattern", mapping.getPlatformPattern());
+                    obj.put("assetType", mapping.getAssetType());
+                    obj.put("bucketId", mapping.getBucketId());
+                    obj.put("confidence", mapping.getConfidenceBoost());
+                    obj.put("lastUpdatedMillis", mapping.getUpdatedAtMillis());
+                    obj.put("source", mapping.getSource());
+                    mappingsArray.put(obj);
+                }
+                backup.put(KEY_BUCKET_MAPPINGS, mappingsArray);
 
                 // Write to file
                 try (OutputStream outputStream = context.getContentResolver().openOutputStream(destinationUri)) {

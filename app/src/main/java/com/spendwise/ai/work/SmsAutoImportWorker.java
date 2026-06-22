@@ -1,6 +1,7 @@
 package com.spendwise.ai.work;
 
 import android.content.Context;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.work.Data;
@@ -41,6 +42,7 @@ import java.util.Locale;
  */
 public class SmsAutoImportWorker extends Worker {
 
+    private static final String TAG = "SmsAutoImportWorker";
     public static final String KEY_IMPORT_EXPENSES = "key_import_expenses";
     public static final String KEY_IMPORT_INVESTMENTS = "key_import_investments";
     public static final String KEY_INVESTMENT_REPAIR_LOOKBACK_DAYS = "key_investment_repair_lookback_days";
@@ -234,18 +236,34 @@ public class SmsAutoImportWorker extends Worker {
         // Parse and ingest investment signals from raw SMS stream.
         List<ParsedInvestmentSignal> investmentSignals = new ArrayList<>();
         com.spendwise.ai.engine.InvestmentUnderstandingEngine understandingEngine = new com.spendwise.ai.engine.InvestmentUnderstandingEngine(db, java.util.concurrent.Executors.newSingleThreadExecutor());
+        Log.i(TAG, "Investment import: rawMessages=" + rawMessages.size() + ", importInvestments=" + importInvestments + ", repairLookbackDays=" + repairLookbackDays);
         if (!rawMessages.isEmpty()) {
             EventIngestionPipeline pipeline = new EventIngestionPipeline();
             List<ParsedInvestmentSignal> acceptedSignals = new ArrayList<>();
             List<Long> acceptedEventIds = new ArrayList<>();
+            int skippedTimestamp = 0;
+            int nullSignals = 0;
+            int lowConfidence = 0;
+            int highConfidence = 0;
             for (int i = rawMessages.size() - 1; i >= 0; i--) {
                 RawSmsMessage message = rawMessages.get(i);
                 long timestamp = message.getTimestampMillis();
                 if (repairLookbackDays <= 0 && timestamp <= lastInvestmentImportedTimestamp) {
+                    skippedTimestamp++;
                     continue;
                 }
                 
                 ParsedInvestmentSignal signal = understandingEngine.understandSync(message.getSender(), message.getBody(), timestamp);
+                
+                if (signal == null) {
+                    nullSignals++;
+                } else if (signal.getConfidence() < 0.80d) {
+                    lowConfidence++;
+                    Log.d(TAG, "Low confidence signal: conf=" + signal.getConfidence() + ", name=" + signal.getInvestmentName() + ", sender=" + message.getSender());
+                } else {
+                    highConfidence++;
+                    Log.i(TAG, "High confidence signal: conf=" + signal.getConfidence() + ", name=" + signal.getInvestmentName() + ", type=" + signal.getSignalType() + ", amount=" + signal.getAmountCents());
+                }
                 
                 if (signal != null && signal.getConfidence() >= 0.80d) {
                     String sourceKey = InvestmentSignalKeyFactory.buildIngestionSourceKey(signal);
@@ -253,7 +271,7 @@ public class SmsAutoImportWorker extends Worker {
                             db, IngestionEvent.DOMAIN_INVESTMENT, IngestionEvent.SOURCE_SMS, sourceKey, signal.getCorrelationKey(),
                             signal.getSignalType().name(), signal.getAmountCents(), timestamp,
                             message.getSender(), message.getBody(), message.getBody());
-                    if (!event.duplicate) {
+                    if (event.eventId > 0) {
                         acceptedSignals.add(signal);
                         acceptedEventIds.add(event.eventId);
                     }
@@ -291,9 +309,11 @@ public class SmsAutoImportWorker extends Worker {
                 }
             }
 
+            Log.i(TAG, "Investment scan summary: total=" + rawMessages.size() + ", skippedTs=" + skippedTimestamp + ", nullSignals=" + nullSignals + ", lowConf=" + lowConfidence + ", highConf=" + highConfidence + ", accepted=" + acceptedSignals.size());
             if (!acceptedSignals.isEmpty()) {
                 InvestmentAutoIngestionEngine engine = new InvestmentAutoIngestionEngine();
-                InvestmentAutoIngestionEngine.IngestResult ingestionResult = engine.ingest(db, acceptedSignals);
+                InvestmentAutoIngestionEngine.IngestResult ingestionResult = engine.ingest(getApplicationContext(), db, acceptedSignals);
+                Log.i(TAG, "Ingestion result: inserted=" + ingestionResult.inserted + ", updated=" + ingestionResult.updated + ", skipped=" + ingestionResult.skipped);
                 OccurrenceReconciliationEngine reconcileEngine = new OccurrenceReconciliationEngine();
                 OccurrenceReconciliationEngine.ReconcileResult reconcileResult = reconcileEngine.reconcileSignals(
                         db,
@@ -313,7 +333,7 @@ public class SmsAutoImportWorker extends Worker {
         if (importInvestments && repairLookbackDays > 0) {
             long endEpochDay = LocalDate.now().toEpochDay();
             long startEpochDay = LocalDate.now().minusDays(repairLookbackDays).toEpochDay();
-            new ExpenseInvestmentRecoveryEngine().recover(db, startEpochDay, endEpochDay);
+            new ExpenseInvestmentRecoveryEngine().recover(getApplicationContext(), db, startEpochDay, endEpochDay);
         }
 
         if (importExpenses) {

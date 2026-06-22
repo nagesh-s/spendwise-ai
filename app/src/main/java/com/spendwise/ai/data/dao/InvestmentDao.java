@@ -40,6 +40,13 @@ public interface InvestmentDao {
     @Query("SELECT * FROM holdings WHERE bucketId = :bucketId ORDER BY providerId ASC, name ASC")
     LiveData<List<com.spendwise.ai.data.pojo.HoldingWithProvider>> getHoldingsWithProviderForBucket(long bucketId);
 
+    @androidx.room.Transaction
+    @Query("SELECT * FROM holdings WHERE bucketId = :bucketId ORDER BY providerId ASC, name ASC")
+    LiveData<List<com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider>> getHoldingsWithTransactionsAndProviderForBucket(long bucketId);
+
+    @Query("SELECT * FROM holdings WHERE bucketId = (SELECT id FROM buckets WHERE type = 'UNASSIGNED') ORDER BY lastUpdatedEpochDay DESC")
+    LiveData<List<Holding>> getUnassignedHoldings();
+
     @Query("SELECT * FROM holdings ORDER BY lastUpdatedEpochDay DESC")
     LiveData<List<Holding>> getAllInvestments();
 

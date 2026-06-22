@@ -23,6 +23,7 @@ public class Bucket {
     public static final String TYPE_MEDIUM_TERM = "MEDIUM_TERM"; // 2 → 5 years
     public static final String TYPE_LONG_TERM = "LONG_TERM"; // 5 → 15 years
     public static final String TYPE_RETIREMENT = "RETIREMENT"; // 15+ years
+    public static final String TYPE_UNASSIGNED = "UNASSIGNED";
     public static final String TYPE_CUSTOM = "CUSTOM"; // User-created
 
     @PrimaryKey(autoGenerate = true)

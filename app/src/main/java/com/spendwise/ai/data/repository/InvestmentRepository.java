@@ -42,6 +42,10 @@ public class InvestmentRepository {
         return investmentDao.getHoldingsWithProviderForBucket(bucketId);
     }
 
+    public LiveData<List<com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider>> getHoldingsWithTransactionsAndProviderForBucket(long bucketId) {
+        return investmentDao.getHoldingsWithTransactionsAndProviderForBucket(bucketId);
+    }
+
     public LiveData<List<Holding>> getAllInvestments() {
         return investmentDao.getAllInvestments();
     }

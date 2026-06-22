@@ -35,6 +35,11 @@ public class BucketAssignmentEngine {
             this.needsUserConfirmation = needsUserConfirmation;
         }
     }
+    private final SemanticBucketClassifier classifier;
+
+    public BucketAssignmentEngine(android.content.Context context) {
+        this.classifier = new SemanticBucketClassifier(context);
+    }
 
     @NonNull
     public AssignmentResult assign(
@@ -46,15 +51,14 @@ public class BucketAssignmentEngine {
             return mapped;
         }
 
-        OnDeviceInference inference = inferOnDevice(signal);
-        if (inference.confidence >= 0.65d) {
+        OnDeviceInference inference = inferOnDevice(signal, buckets);
+        if (inference.confidence >= 0.60d) {
             long bucketId = resolveBucketIdByType(buckets, inference.bucketType, fallbackBucketId(buckets));
-            return new AssignmentResult(bucketId, inference.bucketType, inference.confidence, "AI", false);
+            return new AssignmentResult(bucketId, inference.bucketType, inference.confidence, "LITE_ML", false);
         }
 
-        String fallbackType = resolveByRules(signal.getAssetType());
-        long fallbackId = resolveBucketIdByType(buckets, fallbackType, fallbackBucketId(buckets));
-        return new AssignmentResult(fallbackId, fallbackType, inference.confidence, "RULE_FALLBACK", true);
+        long unassignedId = getOrCreateUnassignedBucketId(db);
+        return new AssignmentResult(unassignedId, Bucket.TYPE_UNASSIGNED, inference.confidence, "UNSURE", true);
     }
 
     public void learnMapping(
@@ -75,6 +79,29 @@ public class BucketAssignmentEngine {
                 signal.getAssetType(),
                 bucketId,
                 0.8,
+                System.currentTimeMillis(),
+                source);
+        db.instrumentBucketMappingDao().upsert(mapping);
+    }
+
+    public void learnFromHolding(
+            @NonNull AppDatabase db,
+            @NonNull com.spendwise.ai.data.entity.Holding holding,
+            long bucketId,
+            @NonNull String source) {
+        String instrumentPattern = normalizeOrEmpty(holding.getName());
+        if (instrumentPattern.isEmpty()) {
+            instrumentPattern = normalizeOrEmpty(holding.getPlatform());
+        }
+        if (instrumentPattern.isEmpty()) {
+            instrumentPattern = "investment";
+        }
+        InstrumentBucketMapping mapping = new InstrumentBucketMapping(
+                instrumentPattern,
+                normalizeOrNull(holding.getPlatform()),
+                holding.getAssetType(),
+                bucketId,
+                0.9, // High confidence for manual sorts
                 System.currentTimeMillis(),
                 source);
         db.instrumentBucketMappingDao().upsert(mapping);
@@ -105,6 +132,16 @@ public class BucketAssignmentEngine {
             }
         }
         return null;
+    }
+
+    private long getOrCreateUnassignedBucketId(AppDatabase db) {
+        Bucket unassigned = db.bucketDao().getByType("UNASSIGNED");
+        if (unassigned == null) {
+            unassigned = new Bucket("Unassigned", "UNASSIGNED", 0, android.graphics.Color.GRAY, 99, false);
+            long id = db.bucketDao().insert(unassigned);
+            return id;
+        }
+        return unassigned.getId();
     }
 
     private long fallbackBucketId(@NonNull List<Bucket> buckets) {
@@ -156,32 +193,58 @@ public class BucketAssignmentEngine {
     }
 
     @NonNull
-    private OnDeviceInference inferOnDevice(@NonNull ParsedInvestmentSignal signal) {
+    private OnDeviceInference inferOnDevice(@NonNull ParsedInvestmentSignal signal, @NonNull List<Bucket> buckets) {
         String label = (normalizeOrEmpty(signal.getInvestmentName()) + " " + normalizeOrEmpty(signal.getPlatform()))
                 .trim();
         String assetType = signal.getAssetType();
 
-        if (label.contains("retire") || label.contains("nps") || label.contains("pension")) {
-            return new OnDeviceInference(Bucket.TYPE_RETIREMENT, 0.9d);
+        double bestScore = -1.0;
+        String bestType = Bucket.TYPE_LONG_TERM;
+
+        // Try cosine similarity for all buckets
+        for (Bucket bucket : buckets) {
+            String bucketDesc = bucket.getName() + " " + bucket.getType() + " ";
+            // Enrich with regex keywords to "train" the zero-shot model
+            if (Bucket.TYPE_RETIREMENT.equals(bucket.getType())) {
+                bucketDesc += "nps pension retire provident fund ppf";
+            } else if (Bucket.TYPE_EMERGENCY.equals(bucket.getType())) {
+                bucketDesc += "emergency liquid savings account reserve";
+            } else if (Bucket.TYPE_MEDIUM_TERM.equals(bucket.getType())) {
+                bucketDesc += "car wedding education fixed recurring deposit fd rd";
+            } else if (Bucket.TYPE_SHORT_TERM.equals(bucket.getType())) {
+                bucketDesc += "travel vacation short liquid";
+            } else if (Bucket.TYPE_LONG_TERM.equals(bucket.getType())) {
+                bucketDesc += "mutual fund etf stock shares equity growth wealth";
+            }
+
+            double score = classifier.computeSimilarity(label + " " + assetType, bucketDesc.trim());
+            if (score > bestScore) {
+                bestScore = score;
+                bestType = bucket.getType();
+            }
         }
-        if (label.contains("emergency") || label.contains("liquid") || Holding.ASSET_SAVINGS.equals(assetType)) {
-            return new OnDeviceInference(Bucket.TYPE_EMERGENCY, 0.85d);
+
+        // If the model fails or returns nonsense, fallback to legacy rules
+        if (bestScore < 0) {
+            if (label.contains("retire") || label.contains("nps") || label.contains("pension") || Holding.ASSET_PPF.equals(assetType) || Holding.ASSET_NPS.equals(assetType)) {
+                return new OnDeviceInference(Bucket.TYPE_RETIREMENT, 0.9d);
+            }
+            if (label.contains("emergency") || label.contains("liquid") || Holding.ASSET_SAVINGS.equals(assetType)) {
+                return new OnDeviceInference(Bucket.TYPE_EMERGENCY, 0.85d);
+            }
+            if (label.contains("car") || label.contains("wedding") || label.contains("education") || Holding.ASSET_FD.equals(assetType) || Holding.ASSET_RD.equals(assetType)) {
+                return new OnDeviceInference(Bucket.TYPE_MEDIUM_TERM, 0.8d);
+            }
+            if (label.contains("travel") || label.contains("vacation")) {
+                return new OnDeviceInference(Bucket.TYPE_SHORT_TERM, 0.75d);
+            }
+            if (Holding.ASSET_MF.equals(assetType) || Holding.ASSET_ETF.equals(assetType) || Holding.ASSET_STOCK.equals(assetType)) {
+                return new OnDeviceInference(Bucket.TYPE_LONG_TERM, 0.6d);
+            }
+            return new OnDeviceInference(Bucket.TYPE_LONG_TERM, 0.45d);
         }
-        if (label.contains("car") || label.contains("wedding") || label.contains("education")
-                || Holding.ASSET_FD.equals(assetType) || Holding.ASSET_RD.equals(assetType)) {
-            return new OnDeviceInference(Bucket.TYPE_MEDIUM_TERM, 0.8d);
-        }
-        if (label.contains("travel") || label.contains("vacation")) {
-            return new OnDeviceInference(Bucket.TYPE_SHORT_TERM, 0.75d);
-        }
-        if (Holding.ASSET_PPF.equals(assetType) || Holding.ASSET_NPS.equals(assetType)) {
-            return new OnDeviceInference(Bucket.TYPE_RETIREMENT, 0.8d);
-        }
-        if (Holding.ASSET_MF.equals(assetType) || Holding.ASSET_ETF.equals(assetType)
-                || Holding.ASSET_STOCK.equals(assetType)) {
-            return new OnDeviceInference(Bucket.TYPE_LONG_TERM, 0.6d);
-        }
-        return new OnDeviceInference(Bucket.TYPE_LONG_TERM, 0.45d);
+
+        return new OnDeviceInference(bestType, bestScore);
     }
 
     @NonNull

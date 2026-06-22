@@ -79,8 +79,13 @@ public class InvestmentLedgerService {
 
     @Transaction
     @NonNull
-    public LedgerResult processEvidence(@NonNull IngestionEvent event, @NonNull com.spendwise.ai.sms.ParsedInvestmentSignal signal) {
+    public LedgerResult processEvidence(@NonNull IngestionEvent event, @NonNull com.spendwise.ai.sms.ParsedInvestmentSignal signal, long assignedBucketId) {
         
+        // 0. Skip zero-amount signals
+        if (signal.getAmountCents() <= 0) {
+            return new LedgerResult(LedgerResult.Status.REJECTED, null, null);
+        }
+
         // 1. Resolve Provider
         Provider provider = null;
         if (signal.getPlatform() != null) {
@@ -93,7 +98,7 @@ public class InvestmentLedgerService {
                 provider != null ? provider.getId() : null,
                 instrument,
                 signal.getAssetType(),
-                1L // default bucket for now, or should be assigned by engine
+                assignedBucketId
         );
         
         // 3. Find Candidate Transaction or Create New
@@ -139,6 +144,24 @@ public class InvestmentLedgerService {
             transaction.setId(txId);
         }
         
+        // Update holding to reflect auto-ingestion source
+        boolean holdingNeedsUpdate = false;
+        if (!holding.isAutoFetched()) {
+            holding.setAutoFetched(true);
+            holdingNeedsUpdate = true;
+        }
+        if (holding.getPrimaryCorrelationKey() == null && signal.getCorrelationKey() != null) {
+            holding.setPrimaryCorrelationKey(signal.getCorrelationKey());
+            holdingNeedsUpdate = true;
+        }
+        if (holding.getPlatform() == null && signal.getPlatform() != null) {
+            holding.setPlatform(signal.getPlatform());
+            holdingNeedsUpdate = true;
+        }
+        if (holdingNeedsUpdate) {
+            db.investmentDao().update(holding);
+        }
+
         // 4. Link Evidence
         InvestmentEventLink link = new InvestmentEventLink(
                 event.getId(),
@@ -152,7 +175,7 @@ public class InvestmentLedgerService {
         db.investmentEventLinkDao().insertIgnore(link);
         
         // 5. Recompute
-        // recomputeHoldingAggregates(holding.getId()); // Moved to daily maintenance worker
+        recomputeHoldingAggregates(holding.getId());
 
         return new LedgerResult(resultStatus, transaction.getId(), holding.getId());
     }
@@ -161,6 +184,7 @@ public class InvestmentLedgerService {
         public enum Status {
             INSERTED, CONFIRMED, DUPLICATE, REVIEW_REQUIRED, REJECTED
         }
+
         
         public final Status status;
         @Nullable public final Long transactionId;
@@ -190,8 +214,10 @@ public class InvestmentLedgerService {
         long totalFees = 0;
         long totalTaxes = 0;
 
+        long oldNetCashInvested = holding.getNetCashInvestedCents();
+
         for (InvestmentTransaction t : transactions) {
-            if (!InvestmentTransaction.STATUS_CONFIRMED.equals(t.getStatus())) continue;
+            if (InvestmentTransaction.STATUS_CANCELLED.equals(t.getStatus())) continue;
             
             switch (t.getTransactionType()) {
                 case InvestmentTransaction.TYPE_CONTRIBUTION:
@@ -213,6 +239,13 @@ public class InvestmentLedgerService {
         }
 
         long netCashInvested = totalContributions + totalFees + totalTaxes - totalWithdrawals;
+        
+        // If we haven't synced market prices (current value is 0) or if it perfectly matched the OLD net cash,
+        // assume current value perfectly tracks the new net cash invested to prevent artificially negative PnL.
+        if (holding.getCurrentValueCents() <= 0 || holding.getCurrentValueCents() == oldNetCashInvested) {
+            holding.setCurrentValueCents(netCashInvested);
+        }
+
         long absolutePnl = holding.getCurrentValueCents() + totalWithdrawals + totalIncome - totalContributions - totalFees - totalTaxes;
 
         holding.setTotalContributionsCents(totalContributions);

@@ -128,7 +128,7 @@ public class InvestmentNotificationListenerService extends NotificationListenerS
                     List<ParsedInvestmentSignal> oneSignal = new ArrayList<>();
                     oneSignal.add(payload.investmentSignal);
                     InvestmentAutoIngestionEngine.IngestResult ingestResult = new InvestmentAutoIngestionEngine()
-                            .ingest(db, oneSignal, IngestionEvent.SOURCE_NOTIFICATION);
+                            .ingest(getApplicationContext(), db, oneSignal, IngestionEvent.SOURCE_NOTIFICATION);
                     OccurrenceReconciliationEngine.ReconcileResult reconcileResult = new OccurrenceReconciliationEngine()
                             .reconcileSignals(
                                     db,

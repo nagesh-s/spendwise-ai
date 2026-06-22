@@ -5,6 +5,7 @@ import androidx.room.Insert;
 import androidx.room.OnConflictStrategy;
 import androidx.room.Query;
 
+import com.spendwise.ai.data.entity.IngestionEvent;
 import com.spendwise.ai.data.entity.InvestmentEventLink;
 
 import java.util.List;
@@ -26,4 +27,16 @@ public interface InvestmentEventLinkDao {
 
     @Query("DELETE FROM investment_event_links WHERE ingestionEventId NOT IN (SELECT id FROM ingestion_events)")
     int deleteOrphanEventLinks();
+
+    @Query("SELECT e.* FROM ingestion_events e "
+            + "INNER JOIN investment_event_links l ON e.id = l.ingestionEventId "
+            + "WHERE l.holdingId = :holdingId "
+            + "ORDER BY e.eventTimestampMillis DESC LIMIT 1")
+    IngestionEvent getLatestEventForHolding(long holdingId);
+
+    @Query("SELECT e.* FROM ingestion_events e "
+            + "INNER JOIN investment_event_links l ON e.id = l.ingestionEventId "
+            + "WHERE l.transactionId = :transactionId "
+            + "ORDER BY e.eventTimestampMillis DESC LIMIT 1")
+    IngestionEvent getLatestEventForTransaction(long transactionId);
 }

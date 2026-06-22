@@ -1,22 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/card_investment_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:layout_marginBottom="10dp"
-    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh"
-    app:cardCornerRadius="14dp"
-    app:cardElevation="0dp"
-    app:strokeColor="?attr/colorOutlineVariant"
-    app:strokeWidth="1dp">
-
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="16dp">
+    android:orientation="vertical"
+    android:background="?attr/selectableItemBackground"
+    android:padding="16dp">
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -44,16 +35,6 @@
                 android:textColor="?attr/colorOnSecondaryContainer"
                 tools:text="Mutual Fund" />
 
-            <ImageView
-                android:id="@+id/btn_investment_info"
-                android:layout_width="32dp"
-                android:layout_height="32dp"
-                android:layout_marginStart="8dp"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="View Source"
-                android:padding="6dp"
-                android:src="@drawable/ic_info_outline"
-                app:tint="?attr/colorOnSurfaceVariant" />
         </LinearLayout>
 
         <TextView
@@ -125,6 +106,10 @@
             android:textColor="?attr/colorOnSurfaceVariant"
             tools:text="Updated 04 Mar 2026" />
 
-    </LinearLayout>
-
-</com.google.android.material.card.MaterialCardView>
+        <LinearLayout
+            android:id="@+id/container_transactions"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:orientation="vertical" />
+</LinearLayout>

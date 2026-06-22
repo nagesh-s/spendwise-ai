@@ -183,20 +183,35 @@ public abstract class AppDatabase extends RoomDatabase {
                 @Override
                 public void onCreate(@NonNull SupportSQLiteDatabase db) {
                         super.onCreate(db);
-                        seedDefaultCategories();
-                        seedDefaultAccounts();
-                        seedDefaultBuckets();
+                        seedDefaultCategoriesInDb(db);
+                        seedDefaultAccountsInDb(db);
+                        seedDefaultBucketsInMigration(db);
                 }
 
                 @Override
                 public void onOpen(@NonNull SupportSQLiteDatabase db) {
                         super.onOpen(db);
-                        // Also check on open in case migration cleared the data
-                        seedDefaultCategories();
-                        seedDefaultAccounts();
-                        seedDefaultBuckets();
                 }
         };
+
+        private static void seedDefaultCategoriesInDb(SupportSQLiteDatabase db) {
+                String insertSql = "INSERT INTO `categories` (`name`, `colorArgb`, `iconKey`, `isDefault`) VALUES (?, ?, ?, 1)";
+                for (Category category : getDefaultCategories()) {
+                        db.execSQL(insertSql, new Object[] {
+                                        category.getName(), category.getColorArgb(), category.getIconKey()
+                        });
+                }
+        }
+
+        private static void seedDefaultAccountsInDb(SupportSQLiteDatabase db) {
+                String insertSql = "INSERT INTO `accounts` (`name`, `type`, `balanceCents`, `colorArgb`, `iconKey`, `isDefault`) VALUES (?, ?, ?, ?, ?, ?)";
+                for (Account account : getDefaultAccounts()) {
+                        db.execSQL(insertSql, new Object[] {
+                                        account.getName(), account.getType(), account.getBalanceCents(),
+                                        account.getColorArgb(), account.getIconKey(), account.isDefault() ? 1 : 0
+                        });
+                }
+        }
 
         private static void seedDefaultCategories() {
                 databaseWriteExecutor.execute(() -> {
@@ -650,50 +665,52 @@ public abstract class AppDatabase extends RoomDatabase {
                 databaseWriteExecutor.execute(() -> {
                         if (INSTANCE == null)
                                 return;
-                        BucketDao bucketDao = INSTANCE.bucketDao();
-                        int count = bucketDao.getBucketCount();
-                        if (count == 0) {
-                                Bucket emergency = new Bucket("Emergency Fund", Bucket.TYPE_EMERGENCY, 10,
-                                                Color.parseColor("#E53935"), 0, true);
-                                emergency.setIconKey("fa_shield");
-                                emergency.setDescription("Protected baseline for unexpected events");
-                                emergency.setTimelineLabel("Protected");
-                                emergency.setInvestmentAdvice(
-                                                "High liquidity only. Savings account or liquid mutual funds.");
-                                bucketDao.insert(emergency);
+                        INSTANCE.runInTransaction(() -> {
+                                BucketDao bucketDao = INSTANCE.bucketDao();
+                                int count = bucketDao.getBucketCount();
+                                if (count == 0) {
+                                        Bucket emergency = new Bucket("Emergency Fund", Bucket.TYPE_EMERGENCY, 10,
+                                                        Color.parseColor("#E53935"), 0, true);
+                                        emergency.setIconKey("fa_shield");
+                                        emergency.setDescription("Protected baseline for unexpected events");
+                                        emergency.setTimelineLabel("Protected");
+                                        emergency.setInvestmentAdvice(
+                                                        "High liquidity only. Savings account or liquid mutual funds.");
+                                        bucketDao.insert(emergency);
 
-                                Bucket shortTerm = new Bucket("Enjoy the Present", Bucket.TYPE_SHORT_TERM, 20,
-                                                Color.parseColor("#1E88E5"), 1, true);
-                                shortTerm.setIconKey("fa_shopping_cart");
-                                shortTerm.setDescription("Guilt-free spending for immediate desires");
-                                shortTerm.setTimelineLabel("Now \u2013 2 Years");
-                                shortTerm.setInvestmentAdvice("No stocks. Use FDs, Liquid Funds, or savings account.");
-                                bucketDao.insert(shortTerm);
+                                        Bucket shortTerm = new Bucket("Enjoy the Present", Bucket.TYPE_SHORT_TERM, 20,
+                                                        Color.parseColor("#1E88E5"), 1, true);
+                                        shortTerm.setIconKey("fa_shopping_cart");
+                                        shortTerm.setDescription("Guilt-free spending for immediate desires");
+                                        shortTerm.setTimelineLabel("Now \u2013 2 Years");
+                                        shortTerm.setInvestmentAdvice("No stocks. Use FDs, Liquid Funds, or savings account.");
+                                        bucketDao.insert(shortTerm);
 
-                                Bucket mediumTerm = new Bucket("Build the Next", Bucket.TYPE_MEDIUM_TERM, 20,
-                                                Color.parseColor("#FB8C00"), 2, true);
-                                mediumTerm.setIconKey("fa_car");
-                                mediumTerm.setDescription("Upgrading your lifestyle \u2014 car, education, wedding");
-                                mediumTerm.setTimelineLabel("2 \u2013 5 Years");
-                                mediumTerm.setInvestmentAdvice("Moderate risk. Arbitrage, Hybrid Funds, Gold.");
-                                bucketDao.insert(mediumTerm);
+                                        Bucket mediumTerm = new Bucket("Build the Next", Bucket.TYPE_MEDIUM_TERM, 20,
+                                                        Color.parseColor("#FB8C00"), 2, true);
+                                        mediumTerm.setIconKey("fa_car");
+                                        mediumTerm.setDescription("Upgrading your lifestyle \u2014 car, education, wedding");
+                                        mediumTerm.setTimelineLabel("2 \u2013 5 Years");
+                                        mediumTerm.setInvestmentAdvice("Moderate risk. Arbitrage, Hybrid Funds, Gold.");
+                                        bucketDao.insert(mediumTerm);
 
-                                Bucket longTerm = new Bucket("Secure the Future", Bucket.TYPE_LONG_TERM, 30,
-                                                Color.parseColor("#43A047"), 3, true);
-                                longTerm.setIconKey("fa_home");
-                                longTerm.setDescription("Major life anchors \u2014 house, business, family");
-                                longTerm.setTimelineLabel("5 \u2013 15 Years");
-                                longTerm.setInvestmentAdvice("Growth priority. Flexi-Cap, Mid-Cap, strong stocks.");
-                                bucketDao.insert(longTerm);
+                                        Bucket longTerm = new Bucket("Secure the Future", Bucket.TYPE_LONG_TERM, 30,
+                                                        Color.parseColor("#43A047"), 3, true);
+                                        longTerm.setIconKey("fa_home");
+                                        longTerm.setDescription("Major life anchors \u2014 house, business, family");
+                                        longTerm.setTimelineLabel("5 \u2013 15 Years");
+                                        longTerm.setInvestmentAdvice("Growth priority. Flexi-Cap, Mid-Cap, strong stocks.");
+                                        bucketDao.insert(longTerm);
 
-                                Bucket retirement = new Bucket("Freedom Fund", Bucket.TYPE_RETIREMENT, 20,
-                                                Color.parseColor("#7E57C2"), 4, true);
-                                retirement.setIconKey("fa_chart_line");
-                                retirement.setDescription("Financial independence \u2014 working becomes optional");
-                                retirement.setTimelineLabel("15+ Years");
-                                retirement.setInvestmentAdvice("Aggressive compounding. Index, Small-Cap, PPF/NPS.");
-                                bucketDao.insert(retirement);
-                        }
+                                        Bucket retirement = new Bucket("Freedom Fund", Bucket.TYPE_RETIREMENT, 20,
+                                                        Color.parseColor("#7E57C2"), 4, true);
+                                        retirement.setIconKey("fa_chart_line");
+                                        retirement.setDescription("Financial independence \u2014 working becomes optional");
+                                        retirement.setTimelineLabel("15+ Years");
+                                        retirement.setInvestmentAdvice("Aggressive compounding. Index, Small-Cap, PPF/NPS.");
+                                        bucketDao.insert(retirement);
+                                }
+                        });
                 });
         }
 

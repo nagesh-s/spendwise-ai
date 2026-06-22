@@ -30,13 +30,15 @@ public class InvestmentAutoIngestionEngine {
 
     @NonNull
     public IngestResult ingest(
+            @NonNull android.content.Context context,
             @NonNull AppDatabase db,
             @NonNull List<ParsedInvestmentSignal> signals) {
-        return ingest(db, signals, IngestionEvent.SOURCE_SMS);
+        return ingest(context, db, signals, IngestionEvent.SOURCE_SMS);
     }
 
     @NonNull
     public IngestResult ingest(
+            @NonNull android.content.Context context,
             @NonNull AppDatabase db,
             @NonNull List<ParsedInvestmentSignal> signals,
             @NonNull String sourceType) {
@@ -50,6 +52,8 @@ public class InvestmentAutoIngestionEngine {
 
         EventIngestionPipeline pipeline = new EventIngestionPipeline();
         InvestmentLedgerService ledgerService = new InvestmentLedgerService(db);
+        BucketAssignmentEngine assignmentEngine = new BucketAssignmentEngine(context);
+        List<com.spendwise.ai.data.entity.Bucket> buckets = db.bucketDao().getAllBucketsSync();
 
         for (ParsedInvestmentSignal signal : orderedSignals) {
             if (signal.getAmountCents() <= 0
@@ -72,18 +76,20 @@ public class InvestmentAutoIngestionEngine {
                     signal.getRawMessage(), // payloadHashBase
                     signal.getRawMessage()); // rawMessage
 
-            if (eventResult.duplicate) {
-                result.skipped++;
-                continue;
-            }
-
             IngestionEvent event = db.ingestionEventDao().getBySourceKey(sourceKey);
             if (event == null) {
                 result.skipped++;
                 continue;
             }
 
-            InvestmentLedgerService.LedgerResult ledgerResult = ledgerService.processEvidence(event, signal);
+            if (IngestionEvent.STATUS_PROCESSED.equals(event.getStatus())) {
+                result.skipped++;
+                continue;
+            }
+
+            BucketAssignmentEngine.AssignmentResult assignment = assignmentEngine.assign(db, signal, buckets);
+            
+            InvestmentLedgerService.LedgerResult ledgerResult = ledgerService.processEvidence(event, signal, assignment.bucketId);
             
             pipeline.markProcessed(db, event.getId(), IngestionEvent.STATUS_PROCESSED);
 

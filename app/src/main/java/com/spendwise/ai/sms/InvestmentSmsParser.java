@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 public final class InvestmentSmsParser {
 
     private static final Pattern AMOUNT_PATTERN = Pattern.compile(
-            "(?i)(?:₹|rs\\.?|inr)\\s*([\\d,]+\\.?\\d*)");
+            "(?i)(?:₹|\\brs\\.?|\\binr\\b)\\s*([\\d,]+\\.?\\d*)");
 
     private static final Pattern REF_PATTERN = Pattern.compile(
             "(?i)(?:ref(?:erence)?|utr|arn|order(?:\\s*(?:id|no|number))?|folio(?:\\s*(?:no|number))?)\\s*[:#-]?\\s*([A-Za-z0-9\\-]{4,30})");
@@ -50,7 +50,29 @@ public final class InvestmentSmsParser {
                 "click here", "bit.ly/", "apply.link",
                 "call to opt", "sms stop", "unsubscribe",
                 "eligible for", "instant loan", "loan offer", "upgrade", "personal loan",
-                "will be converted", "expires", "caution");
+                "will be converted", "expires", "caution",
+                "loan is credited", "loan disbursed", "loan approved",
+                "credit limit", "credit line", "emi starts",
+                "redeem now", "claim now", "activate now",
+                "download the app", "download app",
+                "tinyurl", "cutt.ly", "short.io", "rebrand.ly",
+                "t.co/", "goo.gl/", "is.gd/",
+                "missed call", "give a missed call",
+                "dial ", "call us", "contact us",
+                "exclusively for you", "just for you",
+                "hurry", "limited time", "offer ends",
+                "win ", "won ", "winner",
+                "free ", "cashback of", "reward",
+                "insurance", "policy premium");
+    }
+
+    private static boolean isLikelyLoanSms(String normalized) {
+        boolean hasLoanKeyword = containsAny(normalized,
+                "loan", "emi", "credit line", "credit limit",
+                "disbursed", "disbursal", "repayment");
+        boolean hasAmountAndCredited = normalized.contains("credited")
+                && !containsAny(normalized, "units", "allotted", "folio", "nav");
+        return hasLoanKeyword && hasAmountAndCredited;
     }
 
     public static boolean isInvestmentSms(@Nullable String sender, @Nullable String body) {
@@ -58,6 +80,9 @@ public final class InvestmentSmsParser {
             return false;
         }
         String normalized = body.toLowerCase(Locale.US);
+        if (isLikelyLoanSms(normalized)) {
+            return false;
+        }
         boolean hasInvestmentKeyword = containsInvestmentKeyword(normalized)
                 || containsFdKeyword(normalized)
                 || containsRdKeyword(normalized);
@@ -102,11 +127,15 @@ public final class InvestmentSmsParser {
                 || normalized.contains("amended");
 
         String correlationSeed = reference;
-        if (correlationSeed == null || correlationSeed.length() < 4) {
-            correlationSeed = sanitizeKey(String.format(Locale.US, "%s|%s|%d",
+        long monthStr = timestampMillis / (30L * 86400000L); // Roughly a month
+        if (correlationSeed != null && correlationSeed.length() >= 4) {
+            correlationSeed = sanitizeKey(correlationSeed) + "_" + amountCents + "_" + monthStr;
+        } else {
+            correlationSeed = sanitizeKey(String.format(Locale.US, "%s|%s|%d|%d",
                     platform == null ? "unknown" : platform,
                     investmentName == null ? "investment" : investmentName,
-                    amountCents));
+                    amountCents,
+                    monthStr));
         }
 
         String sourceSeed = String.format(Locale.US, "%s|%s|%s|%d",
@@ -117,8 +146,27 @@ public final class InvestmentSmsParser {
         String sourceKey = "src_" + sanitizeKey(sourceSeed);
         String correlationKey = "corr_" + sanitizeKey(correlationSeed);
         String fingerprint = normalizedFingerprint(body);
-        double confidence = reference != null ? 0.95d
+        double baseConfidence = reference != null ? 0.95d
                 : (platform != null && investmentName != null && amountCents > 0 ? 0.85d : 0.65d);
+
+        double confidence = baseConfidence;
+        if (investmentName != null && body.toLowerCase(Locale.US).contains("for " + investmentName.toLowerCase(Locale.US)) && body.length() - body.toLowerCase(Locale.US).indexOf("for " + investmentName.toLowerCase(Locale.US)) < 50) {
+            confidence -= 0.3; // likely a footer
+        }
+        if (containsAny(normalized, "bit.ly", "apply.link", "cutt.ly", "goo.gl", "tinyurl", "short.io")) {
+            confidence -= 0.4;
+        }
+        if (normalized.contains("credited") && !containsAny(normalized, "units", "allotted", "nav", "maturity", "redemption", "folio", "sip")) {
+            confidence -= 0.25;
+        }
+        int kwCount = 0;
+        String[] kws = {"mutual fund", "sip", "folio", "allotment", "units allotted", "nav", "amc", "demat", "units", "shares", "scheme", "coin", "investment", "stock"};
+        for (String kw : kws) {
+            if (normalized.contains(kw)) kwCount++;
+        }
+        if (kwCount <= 1) {
+            confidence -= 0.15;
+        }
 
         return new ParsedInvestmentSignal(
                 signalType,
@@ -210,7 +258,9 @@ public final class InvestmentSmsParser {
 
     private static long extractPrimaryAmountCents(@NonNull String body) {
         Matcher matcher = AMOUNT_PATTERN.matcher(body);
-        long selectedAmount = 0L;
+        long bestAmount = 0L;
+        int bestScore = -1;
+
         while (matcher.find()) {
             String amountRaw = matcher.group(1);
             if (amountRaw == null) {
@@ -218,12 +268,30 @@ public final class InvestmentSmsParser {
             }
             try {
                 long parsed = Math.round(Double.parseDouble(amountRaw.replace(",", "")) * 100d);
-                selectedAmount = Math.max(selectedAmount, parsed);
+                if (parsed <= 0) continue;
+
+                int matchStart = matcher.start();
+                String preceding = body.substring(Math.max(0, matchStart - 30), matchStart).toLowerCase(Locale.US);
+                int score = 1;
+                if (containsAny(preceding, "debited", "invested", "purchased", "bought",
+                        "sip of", "allotted", "amount")) {
+                    score = 3;
+                } else if (containsAny(preceding, "rs", "inr", "₹")) {
+                    score = 2;
+                }
+                if (containsAny(preceding, "balance", "avl bal", "limit", "available", "value", "current", "total", "nav")) {
+                    score = 0;
+                }
+
+                if (score > bestScore || (score == bestScore && parsed > bestAmount)) {
+                    bestAmount = parsed;
+                    bestScore = score;
+                }
             } catch (NumberFormatException ignore) {
                 // Skip malformed amounts.
             }
         }
-        return selectedAmount;
+        return bestAmount;
     }
 
     @Nullable
@@ -232,11 +300,26 @@ public final class InvestmentSmsParser {
             @NonNull ParsedInvestmentSignal.SignalType signalType,
             @Nullable String platform,
             @NonNull String assetType) {
-        Matcher matcher = INVESTMENT_NAME_PATTERN.matcher(body);
+        String bodyForName = body.replaceAll("(?i)(?:For queries|For more details|For assistance|For support).*$", "");
+        Matcher matcher = INVESTMENT_NAME_PATTERN.matcher(bodyForName);
         if (matcher.find()) {
             String value = cleanLabel(matcher.group(1));
-            if (value != null && value.length() >= 3) {
-                return value;
+            // Remove any accidental currency/amount captures
+            if (value != null) {
+                value = value.replaceAll("(?i)^(?:rs\\.?|inr|₹)\\s*[\\d,]+\\.?\\d*\\s*(?:in|for)?\\s*", "").trim();
+                
+                String lowerName = value.toLowerCase(Locale.US);
+                boolean blacklisted = false;
+                for (String bl : new String[]{"queries", "query", "details", "information", "customer care", "helpline", "support", "assistance", "more info", "questions", "grievance", "complaints"}) {
+                    if (lowerName.contains(bl)) {
+                        blacklisted = true;
+                        break;
+                    }
+                }
+
+                if (!blacklisted && value.length() >= 3 && !value.matches("^[\\d.,]+$")) {
+                    return value;
+                }
             }
         }
 
@@ -266,12 +349,28 @@ public final class InvestmentSmsParser {
     }
 
     public static boolean containsInvestmentKeyword(String normalized) {
-        return containsAny(normalized,
-                "investment", "mutual fund", "mf", "sip", "folio",
-                "etf", "shares", "stock", "demat", "buy order", "allotment",
-                "units", "scheme", "amc", "upstox", "groww", "zerodha",
-                "coin", "kite", "angel one", "icici direct", "paytm money",
-                "et money", "mf central", "broker", "demat");
+        boolean hasStrong = containsAny(normalized,
+                "mutual fund", "mf", "sip", "folio", "allotment",
+                "units allotted", "nav", "amc", "demat", "buy order");
+        boolean hasWeak = containsAny(normalized,
+                "units", "shares", "scheme", "coin", "investment",
+                "stock", "upstox", "groww", "zerodha", "kite",
+                "angel one", "icici direct", "paytm money", "et money",
+                "mf central", "broker");
+
+        // Consider it an investment keyword match if there's a strong keyword,
+        // or if it has a weak keyword but isn't just a generic word without context.
+        if (hasStrong) return true;
+        if (hasWeak) {
+            // Require at least two weak keywords if no strong ones
+            int weakCount = 0;
+            String[] weaks = {"units", "shares", "scheme", "coin", "investment", "stock", "upstox", "groww", "zerodha", "kite", "angel one", "icici direct", "paytm money", "et money", "mf central", "broker"};
+            for (String w : weaks) {
+                if (normalized.contains(w)) weakCount++;
+            }
+            return weakCount >= 2;
+        }
+        return false;
     }
 
     private static boolean containsFdKeyword(String normalized) {

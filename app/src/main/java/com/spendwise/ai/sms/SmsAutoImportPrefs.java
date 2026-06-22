@@ -18,7 +18,7 @@ public final class SmsAutoImportPrefs {
 
     public static boolean isEnabled(@NonNull Context context) {
         SharedPreferences prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
-        return prefs.getBoolean(KEY_ENABLED, true);
+        return prefs.getBoolean(KEY_ENABLED, false);
     }
 
     public static void setEnabled(@NonNull Context context, boolean enabled) {

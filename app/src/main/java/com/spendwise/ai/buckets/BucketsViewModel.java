@@ -25,6 +25,7 @@ public class BucketsViewModel extends AndroidViewModel {
     private final InvestmentRepository investmentRepository;
     private final LiveData<List<BucketWithTotal>> bucketsWithTotals;
     private final LiveData<Long> totalPortfolioValue;
+    private final LiveData<List<com.spendwise.ai.data.entity.Holding>> unassignedHoldings;
 
 
     public BucketsViewModel(@NonNull Application application) {
@@ -33,6 +34,7 @@ public class BucketsViewModel extends AndroidViewModel {
         investmentRepository = new InvestmentRepository(application);
         bucketsWithTotals = bucketRepository.getAllBucketsWithTotals();
         totalPortfolioValue = investmentRepository.getTotalPortfolioValue();
+        unassignedHoldings = AppDatabase.getInstance(application).investmentDao().getUnassignedHoldings();
     }
 
     public LiveData<List<BucketWithTotal>> getBucketsWithTotals() {
@@ -41,6 +43,10 @@ public class BucketsViewModel extends AndroidViewModel {
 
     public LiveData<Long> getTotalPortfolioValue() {
         return totalPortfolioValue;
+    }
+
+    public LiveData<List<com.spendwise.ai.data.entity.Holding>> getUnassignedHoldings() {
+        return unassignedHoldings;
     }
 
 

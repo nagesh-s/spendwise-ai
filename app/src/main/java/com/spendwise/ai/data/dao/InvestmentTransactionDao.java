@@ -48,6 +48,11 @@ public interface InvestmentTransactionDao {
     List<InvestmentTransaction> findCandidates(long holdingId, String type, long amountCents,
             long startMillis, long endMillis);
 
+    @Query("SELECT * FROM investment_transactions WHERE amountCents = :amountCents "
+            + "AND eventTimestampMillis BETWEEN :startMillis AND :endMillis "
+            + "ORDER BY eventTimestampMillis DESC")
+    List<InvestmentTransaction> findGlobalCandidates(long amountCents, long startMillis, long endMillis);
+
     @Query("UPDATE investment_transactions SET status = :status WHERE id = :id")
     int updateStatus(long id, String status);
 

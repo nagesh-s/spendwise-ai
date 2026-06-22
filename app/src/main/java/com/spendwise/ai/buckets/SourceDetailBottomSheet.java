@@ -33,8 +33,9 @@ import com.google.android.material.button.MaterialButton;
 
 public class SourceDetailBottomSheet extends BottomSheetDialogFragment {
 
-    private static final String ARG_INVESTMENT_ID = "investment_id";
-    private static final String ARG_EXPENSE_ID = "expense_id";
+    public static final String ARG_INVESTMENT_ID = "investmentId";
+    public static final String ARG_TRANSACTION_ID = "transactionId";
+    public static final String ARG_EXPENSE_ID = "expenseId";
 
     private FrameLayout containerLoading;
     private LinearLayout containerContent;
@@ -52,7 +53,14 @@ public class SourceDetailBottomSheet extends BottomSheetDialogFragment {
         SourceDetailBottomSheet fragment = new SourceDetailBottomSheet();
         Bundle args = new Bundle();
         args.putLong(ARG_INVESTMENT_ID, investmentId);
-        args.putLong(ARG_EXPENSE_ID, -1);
+        fragment.setArguments(args);
+        return fragment;
+    }
+
+    public static SourceDetailBottomSheet newInstanceForTransaction(long transactionId) {
+        SourceDetailBottomSheet fragment = new SourceDetailBottomSheet();
+        Bundle args = new Bundle();
+        args.putLong(ARG_TRANSACTION_ID, transactionId);
         fragment.setArguments(args);
         return fragment;
     }
@@ -130,9 +138,12 @@ public class SourceDetailBottomSheet extends BottomSheetDialogFragment {
         btnRefreshSourcesEmpty.setOnClickListener(refreshClick);
 
         long investmentId = getArguments() != null ? getArguments().getLong(ARG_INVESTMENT_ID, -1) : -1;
+        long transactionId = getArguments() != null ? getArguments().getLong(ARG_TRANSACTION_ID, -1) : -1;
         long expenseId = getArguments() != null ? getArguments().getLong(ARG_EXPENSE_ID, -1) : -1;
 
-        if (investmentId > 0) {
+        if (transactionId > 0) {
+            loadTransactionSource(transactionId);
+        } else if (investmentId > 0) {
             loadInvestmentSource(investmentId);
         } else if (expenseId > 0) {
             loadExpenseSource(expenseId);
@@ -153,9 +164,9 @@ public class SourceDetailBottomSheet extends BottomSheetDialogFragment {
             }
 
             // Manual entry: no correlation key and not auto-fetched
-            if (!investment.isAutoFetched()
-                    && (investment.getPrimaryCorrelationKey() == null
-                            || investment.getPrimaryCorrelationKey().isEmpty())) {
+            boolean hasCorrelationKey = investment.getPrimaryCorrelationKey() != null && !investment.getPrimaryCorrelationKey().isEmpty();
+            
+            if (!investment.isAutoFetched() && !hasCorrelationKey) {
                 post(() -> showManualEntry(investment.getLastUpdatedEpochDay()));
                 return;
             }
@@ -163,7 +174,7 @@ public class SourceDetailBottomSheet extends BottomSheetDialogFragment {
             IngestionEvent event = findEventForInvestment(db, investment);
             if (event != null) {
                 post(() -> populateDetails(event));
-            } else if (!investment.isAutoFetched()) {
+            } else if (!investment.isAutoFetched() && !hasCorrelationKey) {
                 post(() -> showManualEntry(investment.getLastUpdatedEpochDay()));
             } else {
                 post(this::showEmptyState);
@@ -174,14 +185,13 @@ public class SourceDetailBottomSheet extends BottomSheetDialogFragment {
     @Nullable
     private IngestionEvent findEventForInvestment(@NonNull AppDatabase db,
             @NonNull Holding investment) {
-        // Try by last source key first
-        if (investment.getLastSourceKey() != null && !investment.getLastSourceKey().isEmpty()) {
-            IngestionEvent event = db.ingestionEventDao()
-                    .getBySourceKey(investment.getLastSourceKey());
-            if (event != null)
-                return event;
+        // Primary: use the link table which directly maps holdingId → ingestionEventId
+        IngestionEvent linkedEvent = db.investmentEventLinkDao()
+                .getLatestEventForHolding(investment.getId());
+        if (linkedEvent != null) {
+            return linkedEvent;
         }
-        // Try by correlation key
+        // Fallback: try by correlation key
         if (investment.getPrimaryCorrelationKey() != null) {
             List<IngestionEvent> events = db.ingestionEventDao()
                     .getByCorrelationKey(investment.getPrimaryCorrelationKey());
@@ -189,6 +199,32 @@ public class SourceDetailBottomSheet extends BottomSheetDialogFragment {
                 return events.get(0);
         }
         return null;
+    }
+
+    private void loadTransactionSource(long transactionId) {
+        showLoadingState();
+        AppDatabase.databaseWriteExecutor.execute(() -> {
+            AppDatabase db = AppDatabase.getInstance(requireContext());
+            com.spendwise.ai.data.entity.InvestmentTransaction transaction = db.investmentTransactionDao().getById(transactionId);
+            if (transaction == null) {
+                post(this::showEmptyState);
+                return;
+            }
+
+            IngestionEvent linkedEvent = db.investmentEventLinkDao().getLatestEventForTransaction(transaction.getId());
+            if (linkedEvent != null) {
+                post(() -> populateDetails(linkedEvent));
+            } else if (transaction.getCorrelationKey() != null) {
+                List<IngestionEvent> events = db.ingestionEventDao().getByCorrelationKey(transaction.getCorrelationKey());
+                if (events != null && !events.isEmpty()) {
+                    post(() -> populateDetails(events.get(0)));
+                } else {
+                    post(this::showEmptyState);
+                }
+            } else {
+                post(this::showEmptyState);
+            }
+        });
     }
 
     // ── Expense lookup ─────────────────────────────────────────────────

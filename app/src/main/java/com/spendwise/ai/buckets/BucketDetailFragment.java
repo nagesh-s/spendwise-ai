@@ -238,7 +238,7 @@ public class BucketDetailFragment extends Fragment
                             : current.getPrimaryCorrelationKey(),
                     current.getName(),
                     false);
-            new BucketAssignmentEngine().learnMapping(db, signal, current.getBucketId(), "USER");
+            new BucketAssignmentEngine(appContext).learnMapping(db, signal, current.getBucketId(), "USER");
             androidx.fragment.app.FragmentActivity activity = getActivity();
             if (activity != null) {
                 String msg = appContext.getString(
@@ -261,8 +261,13 @@ public class BucketDetailFragment extends Fragment
     }
 
     @Override
-    public void onInfoClick(Holding investment) {
-        showSourceDetailSheet(investment);
+    public void onInfoClick(long transactionId) {
+        showTransactionSourceSheet(transactionId);
+    }
+
+    private void showTransactionSourceSheet(long transactionId) {
+        SourceDetailBottomSheet sheet = SourceDetailBottomSheet.newInstanceForTransaction(transactionId);
+        sheet.show(getChildFragmentManager(), "SourceDetailSheet");
     }
 
     private void showSourceDetailSheet(Holding investment) {
@@ -316,11 +321,11 @@ public class BucketDetailFragment extends Fragment
             public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
                 int position = viewHolder.getAdapterPosition();
                 Object item = adapter.getCurrentList().get(position);
-                if (!(item instanceof com.spendwise.ai.data.pojo.HoldingWithProvider)) {
+                if (!(item instanceof com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider)) {
                     adapter.notifyItemChanged(position);
                     return;
                 }
-                Holding investment = ((com.spendwise.ai.data.pojo.HoldingWithProvider) item).holding;
+                Holding investment = ((com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider) item).holding;
                 confirmDeleteInvestment(investment, position);
             }
         };
@@ -596,16 +601,16 @@ public class BucketDetailFragment extends Fragment
         Toast.makeText(requireContext(), R.string.bucket_detail_occurrence_updated, Toast.LENGTH_SHORT).show();
     }
 
-    private void updateSummary(@Nullable List<Object> items) {
+    private void updateSummary(@Nullable List<BucketDetailViewModel.ProviderGroup> items) {
         long totalValue = 0;
         long totalInvested = 0;
         long totalPnl = 0;
         int count = 0;
 
         if (items != null) {
-            for (Object obj : items) {
-                if (obj instanceof com.spendwise.ai.data.pojo.HoldingWithProvider) {
-                    Holding inv = ((com.spendwise.ai.data.pojo.HoldingWithProvider) obj).holding;
+            for (BucketDetailViewModel.ProviderGroup group : items) {
+                for (com.spendwise.ai.data.pojo.HoldingWithTransactionsAndProvider obj : group.holdings) {
+                    Holding inv = obj.holding;
                     totalValue += inv.getCurrentValueCents();
                     totalInvested += inv.getInvestedAmountCents();
                     totalPnl += inv.getProfitLossCents();
