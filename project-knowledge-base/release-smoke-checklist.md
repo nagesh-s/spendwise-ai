@@ -1,4 +1,4 @@
-# Release Smoke Checklist (v1.7.0)
+# Release Smoke Checklist
 
 Use this checklist before publishing any build candidate.
 
@@ -40,7 +40,7 @@ Use this checklist before publishing any build candidate.
 - [ ] Voice low-confidence parse opens editor with transcript and only trusted field prefill
 - [ ] Voice `ERROR_CLIENT`/`ERROR_NO_MATCH` retry path works without crash
 - [ ] On-device semantic fallback path enriches low-confidence transcripts without network
-- [ ] `offlineLlm` flavor auto-copies bundled model asset into app files (default `files/models/spendwise_gemma3_1b.task`) and enriches low-confidence voice parses
+- [ ] With a separately supplied compatible Gemma model in flavor assets, `offlineLlm` provisions it into app files (default `files/models/spendwise_gemma3_1b.task`) and enriches low-confidence voice parses
 - [ ] `offlineLlm` flavor gracefully falls back to semantic extraction when local model file is missing
 - [ ] Calendar tab opens without crash and month/date selection works
 - [ ] Profile screen opens from Dashboard and shows level/XP/achievements
@@ -70,4 +70,8 @@ Use this checklist before publishing any build candidate.
 - [ ] `versionCode` and `versionName` are set for target release
 - [ ] `CHANGELOG.md` includes final release notes
 - [ ] Progress log and module docs are updated
-- [ ] `lintDebug` passes with no blocking errors
+## Upgrade and data-retention gates
+- [ ] An explicit 9→10 migration/upgrade policy exists before shipping to existing users; current source registers migrations only through 8→9
+- [ ] Upgrade instrumentation preserves representative existing-user data through version 10 (the current migration test covers only 3→4)
+- [ ] Export/import coverage is understood: JSON format version 3 is a partial, merging export, not a complete backup or database migration
+- [ ] Verify on a clean test device whether all preferences, ledger/source/review records, and attachments that users expect to survive are actually retained

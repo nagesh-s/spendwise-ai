@@ -1,84 +1,85 @@
-# Buckets & Investments Module
+# Buckets & Investment Schedules
 
 ## Purpose
-Turn buckets into an automatic monthly money-management system:
-- run salary allocation automatically
-- separate planned vs actual ledger
-- model SIP schedules and expected occurrences
-- reconcile expected vs confirmed signals with strict no-duplicate behavior
+
+Coordinate planned salary allocation with actual investment holdings, scheduled SIP expectations, source reconciliation, and bucket suggestions.
 
 ## Main Screens
-- `BucketsFragment`
-  - compact bucket grid
-  - ledger mode chips: `Planned | Actual`
-  - month status banner: pending/detected/auto/fallback/manual
-  - `Run Allocation Now` manual override (idempotent for current month)
-  - interactive net-worth eye toggle
-- `BucketDetailFragment`
-  - holdings summary and holdings list
-  - expected SIP section with status chips (`Expected`, `Confirmed`, `Adjusted`, `Skipped`)
-  - manual resolve/edit actions for unresolved expected entries
-  - low-confidence bucket mapping prompt (ask-once-then-learn)
 
-## Automation and Data Flow
+- `BucketsFragment`: compact bucket grid, Planned/Actual modes, month allocation status, manual allocation action, and net-worth visibility.
+- `BucketDetailFragment`: holdings, expected SIP occurrence states, manual resolve/edit actions, and uncertain bucket-assignment confirmation.
 
-### Salary month flow
-1. Salary signal detected from SMS credit or notification text.
-2. Event deduped via `EventIngestionPipeline` into `ingestion_events`.
-3. `SalaryAllocationOrchestrator` checks monthly idempotency.
-4. Allocation plan updates planned ledger (`Bucket.currentBalanceCents`).
-5. Allocation status stored in `BucketSalaryPrefs`.
+## Salary Planning
 
-### SIP expected flow
-1. User creates recurring investment schedule in recurring module.
-2. `InvestmentScheduleEngine` materializes expected `InvestmentOccurrence` rows.
-3. Backfill rule: 24 months detailed + older rollup aggregate block.
+1. Salary signal arrives from SMS or notification parsing.
+2. `EventIngestionPipeline` records a deduplicated `IngestionEvent`.
+3. `SalaryAllocationOrchestrator` applies monthly guardrails/idempotency.
+4. The plan updates `Bucket.currentBalanceCents`; status is stored in `BucketSalaryPrefs`.
 
-### SIP confirmation flow
-1. SMS/notification investment signal parsed.
-2. Event pipeline enforces unique `sourceKey`.
-3. `InvestmentAutoIngestionEngine` updates confirmed holdings.
-4. `OccurrenceReconciliationEngine` resolves expected occurrence to confirmed/adjusted.
-5. Net worth updates only from `investments` (actual ledger).
+**Planned bucket balances are not actual investment holdings.**
 
-### Holdings repair flow
-1. `BucketDetailFragment` triggers a dedicated holdings repair action instead of the generic SMS auto-import path.
-2. `SmsAutoImportWorker` runs in investments-only mode with a 180-day backfill window.
-3. Investment SMS ingestion uses a separate investment sync cursor from expense transaction sync.
-4. After SMS replay, `ExpenseInvestmentRecoveryEngine` scans existing expense rows for likely broker/SIP/FD/RD transfers.
-5. High-confidence candidates are converted into holdings through the same idempotent ingestion pipeline.
-6. Medium-confidence candidates are marked for future review without polluting holdings.
+## Schedules and Confirmation
 
-## Duplicate Prevention Strategy
-- Global idempotency: unique `ingestion_events.sourceKey`.
-- Correlation matching: `correlationKey` links debit/allotment/correction paths.
-- Source precedence: first accepted event creates path; later correlated events update path.
-- Worker/restart safety: duplicate deliveries are ignored through registry checks.
-- Expense recovery idempotency: recovered rows store `canonicalSourceKey` and optional `linkedInvestmentId` so repeat repair runs do not create duplicate holdings.
+1. A recurring investment creates an `InvestmentSchedule`.
+2. `InvestmentScheduleEngine` materializes expected `InvestmentOccurrence` rows, including detailed-history limits/older rollups.
+3. SMS/notification/recovery signals flow through `InvestmentAutoIngestionEngine` into `InvestmentLedgerService.processEvidence(...)`.
+4. The service resolves Provider/Holding, creates or confirms an `InvestmentTransaction`, links evidence, and recomputes aggregates.
+5. `OccurrenceReconciliationEngine` resolves expected occurrences and connects holding/transaction identifiers where supported.
+6. Expected, skipped, or otherwise unconfirmed occurrences do not contribute to net worth; actual holdings/transactions do.
 
-## Accounting Policy
+`InvestmentOccurrence.linkedInvestmentId` is a historical field name for a holding. `transactionId` separately identifies the logical transaction.
+
+## Holdings Repair and Review
+
+- Bucket detail can start investments-only SMS repair, using an investment cursor separate from expense import.
+- `ExpenseInvestmentRecoveryEngine` finds likely investment transfers in expense history and feeds evidence into the same ingestion/ledger path.
+- `InvestmentUnderstandingEngine` prioritizes correction memory, deterministic parsing, then lightweight semantic interpretation; uncertain cases can enter review.
+- `InvestmentMaintenanceWorker` repairs stale occurrence links, removes orphan event links, and recomputes aggregates.
+- Do not describe all historical-plan merge/conflict invariants as implemented without source/test verification.
+
+## Duplicate and Identity Rules
+
+- Unique `IngestionEvent.sourceKey` suppresses repeated source delivery.
+- Ledger correlation keys can connect matching evidence to a logical transaction; inspect `InvestmentLedgerService` for current matching scope.
+- Logical transaction keys and unique event links provide additional identity constraints.
+- Recovery metadata (`canonicalSourceKey`, optional `linkedInvestmentId`) supports expense-recovery idempotency.
+- Provider/instrument identity matters: neither automatically counting a debit and allotment twice nor promising universal merging is correct.
+
+## Accounting and Bucket Assignment
+
 - Investment-transfer expenses remain visible in Calendar and merchant history.
-- Budget progress, dashboard totals, salary allocation heuristics, streaks, insights, and predictions use consumption-only queries that exclude `Expense.isInvestmentTransfer = 1`.
-- Net worth still comes only from confirmed `Investment` rows.
-
-## Bucket Assignment Strategy
-- `BucketAssignmentEngine` priority:
-  1) learned mapping table (`InstrumentBucketMapping`)
-  2) on-device inference heuristics
-  3) rules fallback
-- Low-confidence inserts get map-pending marker.
-- Bucket detail prompts user once and stores mapping for future auto-apply.
+- Consumption analytics exclude `Expense.isInvestmentTransfer = 1`.
+- Active net worth uses `Holding`/`InvestmentTransaction`, not the inactive legacy `Investment` table or expected occurrences.
+- Bucket assignment priority: learned `InstrumentBucketMapping` → local text-embedding classifier → deterministic asset/keyword fallback → Unassigned confirmation.
 
 ## Key Files
-- `app/src/main/java/com/spendwise/ai/buckets/BucketsFragment.java`
-- `app/src/main/java/com/spendwise/ai/buckets/BucketDetailFragment.java`
-- `app/src/main/java/com/spendwise/ai/engine/SalaryAllocationOrchestrator.java`
-- `app/src/main/java/com/spendwise/ai/engine/EventIngestionPipeline.java`
-- `app/src/main/java/com/spendwise/ai/engine/InvestmentScheduleEngine.java`
-- `app/src/main/java/com/spendwise/ai/engine/OccurrenceReconciliationEngine.java`
-- `app/src/main/java/com/spendwise/ai/engine/InvestmentAutoIngestionEngine.java`
-- `app/src/main/java/com/spendwise/ai/engine/ExpenseInvestmentRecoveryEngine.java`
-- `app/src/main/java/com/spendwise/ai/engine/BucketAssignmentEngine.java`
-- `app/src/main/java/com/spendwise/ai/work/SalaryAutomationWorker.java`
-- `app/src/main/java/com/spendwise/ai/work/InvestmentScheduleWorker.java`
-- `app/src/main/java/com/spendwise/ai/work/InvestmentDigestWorker.java`
+
+```
+buckets/BucketsFragment.java
+buckets/BucketDetailFragment.java
+domain/InvestmentLedgerService.java
+engine/SalaryAllocationOrchestrator.java
+engine/EventIngestionPipeline.java
+engine/InvestmentScheduleEngine.java
+engine/OccurrenceReconciliationEngine.java
+engine/InvestmentAutoIngestionEngine.java
+engine/InvestmentUnderstandingEngine.java
+engine/ExpenseInvestmentRecoveryEngine.java
+engine/BucketAssignmentEngine.java
+work/SalaryAutomationWorker.java
+work/InvestmentScheduleWorker.java
+work/InvestmentDigestWorker.java
+work/InvestmentMaintenanceWorker.java
+```
+
+Paths are relative to `app/src/main/java/com/spendwise/ai/`.
+
+## Related Guides
+
+- [Investment ledger](investment-ledger.md)
+- [Data layer](data-layer.md)
+- [Memory Bank: Architecture](../../memory-bank/architecture.md)
+- [Memory Bank: Data model](../../memory-bank/data-model.md)
+
+## Last Updated
+2026-11-10 — provider/holding/logical-transaction flow and review/maintenance ownership.

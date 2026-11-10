@@ -1,0 +1,18 @@
+title = "SpendWise AI secret-scan configuration"
+
+[extend]
+useDefault = true
+
+# Verified false positive: `correlationKey` in a Room DAO SQL binding.
+# Restrict to the original commit, exact paths, and the ordinary SQL identifier.
+# Keep both directory names because the exception also covers repository history.
+[allowlist]
+description = "Room correlationKey SQL identifier false positive"
+condition = "AND"
+commits = ["611398371e0fb0fa429b91217407d61ea4818d25"]
+regexes = ['''^correlationKey$''']
+paths = [
+  '''app/src/main/java/com/spendwise/ai/data/dao/InvestmentOccurrenceDao.java''',
+  '''memorybank/room-daos-and-queries.md''',
+  '''memory-bank/room-daos-and-queries.md'''
+]

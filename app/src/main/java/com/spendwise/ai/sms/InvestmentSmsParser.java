@@ -349,28 +349,23 @@ public final class InvestmentSmsParser {
     }
 
     public static boolean containsInvestmentKeyword(String normalized) {
-        boolean hasStrong = containsAny(normalized,
-                "mutual fund", "mf", "sip", "folio", "allotment",
-                "units allotted", "nav", "amc", "demat", "buy order");
-        boolean hasWeak = containsAny(normalized,
-                "units", "shares", "scheme", "coin", "investment",
-                "stock", "upstox", "groww", "zerodha", "kite",
-                "angel one", "icici direct", "paytm money", "et money",
-                "mf central", "broker");
-
-        // Consider it an investment keyword match if there's a strong keyword,
-        // or if it has a weak keyword but isn't just a generic word without context.
-        if (hasStrong) return true;
-        if (hasWeak) {
-            // Require at least two weak keywords if no strong ones
-            int weakCount = 0;
-            String[] weaks = {"units", "shares", "scheme", "coin", "investment", "stock", "upstox", "groww", "zerodha", "kite", "angel one", "icici direct", "paytm money", "et money", "mf central", "broker"};
-            for (String w : weaks) {
-                if (normalized.contains(w)) weakCount++;
-            }
-            return weakCount >= 2;
+        if (containsBoundedToken(normalized,
+                "mutual\\s+fund", "mf", "sip", "folio", "allotment",
+                "units\\s+allotted", "nav", "amc", "demat", "buy\\s+order")) {
+            return true;
         }
-        return false;
+
+        String weakTokenPattern = "units|shares?|scheme|coin|investment|stock|upstox|groww|zerodha|kite"
+                + "|angel\\s+one|icici\\s+direct|paytm\\s+money|et\\s+money|mf\\s+central|broker";
+        if (!containsBoundedToken(normalized, weakTokenPattern)) {
+            return false;
+        }
+        String remainingContext = normalized.replaceAll("(?i)\\b(?:" + weakTokenPattern + ")\\b", " ");
+        return containsBoundedToken(remainingContext, "debited", "debit", "purchased?", "order\\s+executed");
+    }
+
+    private static boolean containsBoundedToken(String text, String... tokenPatterns) {
+        return text.matches("(?s).*\\b(?:" + String.join("|", tokenPatterns) + ")\\b.*");
     }
 
     private static boolean containsFdKeyword(String normalized) {
