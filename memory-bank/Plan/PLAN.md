@@ -1,5 +1,7 @@
 # SpendWise Investment Ledger and Intelligent Ingestion Plan
 
+> **Historical design record.** It describes intended behavior, not an implementation-status or acceptance checklist. Future-facing items may be incomplete. Use [data-model.md](../data-model.md), [architecture.md](../architecture.md), and [testing-and-quality.md](../testing-and-quality.md) for current verified state.
+
 ## Summary
 
 Rebuild investment tracking around four separate concepts:

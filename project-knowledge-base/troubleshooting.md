@@ -43,6 +43,14 @@
 
 ## 📊 Data Issues
 
+### Database Upgrade Fails
+
+| Symptom | Check | Action |
+|---|---|---|
+| App cannot open after upgrading an old database | `AppDatabase` registered migrations | No 9→10 migration exists. Design and test a migration/backfill or an explicit upgrade policy before shipping to existing users; do not enable destructive release migration to hide the issue |
+| Debug reinstall works but production upgrade is unverified | Debug destructive fallback and migration tests | Fresh debug installs are not upgrade proof; current migration instrumentation tests only 3→4 |
+| Holdings missing after JSON import | Partial backup format | JSON format 3 does not restore the full ledger, evidence links, review/correction state, or preferences |
+
 ### Dashboard Shows Wrong Data
 
 | Symptom | Check | File |
@@ -96,7 +104,7 @@
 | Voice opens dialog but amount is empty | transcript had no parseable numeric token | Keep transcript prefilled and manually confirm amount in editor |
 | Wrong category chosen from voice | heuristic keyword collision | Verify available category names and parser keyword rules in `VoiceExpenseParser` |
 | On-device fallback never improves parse | transcript lacks strong amount/category cues | Verify `OnDeviceSemanticExpenseExtractor` confidence thresholds and keyword mappings |
-| `offlineLlm` flavor does not use Gemma path | bundled model asset missing, copy failed, or invalid file | Ensure `app/src/offlineLlm/assets/models/spendwise_gemma3_1b.task` exists and verify app can copy to `files/models/spendwise_gemma3_1b.task` |
+| `offlineLlm` flavor does not use Gemma path | separately supplied model asset missing, copy failed, or invalid file | Obtain a compatible licensed Gemma model, place it at `app/src/offlineLlm/assets/models/spendwise_gemma3_1b.task` before building, and verify app can copy it to `files/models/spendwise_gemma3_1b.task`; model weights are not in this public repository |
 | `offlineLlm` build fails resolving MediaPipe | dependency sync/cache issue | Re-sync Gradle and verify `com.google.mediapipe:tasks-genai` resolves from `google()` |
 | Gemma output ignored | model returned non-JSON or low-confidence fields | Inspect parser logs and JSON format in `MediaPipeGemmaExpenseExtractor.parseResponse(...)` |
 | Busy/microphone errors | recognizer service or permissions unavailable | Re-grant mic permission and retry after service cooldown |

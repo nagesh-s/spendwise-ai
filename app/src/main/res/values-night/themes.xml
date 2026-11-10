@@ -1,6 +1,6 @@
 <resources>
     <!-- Dark theme using Material 3 -->
-    <style name="Theme.SpendWiseAI" parent="Theme.Material3.DayNight.NoActionBar">
+    <style name="Theme.SpendWiseAI.Material" parent="Theme.Material3.DayNight.NoActionBar">
         <!-- Primary brand color. -->
         <item name="colorPrimary">@color/md_theme_primary</item>
         <item name="colorOnPrimary">@color/md_theme_onPrimary</item>
@@ -23,9 +23,10 @@
         <!-- Status bar color -->
         <item name="android:statusBarColor">@color/md_theme_surface</item>
         <item name="android:windowLightStatusBar">false</item>
-        <item name="android:windowLightNavigationBar">false</item>
     </style>
     
+    <style name="Theme.SpendWiseAI" parent="Theme.SpendWiseAI.Base" />
+
     <!-- Calendar text styles for MaterialCalendarView (dark mode) -->
     <style name="CalendarDateTextAppearance" parent="android:TextAppearance">
         <item name="android:textColor">@color/md_theme_onSurface</item>

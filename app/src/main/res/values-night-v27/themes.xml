@@ -1,0 +1,6 @@
+<resources>
+    <!-- Resource-qualified parents replace, rather than extend, their unqualified parent. -->
+    <style name="Theme.SpendWiseAI.Base" parent="Theme.SpendWiseAI.Material">
+        <item name="android:windowLightNavigationBar">false</item>
+    </style>
+</resources>

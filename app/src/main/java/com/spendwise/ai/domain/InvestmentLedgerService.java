@@ -217,7 +217,7 @@ public class InvestmentLedgerService {
         long oldNetCashInvested = holding.getNetCashInvestedCents();
 
         for (InvestmentTransaction t : transactions) {
-            if (InvestmentTransaction.STATUS_CANCELLED.equals(t.getStatus())) continue;
+            if (!InvestmentTransaction.STATUS_CONFIRMED.equals(t.getStatus())) continue;
             
             switch (t.getTransactionType()) {
                 case InvestmentTransaction.TYPE_CONTRIBUTION:

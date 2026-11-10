@@ -1,56 +1,72 @@
 # Data Layer Module
 
-> Purpose: local persistence, aggregates, and automation-safe idempotent ingestion.
-
 ## Status
-Implemented and active on Room DB version `7`.
 
-## Core Design
-- Offline-first Room architecture.
-- Write path: `Fragment/ViewModel -> Repository or Engine -> AppDatabase.databaseWriteExecutor -> DAO`.
-- Read path: `DAO LiveData -> ViewModel -> UI observers`.
-- Amounts in cents (`long`), dates as epoch-day (`long`) for stable queries.
+Active Room database version: **10**, with **23 registered entities**.
 
-## Entity Groups
-- Expense tracking: `Expense`, `Category`, `Merchant`, `Budget`, `QuickTile`, `RecurringExpense`, `Tag`, `ExpenseTag`, `Account`, `FinancialGoal`.
-- `Expense` now also carries recovery metadata for investment transfers: `isInvestmentTransfer`, `linkedInvestmentId`, `recoveryStatus`, `canonicalSourceKey`.
-- Buckets and holdings: `Bucket`, `BucketCategory`, `Investment`.
-- Automation/schedules: `InvestmentSchedule`, `InvestmentOccurrence`, `IngestionEvent`, `InstrumentBucketMapping`.
+The authoritative references are `AppDatabase.java`, the entity/DAO annotations, and `app/schemas/com.spendwise.ai.data.AppDatabase/10.json`. See [Memory Bank: Data Model](../../memory-bank/data-model.md) for field-level rules.
 
-## Ledger Model
-- Planned ledger: monthly allocation plan in `Bucket.currentBalanceCents`.
-- Actual ledger: confirmed holdings from `Investment`.
-- Net worth/portfolio totals use actual ledger only.
-- Expense-derived investment transfers remain stored in `Expense` for history, but spend analytics and budgets query only non-transfer rows.
+## Entity groups
 
-## DB Migration Snapshot
-- `4 -> 5`: buckets + investments baseline.
-- `5 -> 6`: adds SIP schedule and ingestion pipeline model:
-  - new tables: `investment_schedules`, `investment_occurrences`, `ingestion_events`, `instrument_bucket_mappings`
-  - added columns on `investments`: `primaryCorrelationKey`, `lastSourceType`, `lastSourceKey`
-  - unique index on `ingestion_events.sourceKey` for strict idempotency
-- `6 -> 7`: adds expense recovery metadata:
-  - added columns on `expenses`: `isInvestmentTransfer`, `linkedInvestmentId`, `recoveryStatus`, `canonicalSourceKey`
-  - unique index on `expenses.canonicalSourceKey` for idempotent expense-to-holding recovery
+- Expenses: `Expense`, `Category`, `Merchant`, `Tag`, `ExpenseTag`, `Account`, `Budget`, `QuickTile`, `RecurringExpense`, `FinancialGoal`.
+- Bucket planning: `Bucket`, `BucketCategory`, `InstrumentBucketMapping`.
+- Investment ledger: `Provider`, `Holding`, `InvestmentTransaction`, `InvestmentEventLink`, `ValuationSnapshot`.
+- Learning and review: `UserCorrection`, `ReviewCandidate`.
+- Schedules and evidence: `InvestmentSchedule`, `InvestmentOccurrence`, `IngestionEvent`.
 
-## Key DAOs Added in v6
+`Investment` and `InvestmentSource` remain in Java source but are **not registered in the active database**. `InvestmentDao` is a legacy class name whose active queries use `Holding`.
+
+## Storage and domain rules
+
+- `AppDatabase` supplies DAOs and Room/PersistentStore configuration. Debug builds can use destructive migration; release builds cannot.
+- `ExpenseRepository` coordinates expense-facing reads/writes.
+- `InvestmentLedgerService.processEvidence(...)` is the investment write boundary. It resolves provider/holding, creates or confirms a logical transaction, links ingestion evidence, and recomputes aggregates.
+- Holding aggregate recomputation excludes cancelled transactions. Net cash invested is contributions + fees + taxes − withdrawals.
+- Monetary values use integer cents. Dates use epoch day or epoch milliseconds as declared by the entity; month keys use `YYYYMM`.
+- `Bucket.currentBalanceCents` is planned salary allocation, not actual portfolio value. Net worth comes from confirmed holdings, not expected occurrences.
+- `IngestionEvent` can retain raw sender/message evidence. Treat source contents as sensitive financial data.
+- `Expense` investment-transfer/recovery metadata separates transfers from consumption analytics without hiding them from transaction history.
+
+## Representative DAOs
+
+- `ExpenseDao`: monthly/category aggregates, expense CRUD, sync and consumption-only analytics.
+- `BucketDao`: planned bucket balance and allocation queries.
+- `InvestmentDao`: active holding access despite its legacy name.
+- `InvestmentTransactionDao`, `InvestmentEventLinkDao`, `ProviderDao`, `ValuationSnapshotDao`: ledger/evidence access.
 - `InvestmentScheduleDao`: schedule CRUD and active schedule queries.
-- `InvestmentOccurrenceDao`: expected occurrence lifecycle, reconciliation resolution, and digest aggregates.
-- `IngestionEventDao`: global event dedupe registry.
-- `InstrumentBucketMappingDao`: learned bucket assignment memory.
+- `InvestmentOccurrenceDao`: occurrence lifecycle, source reconciliation, and digest aggregates. Historical `linkedInvestmentId` references a holding; `transactionId` links a logical transaction.
+- `IngestionEventDao`: idempotent evidence ingestion.
+- `UserCorrectionDao`, `ReviewCandidateDao`: learned corrections and uncertain-review state.
 
-## Operational Guarantees
-- Event dedupe works across SMS, notifications, manual actions, and schedule workers.
-- Expense recovery uses the same event/holding dedupe path as SMS and notification imports.
-- Worker retries and app restarts do not duplicate logical financial events.
-- Expected SIP values do not affect net worth until confirmed.
-- Budgeting and insights stay clean even when past investment debits were first imported as expenses.
+## Migrations and backup
 
-## Key Files
-- `app/src/main/java/com/spendwise/ai/data/AppDatabase.java`
-- `app/src/main/java/com/spendwise/ai/data/dao/*.java`
-- `app/src/main/java/com/spendwise/ai/data/entity/*.java`
-- `app/src/main/java/com/spendwise/ai/data/repository/*.java`
+Explicit migrations cover **3→4 through 8→9**. There is no **9→10** migration or legacy investment backfill. Instrumentation currently checks only 3→4. Do not ship the version-10 schema to existing users without a migration/upgrade policy and retained-data tests. See [Room migrations](../../memory-bank/room-migrations.md).
+
+JSON backup format version **3** is separate from Room schema 10. It exports only selected categories, merchants, expenses, budgets, buckets, holdings, and bucket mappings; import merges rather than replacing the database. It does **not** preserve the full ledger, raw ingestion evidence, review/correction state, preferences, or receipts. See [JSON import/export](../../memory-bank/import-export-json.md).
+
+## Current Verification Notes
+
+- Version-10 entity and schema alignment has been inspected statically.
+- Full connected-device migration tests have not been run during public-repository preparation.
+- Do not use previous version-7 smoke results as evidence of a successful upgrade to version 10.
+
+## Common Failures
+
+| Failure | Likely Cause | Check |
+|---|---|---|
+| `Cannot find implementation for AppDatabase` | Room annotation processing/configuration | `app/build.gradle`, clean rebuild |
+| Migration crash on upgrade | Missing migration path | `AppDatabase` registered migrations and schema JSON |
+| Holding totals look wrong | Ad hoc writes or stale aggregates | Route writes through `InvestmentLedgerService`; run maintenance/recompute |
+| Duplicate evidence creates unexpected results | Source identity/transaction-key handling | `IngestionEventDao`, `InvestmentEventLink`, ledger matching tests |
+| Expected SIP affects net worth | Occurrence treated as a confirmed holding | Occurrence status and holding transaction linkage |
+| Restored JSON is incomplete | Partial export format mistaken for full backup | Export coverage table in the memory bank |
+
+## References
+
+- [Memory Bank: Data model](../../memory-bank/data-model.md)
+- [Memory Bank: DAO queries](../../memory-bank/room-daos-and-queries.md)
+- [Memory Bank: Import/export](../../memory-bank/import-export-json.md)
+- [Investment ledger guide](investment-ledger.md)
 
 ## Last Updated
-2026-03-08
+2026-11-10 — schema 10, active ledger entities, migration and backup limitations.

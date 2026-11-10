@@ -7,14 +7,14 @@ Authoritative context for code generation in this repository. Generate Java (And
 - Local-only persistence via Room; no network or cloud calls.  
 - Charts: MPAndroidChart (PieChart, BarChart).  
 - Calendar: MaterialCalendarView.  
-- Icons: Font Awesome via bundled TTF.  
+- Icons: Android vector drawables in `res/drawable/`; no Font Awesome font is bundled.
 - Files: Storage Access Framework (SAF) for JSON export/import.  
 - Theming: Material DayNight; Settings toggle chooses system / light / dark.
 
 ## Architectural Rules
 - Use Java + Android Views/XML; do not introduce Jetpack Compose or Kotlin.  
 - Fragments are thin; put transformations and business logic in ViewModels; use LiveData or observable patterns suitable for Java.  
-- Navigation graph (`app_nav_graph.xml`) defines destinations: DashboardFragment, CalendarFragment, CategoriesBudgetsFragment, MerchantsFragment, SettingsFragment, and `ExpenseEditorDialogFragment`.  
+- Navigation graph (`nav_graph.xml`) defines destinations: DashboardFragment, CalendarFragment, CategoriesBudgetsFragment, MerchantsFragment, SettingsFragment, and `ExpenseEditorDialogFragment`.
 - Bottom nav IDs map 1:1 with fragment IDs; use `NavController` for actions and dialog args.
 
 ## Data Model (canonical)
@@ -81,8 +81,8 @@ pieChart.invalidate();
 - App is offline-first; adding network requires product sign-off.
 
 ## Strict Do/Don’t
-DO: Java + AndroidX Views, Room, Navigation, MPAndroidChart, MaterialCalendarView, SAF, Font Awesome TTF.  
+DO: Java + AndroidX Views, Room, Navigation, MPAndroidChart, MaterialCalendarView, SAF, Android vector drawable icons.
 DON’T: Compose, Kotlin, Recharts/web libs, network calls, broad storage permissions, floating-point currency.
 
 ## FINAL NOTE
-For deeper context, cross-reference the documentation in `memorybank/`— each topic above maps to a dedicated guide you can open for examples and edge cases.
+For deeper context, cross-reference the documentation in `memory-bank/`— each topic above maps to a dedicated guide you can open for examples and edge cases.
