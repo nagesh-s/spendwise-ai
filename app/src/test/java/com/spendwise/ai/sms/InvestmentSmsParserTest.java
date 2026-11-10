@@ -65,4 +65,25 @@ public class InvestmentSmsParserTest {
         Assert.assertEquals("Upstox", signal.getPlatform());
         Assert.assertEquals(ParsedInvestmentSignal.SignalType.INVESTMENT_DEBIT, signal.getSignalType());
     }
+
+    @Test
+    public void parse_stockPhotographyPurchase_isNotAnInvestment() {
+        String message = "Rs 499 paid for stock photography subscription.";
+
+        Assert.assertNull(InvestmentSmsParser.parse("VK-HDFCBK", message, 1700000000000L));
+    }
+
+    @Test
+    public void parse_brokerageFee_isNotAnInvestment() {
+        String message = "Rs 20 brokerage fee paid for your subscription.";
+
+        Assert.assertNull(InvestmentSmsParser.parse("VK-HDFCBK", message, 1700000000000L));
+    }
+
+    @Test
+    public void parse_investmentAdvisoryPayment_isNotAnInvestment() {
+        String message = "Rs 999 paid for investment advisory subscription.";
+
+        Assert.assertNull(InvestmentSmsParser.parse("VK-HDFCBK", message, 1700000000000L));
+    }
 }

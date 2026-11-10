@@ -3,14 +3,36 @@
 build/
 app/build/
 
-# IDE
+# IDE and local AI-agent plans
 .idea/
+.claude/plans/
 *.iml
 local.properties
 
 # macOS
 .DS_Store
 
-# Logs
+# Logs and generated reports
 *.log
 build_output.txt
+reports/
+
+# Compiled files and local scratch output
+*.class
+*.pyc
+__pycache__/
+
+# Separately supplied model weights (retain packaging instructions)
+app/src/offlineLlm/assets/models/*.task
+app/src/offlineLlm/assets/models/*.tflite
+app/src/offlineLlm/assets/models/*.bin
+app/src/offlineLlm/assets/models/*.litertlm
+
+# Signing keys and local credentials
+*.jks
+*.keystore
+key.properties
+google-services.json
+.env
+.env.*
+!.env.example

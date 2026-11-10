@@ -1,0 +1,15 @@
+SpendWise AI
+Copyright 2026 Nagesh S
+
+This product includes the Universal Sentence Encoder Lite model from
+TensorFlow / Google, licensed under the Apache License, Version 2.0.
+
+The bundled model was obtained unmodified from:
+https://storage.googleapis.com/download.tensorflow.org/models/tflite_support/searcher/text_to_image_blogpost/text_embedder.tflite
+
+It is distributed locally as app/src/main/assets/models/text_embedder.tflite.
+Only the filename was changed for packaging.
+
+SHA-256: cf0f989feaea1a9c27e7923e29cec2fcbd2edb6c7321fcc227edf5edce7785cd
+
+See THIRD_PARTY_NOTICES.md for model, tutorial, and dependency attribution.

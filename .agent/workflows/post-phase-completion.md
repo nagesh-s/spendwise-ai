@@ -16,7 +16,7 @@ Run this workflow **every time** a phase (Phase 1, Phase 2, Phase 3, etc.) or a 
    - List every feature with a bold label and one-line description
    - Include database version, migration, and permission details in Technical
 
-2. **Update Memory Bank** (`memorybank/`)
+2. **Update Memory Bank** (`memory-bank/`)
    - `data-model.md` — Add any new entities, updated fields, and current DB version
    - `room-migrations.md` — Document new migration with SQL details
    - `navigation-map.md` — Add any new fragment routes
@@ -28,20 +28,14 @@ Run this workflow **every time** a phase (Phase 1, Phase 2, Phase 3, etc.) or a 
    - `architecture.md` — Add new screens to file map tables, update version history
    - If a new module was introduced, consider adding a guide in `modules/`
 
-4. **Update task.md**
-   - Mark the completed phase as ✅ in the header
-   - Mark all sub-tasks as `[x]`
+4. **Verify**
+   - Follow [CONTRIBUTING.md](../../CONTRIBUTING.md) for JDK 21, build/test/lint, connected-device, migration, and privacy requirements.
+   - Report the checks actually run and their results.
 
-5. **Git Commit**
-   - Stage all changes: `git add -A`
-   - Commit with message: `feat(phase-N): [Phase Name] - [brief summary]`
-   - Example: `feat(phase-2): Core Features - tags, accounts, goals, analytics, SMS reader`
-   - Tag the version: `git tag vX.Y.Z`
-
-6. **Notify User**
-   - Summarize what was completed
-   - Mention the version number and git tag
-   - Ask about next steps
+5. **Handoff**
+   - Leave changes unstaged and uncommitted for review.
+   - Never commit, tag, or push without explicit authorization for that action.
+   - Summarize completed work, the version if one was requested, verification results, and remaining limitations.
 
 ## Reminder
 This workflow MUST be followed after every phase completion. It ensures:

@@ -45,6 +45,8 @@
 | `security/BiometricHelper.java` | biometric capability + lock preference |
 | `res/layout/fragment_settings.xml` | settings layout |
 
+JSON backup format version 3 is a partial, merging export—not a complete restore. It omits full investment-ledger/source/review state, preferences, and some other app data. Exported files are written through SAF and are not encrypted by SpendWise. See [Import/export JSON](../../memory-bank/import-export-json.md).
+
 ## Common Issues
 
 | Issue | Likely Cause | Check |

@@ -1,21 +1,21 @@
-Build and release baseline (v1.6.0):
+Build and release baseline:
 
-- Release metadata:
-  - `app/build.gradle` -> `versionCode 160`
-  - `app/build.gradle` -> `versionName "1.6.0"`
+- Release metadata is maintained in `app/build.gradle` (`versionCode` and `versionName`).
+- Local and CI verification use JDK 21. The app's Java source/target compatibility is 11; `tasks-genai` requires a Java 21-compatible compiler.
+- `master` is the release branch and `staging` is the development branch; both are verified by CI.
 
 - Required verification commands:
   - `./gradlew :app:testDebugUnitTest`
   - `./gradlew :app:assembleDebug`
   - `./gradlew :app:assembleDebugAndroidTest`
   - `./gradlew :app:connectedDebugAndroidTest` (with emulator/device)
-  - `./gradlew :app:lintDebug`
+  - `./gradlew :app:lintStandardDebug :app:lintOfflineLlmDebug`
   - Flavor-specific (if validating each build target explicitly):
     - `./gradlew :app:testStandardDebugUnitTest :app:assembleStandardDebug`
     - `./gradlew :app:testOfflineLlmDebugUnitTest :app:assembleOfflineLlmDebug`
 
 - CI automation:
-  - `.github/workflows/android-ci.yml` enforces build + test APK + unit test gates on push/PR.
+  - `.github/workflows/android-ci.yml` enforces debug APK builds + JVM unit tests + instrumentation APK compilation + both debug-flavor lint gates on push/PR.
 
 - Dependency/build stability notes:
   - `material-calendarview` pulls legacy support references; keep `android.enableJetifier=true` in `gradle.properties` so legacy support calls are rewritten to AndroidX at build time.
@@ -23,8 +23,8 @@ Build and release baseline (v1.6.0):
   - Java compile target is `VERSION_11` to avoid obsolete Java 8 source/target warnings.
   - Use `org.gradle.jvmargs=-Xmx2048m -XX:MaxMetaspaceSize=768m -Dfile.encoding=UTF-8` in `gradle.properties`.
   - **ProGuard/R8**: `minifyEnabled true` for release builds. Rules in `proguard-rules.pro`.
-  - `offlineLlm` flavor pulls `com.google.mediapipe:tasks-genai` and auto-provisions Gemma model from bundled app assets on first use.
-  - Bundle model file in flavor assets at `app/src/offlineLlm/assets/models/spendwise_gemma3_1b.task` for zero-setup user experience.
+  - `offlineLlm` pulls `com.google.mediapipe:tasks-genai`. Obtain a compatible licensed Gemma model separately; the large model weights are not distributed in this public repository.
+  - Place the model at `app/src/offlineLlm/assets/models/spendwise_gemma3_1b.task` before building a model-enabled `offlineLlm` APK. Without the asset, semantic fallback remains available.
   - `OFFLINE_LLM_MODEL_PATH` can override target path (relative paths resolve under app files dir).
 
 ## Git Branching & Workflow

@@ -57,7 +57,7 @@
 | Voice shows repeated "No match" | recognizer final result dropped but no partial fallback | `VoiceInputHelper` partial-result handling and error mapping |
 | Voice log shows Error 13 | speech language unavailable on recognizer service | `VoiceInputHelper` language-error mapping and fallback retry |
 | Voice always opens modal (no auto-save) | parsed category/amount not high-confidence | `VoiceExpenseParser` certainty flags + auto-save gate in `DashboardFragment` |
-| `offlineLlm` still behaves like semantic-only fallback | bundled model asset missing or copy failed | ensure `app/src/offlineLlm/assets/models/spendwise_gemma3_1b.task` is packaged and check `MediaPipeGemmaExpenseExtractor` init logs |
+| `offlineLlm` still behaves like semantic-only fallback | separately supplied model asset missing or copy failed | obtain a compatible licensed Gemma model and place it at `app/src/offlineLlm/assets/models/spendwise_gemma3_1b.task` before building; check `MediaPipeGemmaExpenseExtractor` init logs |
 | Insights/predictions hidden | no qualifying data | engine conditions + date range |
 | Profile icon not navigating | missing nav destination ID | `navigation_profile` in nav graph |
 | Projected total seems off | early month low sample size | run-rate logic in `updateSpendingPace()` |

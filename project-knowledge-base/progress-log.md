@@ -4,13 +4,27 @@
 
 ---
 
-## Current State: Unreleased (Salary-to-Buckets Automation 2.0)
+## Current State: Public-Repository Preparation (2026-11-10)
 
 | Metric | Value |
 |---|---|
-| Version | `Unreleased` |
-| Status | Automation 2.0 implemented and holdings repair shipped: dual ledger, SIP schedules, idempotent event pipeline, reconciliation, reward-only investment XP, digest notifications, SMS holdings recovery |
-| Last Updated | 2026-03-08 (holdings repair + expense-to-investment recovery + analytics separation) |
+| Version in source | `1.9.0` (`versionCode 190`) |
+| Database | Room schema 10; migrations through 8→9 only |
+| Branch | `chore/github-open-source-readiness` |
+| Status | Documentation/licensing preparation is uncommitted. Source publication is not equivalent to existing-user release readiness. |
+| Verification | **Native JDK 21 build/test/lint gate passed.** Both debug app and Android-test APKs assembled; each JVM-test flavor passed 84 tests. Both lint flavors have zero errors (376 pre-existing warnings each). Connected-device tests remain unrun. Java was selected only for the verification invocation; global settings were unchanged. |
+| Completed checks | Gitleaks: 54 commits and a final 167.83 MB directory scan, no leaks. Markdown relative links (44 files), GitHub Actions YAML, and `git diff --check` passed. Verification fixed pending-transaction aggregate inclusion and two API-27 theme-resource lint errors. |
+
+### Documentation and readiness updates
+
+- Renamed `memorybank/` to `memory-bank/` with Git rename detection and updated repository references.
+- Refreshed canonical schema-10/engineering guides and module navigation; added a dedicated investment-ledger guide.
+- Documented active `Holding`/`InvestmentTransaction` storage and separated it from inactive legacy `Investment`/`InvestmentSource` source files.
+- Clarified separately supplied Gemma weights, speech-provider behavior, partial JSON backup, raw-source evidence, and experimental synchronization limitations.
+- Added missing-license, attribution, privacy, security, contribution, CI, and secret-scan publication files.
+- No migration implementation is claimed here: no 9→10 path exists; only 3→4 migration instrumentation currently exists. Existing-user upgrades require explicit data-retention work and verification.
+
+Older milestones below are dated historical records. Their commands/results apply to the code tested at that time; they are **not** fresh verification of this working tree. In particular, `:app:lintDebug` is now ambiguous with multiple flavors: use `:app:lintStandardDebug :app:lintOfflineLlmDebug`. The previously bundled Gemma asset is no longer distributed in this public tree.
 
 ---
 

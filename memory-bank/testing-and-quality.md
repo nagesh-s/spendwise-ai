@@ -13,6 +13,9 @@ Current baseline coverage:
 - `app/src/test/java/com/spendwise/ai/engine/SalaryDetectorTest.java`
 - `app/src/test/java/com/spendwise/ai/engine/CashflowGuardrailTest.java`
 - `app/src/test/java/com/spendwise/ai/sms/InvestmentSmsParserTest.java`
+- `app/src/test/java/com/spendwise/ai/sms/GoldenCorpusEvaluatorTest.java`
+- `app/src/test/java/com/spendwise/ai/sms/TransactionParserPromotionalTest.java`
+- `app/src/test/java/com/spendwise/ai/domain/InvestmentLedgerServiceTest.java`
 - `app/src/androidTest/java/com/spendwise/ai/data/AppDatabaseMigrationTest.java`
 - `app/src/androidTest/java/com/spendwise/ai/common/ExpenseEditorViewModelSaveTest.java`
 - `app/src/androidTest/java/com/spendwise/ai/categories/CategoryBudgetIntegrityTest.java`
@@ -43,6 +46,7 @@ Verification commands:
 - `./gradlew :app:assembleStandardDebug`
 - `./gradlew :app:assembleOfflineLlmDebug`
 - `./gradlew :app:assembleDebugAndroidTest`
+- `./gradlew :app:lintStandardDebug :app:lintOfflineLlmDebug`
 - `./gradlew :app:connectedDebugAndroidTest`
 
 CI gate:
@@ -50,9 +54,21 @@ CI gate:
   - `:app:assembleDebug`
   - `:app:testDebugUnitTest`
   - `:app:assembleDebugAndroidTest`
+  - `:app:lintStandardDebug :app:lintOfflineLlmDebug`
 
 Quality gates before release:
 - Unit tests pass.
 - App debug build passes.
 - Android test APK compiles.
 - Connected instrumentation tests pass on at least one emulator/device run before tagging.
+
+Migration coverage and current-run status:
+- `AppDatabaseMigrationTest` verifies **3→4 only**. It does not validate upgrades through schema 10; no 9→10 migration exists. Add explicit migration/backfill coverage before making existing-user upgrade claims.
+- `GoldenCorpusEvaluatorTest` exercises corpus-based parser evaluation; `TransactionParserPromotionalTest` asserts promotional rental-plan text is rejected; `InvestmentLedgerServiceTest` checks transaction/holding ledger behavior. File presence is not proof of a passing run.
+- Latest native JDK 21 gate: **passed** with `./gradlew --no-daemon --continue :app:assembleDebug :app:testDebugUnitTest :app:assembleDebugAndroidTest :app:lintStandardDebug :app:lintOfflineLlmDebug`. Both debug app APKs and both Android-test APKs assembled; each flavor passed **84 JVM tests with zero failures or errors**. Both lint reports have **zero errors and 376 pre-existing warnings**. The command used Temurin 21 only through `JAVA_HOME`/`PATH` for that invocation; no global Java setting changed.
+- Verification exposed and fixed a genuine accounting defect: `recomputeHoldingAggregates(...)` previously counted a pending contribution. It now includes only confirmed transactions; the unchanged existing ledger regression passes.
+- Lint exposed and fixed two theme-resource errors per flavor: `windowLightNavigationBar` now lives in API-27-qualified resource variants. The 376 existing warnings remain follow-up work rather than a passing-lint error count.
+- Historical native Java 25 `offlineLlmDebugUnitTest` result: **84 tests, 8 failures**, all Mockito/Byte Buddy initialization failures because Java 25 exceeded the installed Byte Buddy support. Use JDK 21 rather than enabling Byte Buddy's experimental Java 25 override.
+- JDK 17 cannot compile `tasks-genai:0.10.27` because it contains Java 21 bytecode (`class version 65`). Toolchain/CI use JDK 21. An earlier isolated Linux-container attempt did not complete resource processing because the installed Android SDK resource compiler was a macOS executable; the native JDK 21 result above supersedes that environment attempt.
+- Gitleaks completed full Git-history scanning: 54 commits, no leaks found. The final `gitleaks dir` filesystem scan processed 167.83 MB and found no leaks. The one earlier planning-file alert was resolved by replacing unnecessary identifier wording rather than adding a broad exclusion. Final `git diff --check`, workflow YAML parsing, and relative Markdown-link validation passed.
+- No connected emulator/device tests have been run in this preparation task.
